@@ -5,6 +5,9 @@ $root = dirname(__DIR__);
 
 require $root . '/app/core/DB.php';
 require $root . '/app/domain/SectionRepo.php';
+require $root . '/app/domain/ComponentRepo.php';
+require $root . '/app/domain/InfoblockRepo.php';
+require $root . '/app/domain/ObjectRepo.php';
 require $root . '/app/render/Renderer.php';
 
 $varDir = $root . '/var';
