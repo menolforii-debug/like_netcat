@@ -1,36 +1,26 @@
 <?php
 
 $root = dirname(__DIR__);
+date_default_timezone_set('UTC');
 
 require $root . '/app/core/DB.php';
-<<<<<<< HEAD
-=======
 require $root . '/app/core/EventBus.php';
 require $root . '/app/core/Core.php';
 require $root . '/app/core/Auth.php';
->>>>>>> origin/codex/-codex.yaml-7vmunj
 require $root . '/app/domain/SectionRepo.php';
 require $root . '/app/domain/ComponentRepo.php';
 require $root . '/app/domain/InfoblockRepo.php';
 require $root . '/app/domain/ObjectRepo.php';
 require $root . '/app/render/Renderer.php';
 
-<<<<<<< HEAD
-=======
 Auth::start();
 
->>>>>>> origin/codex/-codex.yaml-7vmunj
 $varDir = $root . '/var';
 if (!is_dir($varDir)) {
     mkdir($varDir, 0777, true);
 }
 
 DB::connect($varDir . '/app.sqlite');
-<<<<<<< HEAD
-runMigrations(DB::pdo(), $root . '/migrations');
-
-function runMigrations(PDO $pdo, $migrationsDir): void
-=======
 
 $skipMigrations = [];
 if (hasColumn('sections', 'slug')) {
@@ -55,7 +45,6 @@ function core(): Core
 }
 
 function runMigrations(PDO $pdo, $migrationsDir, array $skipMigrations = []): void
->>>>>>> origin/codex/-codex.yaml-7vmunj
 {
     $pdo->exec('CREATE TABLE IF NOT EXISTS migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL)');
 
@@ -68,8 +57,6 @@ function runMigrations(PDO $pdo, $migrationsDir, array $skipMigrations = []): vo
 
     foreach ($files as $file) {
         $name = basename($file);
-<<<<<<< HEAD
-=======
         if (in_array($name, $skipMigrations, true)) {
             if (!migrationApplied($pdo, $name)) {
                 $stmt = $pdo->prepare('INSERT INTO migrations (name, applied_at) VALUES (:name, :applied_at)');
@@ -81,7 +68,6 @@ function runMigrations(PDO $pdo, $migrationsDir, array $skipMigrations = []): vo
             continue;
         }
 
->>>>>>> origin/codex/-codex.yaml-7vmunj
         if (migrationApplied($pdo, $name)) {
             continue;
         }
@@ -109,8 +95,6 @@ function migrationApplied(PDO $pdo, $name): bool
 
     return (bool) $stmt->fetchColumn();
 }
-<<<<<<< HEAD
-=======
 
 function hasTable($table): bool
 {
@@ -156,4 +140,3 @@ function seedAdminUser(): void
         'role' => 'admin',
     ]);
 }
->>>>>>> origin/codex/-codex.yaml-7vmunj

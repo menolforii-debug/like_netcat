@@ -17,14 +17,11 @@
                     <?php if (!empty($data['text'])) : ?>
                         <div><?= htmlspecialchars($data['text'], ENT_QUOTES, 'UTF-8') ?></div>
                     <?php endif; ?>
-<<<<<<< HEAD
-=======
                     <?php if (!empty($editMode) && !empty($item['controls']['delete_url'])) : ?>
                         <div>
                             <a href="<?= htmlspecialchars($item['controls']['delete_url'], ENT_QUOTES, 'UTF-8') ?>">Удалить</a>
                         </div>
                     <?php endif; ?>
->>>>>>> origin/codex/-codex.yaml-7vmunj
                 </li>
             <?php endforeach; ?>
         </ul>
