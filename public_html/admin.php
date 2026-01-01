@@ -34,7 +34,84 @@ function fetchSectionById($id): ?array
     );
 }
 
+function fetchInfoblockById($id): ?array
+{
+    return DB::fetchOne(
+        'SELECT id, section_id, component_id, name FROM infoblocks WHERE id = :id LIMIT 1',
+        ['id' => $id]
+    );
+}
+
+function fetchObjectById($id): ?array
+{
+    return DB::fetchOne(
+        'SELECT id, infoblock_id, component_id, data_json FROM objects WHERE id = :id LIMIT 1',
+        ['id' => $id]
+    );
+}
+
+function parseComponentFields(array $component): array
+{
+    $validator = new FieldValidator();
+
+    return $validator->parseFields($component);
+}
+
+function renderFieldInput(array $field, array $data): string
+{
+    $name = $field['name'];
+    $type = $field['type'];
+    $value = isset($data[$name]) ? (string) $data[$name] : '';
+    $label = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+
+    $html = '<label>' . $label . '<br>';
+
+    if ($type === 'text') {
+        $html .= '<textarea name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" rows="4" cols="50">'
+            . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '</textarea>';
+    } elseif ($type === 'bool') {
+        $checked = $value !== '' && $value !== '0' ? ' checked' : '';
+        $html .= '<input type="checkbox" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" value="1"' . $checked . '>';
+    } elseif ($type === 'int' || $type === 'float') {
+        $step = $type === 'float' ? ' step="0.01"' : '';
+        $html .= '<input type="number" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" value="'
+            . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '"' . $step . '>';
+    } elseif ($type === 'date') {
+        $html .= '<input type="date" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" value="'
+            . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '">';
+    } else {
+        $html .= '<input type="text" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" value="'
+            . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '">';
+    }
+
+    if (!empty($field['required'])) {
+        $html .= ' <strong>*</strong>';
+    }
+
+    $html .= '</label><br>';
+
+    return $html;
+}
+
+function extractFormData(array $fields): array
+{
+    $data = [];
+    foreach ($fields as $field) {
+        $name = $field['name'];
+        if ($field['type'] === 'bool') {
+            $data[$name] = isset($_POST[$name]) ? '1' : '0';
+            continue;
+        }
+        if (isset($_POST[$name])) {
+            $data[$name] = $_POST[$name];
+        }
+    }
+
+    return $data;
+}
+
 $error = '';
+$errors = [];
 
 if ($action === 'login') {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -100,6 +177,124 @@ if ($action === 'users_create') {
     echo '<option value="admin">admin</option>';
     echo '</select></label><br>';
     echo '<button type="submit">Создать</button>';
+    echo '</form>';
+    echo '</body></html>';
+    exit;
+}
+
+if ($action === 'object_create') {
+    requireEditor();
+
+    $infoblockId = isset($_GET['infoblock_id']) ? (int) $_GET['infoblock_id'] : 0;
+    $infoblock = $infoblockId > 0 ? fetchInfoblockById($infoblockId) : null;
+
+    if ($infoblock === null) {
+        http_response_code(404);
+        echo 'Инфоблок не найден';
+        exit;
+    }
+
+    $componentRepo = new ComponentRepo();
+    $component = $componentRepo->findById((int) $infoblock['component_id']);
+    if ($component === null) {
+        http_response_code(404);
+        echo 'Компонент не найден';
+        exit;
+    }
+
+    $fields = parseComponentFields($component);
+    $data = [];
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $data = extractFormData($fields);
+        try {
+            $repo = new ObjectRepo(core()->events());
+            $repo->insert($component, (int) $infoblock['section_id'], (int) $infoblock['id'], $data);
+            redirectTo('/admin.php?action=trash_list');
+        } catch (Throwable $e) {
+            $errors = explode("\n", $e->getMessage());
+        }
+    }
+
+    echo '<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Создать объект</title></head><body>';
+    echo '<p><a href="/admin.php?action=trash_list">К списку корзины</a> | <a href="/admin.php?action=logout">Выйти</a></p>';
+    echo '<h1>Создать объект: ' . htmlspecialchars((string) $infoblock['name'], ENT_QUOTES, 'UTF-8') . '</h1>';
+    if (!empty($errors)) {
+        echo '<ul style="color:red">';
+        foreach ($errors as $err) {
+            echo '<li>' . htmlspecialchars($err, ENT_QUOTES, 'UTF-8') . '</li>';
+        }
+        echo '</ul>';
+    }
+    echo '<form method="post" action="/admin.php?action=object_create&infoblock_id=' . $infoblockId . '">';
+    foreach ($fields as $field) {
+        echo renderFieldInput($field, $data);
+    }
+    echo '<button type="submit">Сохранить</button>';
+    echo '</form>';
+    echo '</body></html>';
+    exit;
+}
+
+if ($action === 'object_edit') {
+    requireEditor();
+
+    $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+    $object = $id > 0 ? fetchObjectById($id) : null;
+
+    if ($object === null) {
+        http_response_code(404);
+        echo 'Объект не найден';
+        exit;
+    }
+
+    $infoblock = fetchInfoblockById((int) $object['infoblock_id']);
+    if ($infoblock === null) {
+        http_response_code(404);
+        echo 'Инфоблок не найден';
+        exit;
+    }
+
+    $componentRepo = new ComponentRepo();
+    $component = $componentRepo->findById((int) $object['component_id']);
+    if ($component === null) {
+        http_response_code(404);
+        echo 'Компонент не найден';
+        exit;
+    }
+
+    $fields = parseComponentFields($component);
+    $data = json_decode((string) $object['data_json'], true);
+    if (!is_array($data)) {
+        $data = [];
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $data = extractFormData($fields);
+        try {
+            $repo = new ObjectRepo(core()->events());
+            $repo->update($component, $id, $data);
+            redirectTo('/admin.php?action=object_edit&id=' . $id);
+        } catch (Throwable $e) {
+            $errors = explode("\n", $e->getMessage());
+        }
+    }
+
+    echo '<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Редактировать объект</title></head><body>';
+    echo '<p><a href="/admin.php?action=trash_list">К списку корзины</a> | <a href="/admin.php?action=logout">Выйти</a></p>';
+    echo '<h1>Редактировать объект</h1>';
+    if (!empty($errors)) {
+        echo '<ul style="color:red">';
+        foreach ($errors as $err) {
+            echo '<li>' . htmlspecialchars($err, ENT_QUOTES, 'UTF-8') . '</li>';
+        }
+        echo '</ul>';
+    }
+    echo '<form method="post" action="/admin.php?action=object_edit&id=' . $id . '">';
+    foreach ($fields as $field) {
+        echo renderFieldInput($field, $data);
+    }
+    echo '<button type="submit">Сохранить</button>';
     echo '</form>';
     echo '</body></html>';
     exit;
@@ -245,6 +440,7 @@ if ($action === 'trash_list') {
             $title = isset($data['title']) ? (string) $data['title'] : 'Без заголовка';
             echo '<li>';
             echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+            echo ' <a href="/admin.php?action=object_edit&id=' . (int) $item['id'] . '">Редактировать</a>';
             echo ' <a href="/admin.php?action=object_restore&id=' . (int) $item['id'] . '">Восстановить</a>';
             echo ' <a href="/admin.php?action=object_purge&id=' . (int) $item['id'] . '">Удалить навсегда</a>';
             echo '</li>';

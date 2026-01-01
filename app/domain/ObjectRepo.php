@@ -3,19 +3,23 @@
 final class ObjectRepo
 {
     private $events;
+    private $validator;
 
     public function __construct(EventBus $events)
     {
         $this->events = $events;
+        $this->validator = new FieldValidator();
     }
 
-    public function insert($sectionId, $infoblockId, $componentId, array $data): int
+    public function insert(array $component, $sectionId, $infoblockId, array $data): int
     {
+        $sanitized = $this->validateAndPrepareData($component, $data);
+
         $payload = [
             'section_id' => $sectionId,
             'infoblock_id' => $infoblockId,
-            'component_id' => $componentId,
-            'data' => $data,
+            'component_id' => $component['id'] ?? null,
+            'data' => $sanitized,
         ];
         $this->events->emit('object.before_insert', $payload);
 
@@ -27,8 +31,8 @@ final class ObjectRepo
         $stmt->execute([
             'section_id' => $sectionId,
             'infoblock_id' => $infoblockId,
-            'component_id' => $componentId,
-            'data_json' => json_encode($data, JSON_UNESCAPED_UNICODE),
+            'component_id' => $component['id'] ?? null,
+            'data_json' => json_encode($sanitized, JSON_UNESCAPED_UNICODE),
             'created_at' => $now,
             'updated_at' => $now,
         ]);
@@ -40,6 +44,29 @@ final class ObjectRepo
         return $id;
     }
 
+    public function update(array $component, $id, array $data): void
+    {
+        $sanitized = $this->validateAndPrepareData($component, $data);
+
+        $payload = [
+            'id' => $id,
+            'component_id' => $component['id'] ?? null,
+            'data' => $sanitized,
+        ];
+        $this->events->emit('object.before_update', $payload);
+
+        $stmt = DB::pdo()->prepare(
+            'UPDATE objects SET data_json = :data_json, updated_at = :updated_at WHERE id = :id'
+        );
+        $stmt->execute([
+            'data_json' => json_encode($sanitized, JSON_UNESCAPED_UNICODE),
+            'updated_at' => $this->now(),
+            'id' => $id,
+        ]);
+
+        $this->events->emit('object.after_update', $payload);
+    }
+
     public function findByInfoblock($infoblockId): array
     {
         return DB::fetchAll(
@@ -48,6 +75,15 @@ final class ObjectRepo
             WHERE infoblock_id = :infoblock_id AND is_deleted = 0
             ORDER BY id ASC',
             ['infoblock_id' => $infoblockId]
+        );
+    }
+
+    public function findById($id): ?array
+    {
+        return DB::fetchOne(
+            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at
+            FROM objects WHERE id = :id LIMIT 1',
+            ['id' => $id]
         );
     }
 
@@ -114,6 +150,26 @@ final class ObjectRepo
             ORDER BY deleted_at DESC
             LIMIT ' . $limit
         );
+    }
+
+    private function validateAndPrepareData(array $component, array $data): array
+    {
+        try {
+            $sanitized = $this->validator->validate($component, $data);
+            $this->events->emit('object.validated', [
+                'component_id' => $component['id'] ?? null,
+                'data' => $sanitized,
+            ]);
+
+            return $sanitized;
+        } catch (Throwable $e) {
+            $this->events->emit('object.validation_failed', [
+                'component_id' => $component['id'] ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
     }
 
     private function now(): string
