@@ -62,10 +62,12 @@ function statusBadge(string $status): string
 
 function fetchInfoblockById($id): ?array
 {
-    return DB::fetchOne(
-        'SELECT id, section_id, component_id, name FROM infoblocks WHERE id = :id LIMIT 1',
+    $row = DB::fetchOne(
+        'SELECT id, section_id, component_id, name, view_template, extra_json FROM infoblocks WHERE id = :id LIMIT 1',
         ['id' => $id]
     );
+
+    return normalizeInfoblockRow($row);
 }
 
 function fetchObjectById($id): ?array
@@ -82,6 +84,52 @@ function fetchSectionById($id): ?array
         'SELECT id, title, extra_json FROM sections WHERE id = :id LIMIT 1',
         ['id' => $id]
     );
+}
+
+function normalizeInfoblockRow(?array $row): ?array
+{
+    if ($row === null) {
+        return null;
+    }
+
+    $extra = json_decode((string) ($row['extra_json'] ?? '{}'), true);
+    if (!is_array($extra)) {
+        $extra = [];
+    }
+    $row['extra'] = $extra;
+
+    $viewTemplate = isset($row['view_template']) ? trim((string) $row['view_template']) : '';
+    $row['view_template'] = $viewTemplate !== '' ? $viewTemplate : 'list';
+
+    return $row;
+}
+
+function requireInfoblockAction(?array $infoblock, string $action): void
+{
+    $user = Auth::user();
+    if ($infoblock === null || !Permission::canAction($user, $infoblock, $action)) {
+        http_response_code(403);
+        echo 'Доступ запрещён';
+        exit;
+    }
+}
+
+function workflowAllowsAction(?array $user, array $infoblock, string $fromStatus, string $action): bool
+{
+    if ($user && ($user['role'] ?? null) === 'admin') {
+        return true;
+    }
+
+    if (!$user || ($user['role'] ?? null) !== 'editor') {
+        return false;
+    }
+
+    $workflow = [];
+    if (isset($infoblock['extra']['workflow']) && is_array($infoblock['extra']['workflow'])) {
+        $workflow = $infoblock['extra']['workflow'];
+    }
+
+    return Workflow::canTransition($fromStatus, $action, $workflow);
 }
 
 function parseComponentFields(array $component): array
@@ -245,7 +293,8 @@ if ($action === 'object_list') {
     requireEditor();
 
     $rows = DB::fetchAll(
-        'SELECT o.id, o.section_id, o.infoblock_id, o.data_json, o.status, i.name AS infoblock_name
+        'SELECT o.id, o.section_id, o.infoblock_id, o.data_json, o.status,
+            i.name AS infoblock_name, i.view_template, i.extra_json, i.component_id
         FROM objects o
         JOIN infoblocks i ON i.id = o.infoblock_id
         WHERE o.is_deleted = 0 AND o.status IN ("draft", "published")
@@ -269,6 +318,25 @@ if ($action === 'object_list') {
     echo '<table class="table table-striped">';
     echo '<thead><tr><th>ID</th><th>Инфоблок</th><th>Заголовок</th><th>Статус</th><th>Действия</th></tr></thead><tbody>';
     foreach ($rows as $row) {
+        $infoblock = normalizeInfoblockRow([
+            'id' => $row['infoblock_id'],
+            'component_id' => $row['component_id'],
+            'name' => $row['infoblock_name'],
+            'view_template' => $row['view_template'],
+            'extra_json' => $row['extra_json'],
+        ]);
+        $user = Auth::user();
+        $canEdit = $infoblock ? Permission::canAction($user, $infoblock, 'edit') : false;
+        $canDelete = $infoblock ? Permission::canAction($user, $infoblock, 'delete') : false;
+        $canView = $infoblock ? Permission::canAction($user, $infoblock, 'view') : false;
+        $canConfigure = $infoblock ? Permission::canAction($user, $infoblock, 'edit') : false;
+        $canPublish = $infoblock ? Permission::canAction($user, $infoblock, 'publish') : false;
+        $canUnpublish = $infoblock ? Permission::canAction($user, $infoblock, 'unpublish') : false;
+        $canArchive = $infoblock ? Permission::canAction($user, $infoblock, 'archive') : false;
+        $status = (string) $row['status'];
+        $workflowPublish = $infoblock ? workflowAllowsAction($user, $infoblock, $status, 'publish') : false;
+        $workflowUnpublish = $infoblock ? workflowAllowsAction($user, $infoblock, $status, 'unpublish') : false;
+        $workflowArchive = $infoblock ? workflowAllowsAction($user, $infoblock, $status, 'archive') : false;
         $data = json_decode((string) $row['data_json'], true);
         $title = isset($data['title']) ? (string) $data['title'] : 'Без заголовка';
         $sectionPath = buildSectionPathFromId((int) $row['section_id']);
@@ -280,20 +348,38 @@ if ($action === 'object_list') {
         echo '<td>' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</td>';
         echo '<td>' . statusBadge((string) $row['status']) . '</td>';
         echo '<td class="d-flex gap-2">';
-        if ($row['status'] === 'draft') {
-            echo '<form method="post" action="/admin.php?action=object_publish&id=' . (int) $row['id'] . '">';
-            echo '<button class="btn btn-sm btn-success" type="submit">Опубликовать</button>';
-            echo '</form>';
+        if ($status === 'draft') {
+            if ($canPublish && $workflowPublish) {
+                echo '<form method="post" action="/admin.php?action=object_publish&id=' . (int) $row['id'] . '">';
+                echo '<button class="btn btn-sm btn-success" type="submit">Опубликовать</button>';
+                echo '</form>';
+            }
         } else {
-            echo '<form method="post" action="/admin.php?action=object_unpublish&id=' . (int) $row['id'] . '">';
-            echo '<button class="btn btn-sm btn-warning" type="submit">Снять</button>';
+            if ($canUnpublish && $workflowUnpublish) {
+                echo '<form method="post" action="/admin.php?action=object_unpublish&id=' . (int) $row['id'] . '">';
+                echo '<button class="btn btn-sm btn-warning" type="submit">Снять</button>';
+                echo '</form>';
+            }
+            if ($canArchive && $workflowArchive) {
+                echo '<form method="post" action="/admin.php?action=object_archive&id=' . (int) $row['id'] . '">';
+                echo '<button class="btn btn-sm btn-outline-secondary" type="submit">Архивировать</button>';
+                echo '</form>';
+            }
+        }
+        if ($canEdit) {
+            echo '<a class="btn btn-sm btn-outline-primary" href="/admin.php?action=object_edit&id=' . (int) $row['id'] . '">Редактировать</a>';
+        }
+        if ($canView) {
+            echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars($previewUrl, ENT_QUOTES, 'UTF-8') . '">Предпросмотр</a>';
+        }
+        if ($canDelete) {
+            echo '<form method="post" action="/admin.php?action=object_delete&id=' . (int) $row['id'] . '">';
+            echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>';
             echo '</form>';
         }
-        echo '<a class="btn btn-sm btn-outline-primary" href="/admin.php?action=object_edit&id=' . (int) $row['id'] . '">Редактировать</a>';
-        echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars($previewUrl, ENT_QUOTES, 'UTF-8') . '">Предпросмотр</a>';
-        echo '<form method="post" action="/admin.php?action=object_delete&id=' . (int) $row['id'] . '">';
-        echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>';
-        echo '</form>';
+        if ($canConfigure && $infoblock) {
+            echo '<a class="btn btn-sm btn-outline-dark" href="/admin.php?action=infoblock_edit&id=' . (int) $infoblock['id'] . '">Вид</a>';
+        }
         echo '</td>';
         echo '</tr>';
     }
@@ -313,6 +399,8 @@ if ($action === 'object_create') {
         echo 'Инфоблок не найден';
         exit;
     }
+
+    requireInfoblockAction($infoblock, 'create');
 
     $componentRepo = new ComponentRepo();
     $component = $componentRepo->findById((int) $infoblock['component_id']);
@@ -374,6 +462,8 @@ if ($action === 'object_edit') {
         exit;
     }
 
+    requireInfoblockAction($infoblock, 'edit');
+
     $componentRepo = new ComponentRepo();
     $component = $componentRepo->findById((int) $object['component_id']);
     if ($component === null) {
@@ -418,12 +508,80 @@ if ($action === 'object_edit') {
     exit;
 }
 
+if ($action === 'infoblock_edit') {
+    requireEditor();
+
+    $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+    $infoblock = $id > 0 ? fetchInfoblockById($id) : null;
+
+    if ($infoblock === null) {
+        http_response_code(404);
+        echo 'Инфоблок не найден';
+        exit;
+    }
+
+    requireInfoblockAction($infoblock, 'edit');
+
+    $componentRepo = new ComponentRepo();
+    $component = $componentRepo->findById((int) $infoblock['component_id']);
+    if ($component === null) {
+        http_response_code(404);
+        echo 'Компонент не найден';
+        exit;
+    }
+
+    $views = isset($component['views']) && is_array($component['views']) ? $component['views'] : ['list'];
+    $currentView = $infoblock['view_template'] ?? 'list';
+    if (!in_array($currentView, $views, true)) {
+        $currentView = 'list';
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $selectedView = isset($_POST['view_template']) ? trim((string) $_POST['view_template']) : '';
+        if (!in_array($selectedView, $views, true)) {
+            $selectedView = 'list';
+        }
+
+        $stmt = DB::pdo()->prepare('UPDATE infoblocks SET view_template = :view_template WHERE id = :id');
+        $stmt->execute([
+            'view_template' => $selectedView,
+            'id' => $id,
+        ]);
+
+        redirectTo('/admin.php?action=infoblock_edit&id=' . $id);
+    }
+
+    renderHeader('Шаблон инфоблока');
+    echo '<h1 class="h4">Шаблон инфоблока: ' . htmlspecialchars((string) $infoblock['name'], ENT_QUOTES, 'UTF-8') . '</h1>';
+    echo '<form method="post" action="/admin.php?action=infoblock_edit&id=' . $id . '" class="card card-body">';
+    echo '<div class="mb-3"><label class="form-label">Вариант отображения</label>';
+    echo '<select class="form-select" name="view_template">';
+    foreach ($views as $view) {
+        $selected = $view === $currentView ? ' selected' : '';
+        echo '<option value="' . htmlspecialchars($view, ENT_QUOTES, 'UTF-8') . '"' . $selected . '>' . htmlspecialchars($view, ENT_QUOTES, 'UTF-8') . '</option>';
+    }
+    echo '</select></div>';
+    echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
+    echo '</form>';
+    renderFooter();
+    exit;
+}
+
 if ($action === 'object_publish') {
     requireEditor();
     $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
     if ($id > 0) {
-        $repo = new ObjectRepo(core()->events());
-        $repo->publish($id);
+        $object = fetchObjectById($id);
+        $infoblock = $object ? fetchInfoblockById((int) $object['infoblock_id']) : null;
+        requireInfoblockAction($infoblock, 'publish');
+        try {
+            $repo = new ObjectRepo(core()->events());
+            $repo->publish($id);
+        } catch (Throwable $e) {
+            http_response_code(403);
+            echo htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+            exit;
+        }
     }
     redirectTo('/admin.php?action=object_list');
 }
@@ -432,8 +590,17 @@ if ($action === 'object_unpublish') {
     requireEditor();
     $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
     if ($id > 0) {
-        $repo = new ObjectRepo(core()->events());
-        $repo->unpublish($id);
+        $object = fetchObjectById($id);
+        $infoblock = $object ? fetchInfoblockById((int) $object['infoblock_id']) : null;
+        requireInfoblockAction($infoblock, 'unpublish');
+        try {
+            $repo = new ObjectRepo(core()->events());
+            $repo->unpublish($id);
+        } catch (Throwable $e) {
+            http_response_code(403);
+            echo htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+            exit;
+        }
     }
     redirectTo('/admin.php?action=object_list');
 }
@@ -442,8 +609,17 @@ if ($action === 'object_archive') {
     requireEditor();
     $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
     if ($id > 0) {
-        $repo = new ObjectRepo(core()->events());
-        $repo->archive($id);
+        $object = fetchObjectById($id);
+        $infoblock = $object ? fetchInfoblockById((int) $object['infoblock_id']) : null;
+        requireInfoblockAction($infoblock, 'archive');
+        try {
+            $repo = new ObjectRepo(core()->events());
+            $repo->archive($id);
+        } catch (Throwable $e) {
+            http_response_code(403);
+            echo htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
+            exit;
+        }
     }
     redirectTo('/admin.php?action=object_list');
 }
@@ -495,6 +671,9 @@ if ($action === 'object_delete') {
     requireEditor();
     $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
     if ($id > 0) {
+        $object = fetchObjectById($id);
+        $infoblock = $object ? fetchInfoblockById((int) $object['infoblock_id']) : null;
+        requireInfoblockAction($infoblock, 'delete');
         $repo = new ObjectRepo(core()->events());
         $repo->softDelete($id);
     }
@@ -505,6 +684,9 @@ if ($action === 'object_restore') {
     requireEditor();
     $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
     if ($id > 0) {
+        $object = fetchObjectById($id);
+        $infoblock = $object ? fetchInfoblockById((int) $object['infoblock_id']) : null;
+        requireInfoblockAction($infoblock, 'restore');
         $repo = new ObjectRepo(core()->events());
         $repo->restore($id);
     }
@@ -515,6 +697,9 @@ if ($action === 'object_purge') {
     requireEditor();
     $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
     if ($id > 0) {
+        $object = fetchObjectById($id);
+        $infoblock = $object ? fetchInfoblockById((int) $object['infoblock_id']) : null;
+        requireInfoblockAction($infoblock, 'purge');
         $repo = new ObjectRepo(core()->events());
         $repo->purge($id);
     }
