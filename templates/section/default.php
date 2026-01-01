@@ -9,5 +9,17 @@ declare(strict_types=1);
 </head>
 <body>
     <h1><?= htmlspecialchars($section['title'], ENT_QUOTES, 'UTF-8') ?></h1>
+
+    <?php if (!empty($items)) : ?>
+        <ul>
+            <?php foreach ($items as $child) : ?>
+                <li>
+                    <a href="/<?= htmlspecialchars($child['slug'], ENT_QUOTES, 'UTF-8') ?>/">
+                        <?= htmlspecialchars($child['title'], ENT_QUOTES, 'UTF-8') ?>
+                    </a>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    <?php endif; ?>
 </body>
 </html>
