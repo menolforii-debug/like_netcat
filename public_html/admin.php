@@ -26,6 +26,14 @@ function requireAdmin(): void
     }
 }
 
+function fetchSectionById($id): ?array
+{
+    return DB::fetchOne(
+        'SELECT id, title, extra_json FROM sections WHERE id = :id LIMIT 1',
+        ['id' => $id]
+    );
+}
+
 $error = '';
 
 if ($action === 'login') {
@@ -92,6 +100,50 @@ if ($action === 'users_create') {
     echo '<option value="admin">admin</option>';
     echo '</select></label><br>';
     echo '<button type="submit">Создать</button>';
+    echo '</form>';
+    echo '</body></html>';
+    exit;
+}
+
+if ($action === 'seo_section') {
+    requireEditor();
+
+    $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+    $section = $id > 0 ? fetchSectionById($id) : null;
+
+    if ($section === null) {
+        http_response_code(404);
+        echo 'Раздел не найден';
+        exit;
+    }
+
+    $extra = json_decode((string) ($section['extra_json'] ?? '{}'), true);
+    if (!is_array($extra)) {
+        $extra = [];
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $extra['seo_title'] = isset($_POST['seo_title']) ? trim((string) $_POST['seo_title']) : '';
+        $extra['seo_description'] = isset($_POST['seo_description']) ? trim((string) $_POST['seo_description']) : '';
+        $extra['seo_keywords'] = isset($_POST['seo_keywords']) ? trim((string) $_POST['seo_keywords']) : '';
+
+        $stmt = DB::pdo()->prepare('UPDATE sections SET extra_json = :extra_json WHERE id = :id');
+        $stmt->execute([
+            'extra_json' => json_encode($extra, JSON_UNESCAPED_UNICODE),
+            'id' => $id,
+        ]);
+
+        redirectTo('/admin.php?action=seo_section&id=' . $id);
+    }
+
+    echo '<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>SEO раздела</title></head><body>';
+    echo '<p><a href="/admin.php?action=trash_list">К списку корзины</a> | <a href="/admin.php?action=logout">Выйти</a></p>';
+    echo '<h1>SEO для раздела: ' . htmlspecialchars((string) $section['title'], ENT_QUOTES, 'UTF-8') . '</h1>';
+    echo '<form method="post" action="/admin.php?action=seo_section&id=' . $id . '">';
+    echo '<label>SEO title<br><input type="text" name="seo_title" value="' . htmlspecialchars((string) ($extra['seo_title'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></label><br>';
+    echo '<label>SEO description<br><textarea name="seo_description" rows="3" cols="50">' . htmlspecialchars((string) ($extra['seo_description'] ?? ''), ENT_QUOTES, 'UTF-8') . '</textarea></label><br>';
+    echo '<label>SEO keywords<br><input type="text" name="seo_keywords" value="' . htmlspecialchars((string) ($extra['seo_keywords'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></label><br>';
+    echo '<button type="submit">Сохранить</button>';
     echo '</form>';
     echo '</body></html>';
     exit;

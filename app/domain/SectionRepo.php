@@ -24,36 +24,72 @@ final class SectionRepo
 
     public function findById($id): ?array
     {
-        return DB::fetchOne(
-            'SELECT id, parent_id, slug, title FROM sections WHERE id = :id LIMIT 1',
+        $section = DB::fetchOne(
+            'SELECT id, parent_id, slug, title, extra_json FROM sections WHERE id = :id LIMIT 1',
             ['id' => $id]
         );
+
+        return $this->withExtra($section);
     }
 
     public function findChildren($parentId): array
     {
-        return DB::fetchAll(
-            'SELECT id, slug, title FROM sections WHERE parent_id = :parent_id ORDER BY id ASC',
+        $rows = DB::fetchAll(
+            'SELECT id, slug, title, extra_json FROM sections WHERE parent_id = :parent_id ORDER BY id ASC',
             ['parent_id' => $parentId]
         );
+
+        return $this->withExtraList($rows);
     }
 
     private function findRoot(): ?array
     {
-        return DB::fetchOne(
-            'SELECT id, parent_id, slug, title FROM sections WHERE parent_id IS NULL AND slug = :slug LIMIT 1',
+        $section = DB::fetchOne(
+            'SELECT id, parent_id, slug, title, extra_json FROM sections WHERE parent_id IS NULL AND slug = :slug LIMIT 1',
             ['slug' => '']
         );
+
+        return $this->withExtra($section);
     }
 
     private function findChildBySlug($parentId, $slug): ?array
     {
-        return DB::fetchOne(
-            'SELECT id, parent_id, slug, title FROM sections WHERE parent_id = :parent_id AND slug = :slug LIMIT 1',
+        $section = DB::fetchOne(
+            'SELECT id, parent_id, slug, title, extra_json FROM sections WHERE parent_id = :parent_id AND slug = :slug LIMIT 1',
             [
                 'parent_id' => $parentId,
                 'slug' => $slug,
             ]
         );
+
+        return $this->withExtra($section);
+    }
+
+    private function withExtra(?array $section): ?array
+    {
+        if ($section === null) {
+            return null;
+        }
+
+        $extra = json_decode((string) ($section['extra_json'] ?? '{}'), true);
+        if (!is_array($extra)) {
+            $extra = [];
+        }
+        $section['extra'] = $extra;
+
+        return $section;
+    }
+
+    private function withExtraList(array $rows): array
+    {
+        foreach ($rows as $index => $row) {
+            $extra = json_decode((string) ($row['extra_json'] ?? '{}'), true);
+            if (!is_array($extra)) {
+                $extra = [];
+            }
+            $rows[$index]['extra'] = $extra;
+        }
+
+        return $rows;
     }
 }

@@ -7,6 +7,7 @@ require $root . '/app/core/DB.php';
 require $root . '/app/core/EventBus.php';
 require $root . '/app/core/Core.php';
 require $root . '/app/core/Auth.php';
+require $root . '/app/core/Seo.php';
 require $root . '/app/domain/SectionRepo.php';
 require $root . '/app/domain/ComponentRepo.php';
 require $root . '/app/domain/InfoblockRepo.php';
@@ -23,19 +24,22 @@ if (!is_dir($varDir)) {
 DB::connect($varDir . '/app.sqlite');
 
 $skipMigrations = [];
-if (hasColumn('sections', 'slug')) {
+if (DB::hasColumn('sections', 'slug')) {
     $skipMigrations[] = '002_section_slug.sql';
 }
-if (hasColumn('objects', 'deleted_at')) {
+if (DB::hasColumn('objects', 'deleted_at')) {
     $skipMigrations[] = '021_objects_deleted_at.sql';
 }
 
 runMigrations(DB::pdo(), $root . '/migrations', $skipMigrations);
 
+ensureColumn('sections', 'extra_json', "ALTER TABLE sections ADD COLUMN extra_json TEXT NOT NULL DEFAULT '{}'");
+ensureColumn('infoblocks', 'extra_json', "ALTER TABLE infoblocks ADD COLUMN extra_json TEXT NOT NULL DEFAULT '{}'");
+
 $core = new Core(DB::pdo(), new EventBus());
 $GLOBALS['core'] = $core;
 
-if (hasTable('users') && usersCount() === 0) {
+if (DB::hasTable('users') && usersCount() === 0) {
     seedAdminUser();
 }
 
@@ -96,32 +100,17 @@ function migrationApplied(PDO $pdo, $name): bool
     return (bool) $stmt->fetchColumn();
 }
 
-function hasTable($table): bool
+function ensureColumn($table, $column, $ddl): void
 {
-    $stmt = DB::pdo()->prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = :name");
-    $stmt->execute(['name' => $table]);
-
-    return (bool) $stmt->fetchColumn();
-}
-
-function hasColumn($table, $column): bool
-{
-    if (!preg_match('/^[a-zA-Z0-9_]+$/', $table) || !preg_match('/^[a-zA-Z0-9_]+$/', $column)) {
-        return false;
+    if (!DB::hasTable($table)) {
+        return;
     }
 
-    $stmt = DB::pdo()->query('PRAGMA table_info(' . $table . ')');
-    if ($stmt === false) {
-        return false;
+    if (DB::hasColumn($table, $column)) {
+        return;
     }
 
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        if (isset($row['name']) && $row['name'] === $column) {
-            return true;
-        }
-    }
-
-    return false;
+    DB::pdo()->exec($ddl);
 }
 
 function usersCount(): int

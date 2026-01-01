@@ -43,7 +43,38 @@ final class Renderer
         $core = [
             'infoblocks_html' => $infoblocksHtml,
         ];
+
+        $seo = Seo::resolve($section, null);
+
+        $this->renderDocumentStart($seo);
         $this->renderSection($section, $children, $core, $editMode);
+        $this->renderDocumentEnd();
+    }
+
+    private function renderDocumentStart(array $seo): void
+    {
+        $title = htmlspecialchars($seo['title'] ?? '', ENT_QUOTES, 'UTF-8');
+        $description = htmlspecialchars($seo['description'] ?? '', ENT_QUOTES, 'UTF-8');
+        $keywords = isset($seo['keywords']) ? trim((string) $seo['keywords']) : '';
+        $keywordsEscaped = htmlspecialchars($keywords, ENT_QUOTES, 'UTF-8');
+
+        echo "<!doctype html>\n";
+        echo "<html lang=\"ru\">\n";
+        echo "<head>\n";
+        echo "    <meta charset=\"utf-8\">\n";
+        echo "    <title>{$title}</title>\n";
+        echo "    <meta name=\"description\" content=\"{$description}\">\n";
+        if ($keywords !== '') {
+            echo "    <meta name=\"keywords\" content=\"{$keywordsEscaped}\">\n";
+        }
+        echo "</head>\n";
+        echo "<body>\n";
+    }
+
+    private function renderDocumentEnd(): void
+    {
+        echo "</body>\n";
+        echo "</html>\n";
     }
 
     private function renderSection(array $section, array $children, array $core, $editMode): void
