@@ -31,11 +31,19 @@ final class Renderer
 
         $infoblocks = $infoblockRepo->findBySection((int) $section['id']);
         $infoblocksHtml = '';
+        $infoblockViews = [];
+        $previewObjectData = null;
         foreach ($infoblocks as $infoblock) {
+            if (!Permission::canView(Auth::user(), $infoblock)) {
+                continue;
+            }
+
             $component = $componentRepo->findById((int) $infoblock['component_id']);
             if ($component === null) {
                 continue;
             }
+
+            $infoblock['view_template'] = $this->resolveViewTemplate($infoblock, $component);
 
             if ($editMode) {
                 $objects = $objectRepo->listForInfoblockEdit((int) $infoblock['id']);
@@ -47,19 +55,24 @@ final class Renderer
                 $previewObject = $objectRepo->findById($previewObjectId);
                 if ($previewObject && (int) $previewObject['infoblock_id'] === (int) $infoblock['id']) {
                     $objects = $this->appendPreviewObject($objects, $previewObject);
+                    $previewObjectData = $this->decodeObjectData($previewObject);
                 }
             }
 
             $items = $this->decodeItems($objects, $editMode);
             $infoblocksHtml .= $this->renderInfoblock($section, $infoblock, $component, $items, $editMode);
+            $infoblockViews[] = [
+                'infoblock' => $infoblock,
+                'component' => $component,
+                'items' => $items,
+            ];
         }
 
         $core = [
             'infoblocks_html' => $infoblocksHtml,
         ];
 
-        $seo = Seo::resolve($section, null);
-
+        $seo = $this->resolveSeo($section, $infoblockViews, $previewObjectData);
         $this->renderDocumentStart($seo);
         $this->renderSection($section, $children, $core, $editMode);
         $this->renderDocumentEnd();
@@ -67,35 +80,18 @@ final class Renderer
 
     private function renderDocumentStart(array $seo): void
     {
-        $title = htmlspecialchars($seo['title'] ?? '', ENT_QUOTES, 'UTF-8');
-        $descriptionRaw = isset($seo['description']) ? trim((string) $seo['description']) : '';
-        $description = htmlspecialchars($descriptionRaw, ENT_QUOTES, 'UTF-8');
-        $keywords = isset($seo['keywords']) ? trim((string) $seo['keywords']) : '';
-        $keywordsEscaped = htmlspecialchars($keywords, ENT_QUOTES, 'UTF-8');
-
-        echo "<!doctype html>\n";
-        echo "<html lang=\"ru\">\n";
-        echo "<head>\n";
-        echo "    <meta charset=\"utf-8\">\n";
-        echo "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n";
-        echo "    <link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css\" rel=\"stylesheet\">\n";
-        echo "    <title>{$title}</title>\n";
-        if ($descriptionRaw !== '') {
-            echo "    <meta name=\"description\" content=\"{$description}\">\n";
-        }
-        if ($keywords !== '') {
-            echo "    <meta name=\"keywords\" content=\"{$keywordsEscaped}\">\n";
-        }
-        echo "</head>\n";
-        echo "<body>\n";
-        echo "<div class=\"container mt-4\">\n";
+        $title = (string) ($seo['title'] ?? '');
+        Layout::renderDocumentStart($title, $seo);
+        Layout::renderNavbar('CMS', [
+            ['label' => 'Админ', 'href' => '/admin.php'],
+        ]);
+        echo '<main class="container mb-5">';
     }
 
     private function renderDocumentEnd(): void
     {
-        echo "</div>\n";
-        echo "</body>\n";
-        echo "</html>\n";
+        echo '</main>';
+        Layout::renderDocumentEnd();
     }
 
     private function renderSection(array $section, array $children, array $core, $editMode): void
@@ -128,6 +124,21 @@ final class Renderer
         return (string) ob_get_clean();
     }
 
+    private function resolveViewTemplate(array $infoblock, array $component): string
+    {
+        $views = [];
+        if (isset($component['views']) && is_array($component['views'])) {
+            $views = $component['views'];
+        }
+
+        $template = isset($infoblock['view_template']) ? trim((string) $infoblock['view_template']) : '';
+        if ($template !== '' && in_array($template, $views, true)) {
+            return $template;
+        }
+
+        return 'list';
+    }
+
     private function decodeItems(array $objects, $editMode): array
     {
         $items = [];
@@ -156,6 +167,84 @@ final class Renderer
         }
 
         return $items;
+    }
+
+    private function resolveSeo(array $section, array $infoblockViews, ?array $previewObjectData): array
+    {
+        $sectionExtra = [];
+        if (isset($section['extra']) && is_array($section['extra'])) {
+            $sectionExtra = $section['extra'];
+        } elseif (isset($section['extra_json'])) {
+            $decoded = json_decode((string) $section['extra_json'], true);
+            if (is_array($decoded)) {
+                $sectionExtra = $decoded;
+            }
+        }
+
+        $objectData = [];
+        $primaryInfoblock = $infoblockViews[0]['infoblock'] ?? null;
+        $primaryView = $primaryInfoblock['view_template'] ?? 'list';
+
+        if ($previewObjectData !== null) {
+            $objectData = $previewObjectData;
+            $primaryView = 'item';
+        } else {
+            foreach ($infoblockViews as $view) {
+                if (($view['infoblock']['view_template'] ?? '') === 'item' && !empty($view['items'])) {
+                    $objectData = $view['items'][0]['data'] ?? [];
+                    $primaryView = 'item';
+                    $primaryInfoblock = $view['infoblock'];
+                    break;
+                }
+            }
+        }
+
+        $title = '';
+        if (!empty($objectData['seo_title'])) {
+            $title = (string) $objectData['seo_title'];
+        } elseif (!empty($sectionExtra['seo_title'])) {
+            $title = (string) $sectionExtra['seo_title'];
+        }
+
+        if ($title === '') {
+            if ($primaryView === 'item' && !empty($objectData['title'])) {
+                $title = (string) $objectData['title'];
+            } elseif ($primaryView === 'list' && $primaryInfoblock && count($infoblockViews) === 1) {
+                $title = (string) ($section['title'] ?? '') . ' — ' . (string) ($primaryInfoblock['name'] ?? '');
+            } else {
+                $title = (string) ($section['title'] ?? '');
+            }
+        }
+
+        $description = '';
+        if (!empty($objectData['seo_description'])) {
+            $description = (string) $objectData['seo_description'];
+        } elseif (!empty($sectionExtra['seo_description'])) {
+            $description = (string) $sectionExtra['seo_description'];
+        }
+
+        $keywords = '';
+        if (!empty($objectData['seo_keywords'])) {
+            $keywords = (string) $objectData['seo_keywords'];
+        } elseif (!empty($sectionExtra['seo_keywords'])) {
+            $keywords = (string) $sectionExtra['seo_keywords'];
+        }
+
+        return [
+            'title' => $title,
+            'description' => $description,
+            'keywords' => $keywords,
+        ];
+    }
+
+    private function decodeObjectData(array $object): array
+    {
+        $data = json_decode((string) ($object['data_json'] ?? ''), true);
+        if (!is_array($data)) {
+            $data = [];
+        }
+
+        return $data;
     }
 
     private function appendPreviewObject(array $objects, array $previewObject): array

@@ -7,6 +7,8 @@ require $root . '/app/core/DB.php';
 require $root . '/app/core/EventBus.php';
 require $root . '/app/core/Core.php';
 require $root . '/app/core/Auth.php';
+require $root . '/app/core/Permission.php';
+require $root . '/app/core/Workflow.php';
 require $root . '/app/core/Seo.php';
 require $root . '/app/core/FieldValidator.php';
 require $root . '/app/domain/SectionRepo.php';
@@ -14,6 +16,9 @@ require $root . '/app/domain/ComponentRepo.php';
 require $root . '/app/domain/InfoblockRepo.php';
 require $root . '/app/domain/ObjectRepo.php';
 require $root . '/app/render/Renderer.php';
+require $root . '/app/ui/Layout.php';
+require $root . '/app/ui/AdminLayout.php';
+require $root . '/app/ui/SectionTree.php';
 
 Auth::start();
 
@@ -30,6 +35,9 @@ if (DB::hasColumn('sections', 'slug')) {
 }
 if (DB::hasColumn('objects', 'deleted_at')) {
     $skipMigrations[] = '021_objects_deleted_at.sql';
+}
+if (DB::hasColumn('sections', 'sort')) {
+    $skipMigrations[] = '040_sections_sort.sql';
 }
 
 runMigrations(DB::pdo(), $root . '/migrations', $skipMigrations);
