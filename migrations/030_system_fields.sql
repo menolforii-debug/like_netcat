@@ -1,0 +1,2 @@
+-- System fields for sections and infoblocks are applied via bootstrap checks.
+-- This migration is intentionally empty to keep schema history consistent.

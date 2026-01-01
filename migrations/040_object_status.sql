@@ -1,0 +1,2 @@
+-- Object lifecycle status columns are applied via bootstrap checks.
+-- This migration is intentionally empty to keep schema history consistent.
