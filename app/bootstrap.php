@@ -1,6 +1,7 @@
 <?php
 
 $root = dirname(__DIR__);
+date_default_timezone_set('UTC');
 
 require $root . '/app/core/DB.php';
 require $root . '/app/core/EventBus.php';

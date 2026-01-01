@@ -24,6 +24,7 @@ final class Auth
             return false;
         }
 
+        session_regenerate_id(true);
         $_SESSION['user'] = [
             'id' => $user['id'],
             'login' => $user['login'],

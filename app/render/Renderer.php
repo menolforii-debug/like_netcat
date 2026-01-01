@@ -77,7 +77,7 @@ final class Renderer
             $controls = [];
             if ($editMode) {
                 $controls = [
-                    'delete_url' => '/admin.php?action=object_delete&id=' . (int) $object['id'],
+                    'delete_url' => $this->buildDeleteUrl((int) $object['id']),
                 ];
             }
 
@@ -91,5 +91,10 @@ final class Renderer
         }
 
         return $items;
+    }
+
+    private function buildDeleteUrl($id): string
+    {
+        return '/admin.php?action=object_delete&id=' . (int) $id;
     }
 }

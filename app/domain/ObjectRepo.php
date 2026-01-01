@@ -19,7 +19,7 @@ final class ObjectRepo
         ];
         $this->events->emit('object.before_insert', $payload);
 
-        $now = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('c');
+        $now = $this->now();
         $stmt = DB::pdo()->prepare(
             'INSERT INTO objects (section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at)
             VALUES (:section_id, :infoblock_id, :component_id, :data_json, :created_at, :updated_at, 0, NULL)'
@@ -55,7 +55,7 @@ final class ObjectRepo
     {
         $this->events->emit('object.before_delete', ['id' => $id]);
 
-        $now = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('c');
+        $now = $this->now();
         $stmt = DB::pdo()->prepare(
             'UPDATE objects SET is_deleted = 1, deleted_at = :deleted_at, updated_at = :updated_at WHERE id = :id'
         );
@@ -74,7 +74,7 @@ final class ObjectRepo
             'UPDATE objects SET is_deleted = 0, deleted_at = NULL, updated_at = :updated_at WHERE id = :id'
         );
         $stmt->execute([
-            'updated_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('c'),
+            'updated_at' => $this->now(),
             'id' => $id,
         ]);
 
@@ -114,5 +114,10 @@ final class ObjectRepo
             ORDER BY deleted_at DESC
             LIMIT ' . $limit
         );
+    }
+
+    private function now(): string
+    {
+        return (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('c');
     }
 }
