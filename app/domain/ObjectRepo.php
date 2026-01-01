@@ -11,7 +11,7 @@ final class ObjectRepo
         $this->validator = new FieldValidator();
     }
 
-    public function insert(array $component, $sectionId, $infoblockId, array $data): int
+    public function insert(array $component, $sectionId, $infoblockId, array $data, $status = 'published'): int
     {
         $sanitized = $this->validateAndPrepareData($component, $data);
 
@@ -24,9 +24,10 @@ final class ObjectRepo
         $this->events->emit('object.before_insert', $payload);
 
         $now = $this->now();
+        $publishedAt = $status === 'published' ? $now : null;
         $stmt = DB::pdo()->prepare(
-            'INSERT INTO objects (section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at)
-            VALUES (:section_id, :infoblock_id, :component_id, :data_json, :created_at, :updated_at, 0, NULL)'
+            'INSERT INTO objects (section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at)
+            VALUES (:section_id, :infoblock_id, :component_id, :data_json, :created_at, :updated_at, 0, NULL, :status, :published_at)'
         );
         $stmt->execute([
             'section_id' => $sectionId,
@@ -35,6 +36,8 @@ final class ObjectRepo
             'data_json' => json_encode($sanitized, JSON_UNESCAPED_UNICODE),
             'created_at' => $now,
             'updated_at' => $now,
+            'status' => $status,
+            'published_at' => $publishedAt,
         ]);
 
         $id = (int) DB::pdo()->lastInsertId();
@@ -67,12 +70,63 @@ final class ObjectRepo
         $this->events->emit('object.after_update', $payload);
     }
 
-    public function findByInfoblock($infoblockId): array
+    public function publish($id): void
+    {
+        $stmt = DB::pdo()->prepare(
+            'UPDATE objects SET status = :status, published_at = :published_at, updated_at = :updated_at WHERE id = :id'
+        );
+        $stmt->execute([
+            'status' => 'published',
+            'published_at' => $this->now(),
+            'updated_at' => $this->now(),
+            'id' => $id,
+        ]);
+    }
+
+    public function unpublish($id): void
+    {
+        $stmt = DB::pdo()->prepare(
+            'UPDATE objects SET status = :status, updated_at = :updated_at WHERE id = :id'
+        );
+        $stmt->execute([
+            'status' => 'draft',
+            'updated_at' => $this->now(),
+            'id' => $id,
+        ]);
+    }
+
+    public function archive($id): void
+    {
+        $stmt = DB::pdo()->prepare(
+            'UPDATE objects SET status = :status, updated_at = :updated_at WHERE id = :id'
+        );
+        $stmt->execute([
+            'status' => 'archived',
+            'updated_at' => $this->now(),
+            'id' => $id,
+        ]);
+    }
+
+    public function listForInfoblock($infoblockId): array
     {
         return DB::fetchAll(
-            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at
+            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
             FROM objects
-            WHERE infoblock_id = :infoblock_id AND is_deleted = 0
+            WHERE infoblock_id = :infoblock_id AND is_deleted = 0 AND status = :status
+            ORDER BY id ASC',
+            [
+                'infoblock_id' => $infoblockId,
+                'status' => 'published',
+            ]
+        );
+    }
+
+    public function listForInfoblockEdit($infoblockId): array
+    {
+        return DB::fetchAll(
+            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
+            FROM objects
+            WHERE infoblock_id = :infoblock_id AND is_deleted = 0 AND status IN ("draft", "published")
             ORDER BY id ASC',
             ['infoblock_id' => $infoblockId]
         );
@@ -81,7 +135,7 @@ final class ObjectRepo
     public function findById($id): ?array
     {
         return DB::fetchOne(
-            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at
+            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
             FROM objects WHERE id = :id LIMIT 1',
             ['id' => $id]
         );
@@ -130,7 +184,7 @@ final class ObjectRepo
         $limit = (int) $limit;
 
         return DB::fetchAll(
-            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at
+            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
             FROM objects
             WHERE infoblock_id = :infoblock_id AND is_deleted = 1
             ORDER BY deleted_at DESC
@@ -144,7 +198,7 @@ final class ObjectRepo
         $limit = (int) $limit;
 
         return DB::fetchAll(
-            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at
+            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
             FROM objects
             WHERE is_deleted = 1
             ORDER BY deleted_at DESC

@@ -5,6 +5,8 @@ final class Renderer
     public function renderPath($path): void
     {
         $editMode = isset($_GET['edit']) && $_GET['edit'] === '1' && Auth::canEdit();
+        $previewMode = $editMode && isset($_GET['preview']) && $_GET['preview'] === '1';
+        $previewObjectId = isset($_GET['object_id']) ? (int) $_GET['object_id'] : 0;
 
         $sectionRepo = new SectionRepo();
         $section = $sectionRepo->findByPath($path);
@@ -35,7 +37,19 @@ final class Renderer
                 continue;
             }
 
-            $objects = $objectRepo->findByInfoblock((int) $infoblock['id']);
+            if ($editMode) {
+                $objects = $objectRepo->listForInfoblockEdit((int) $infoblock['id']);
+            } else {
+                $objects = $objectRepo->listForInfoblock((int) $infoblock['id']);
+            }
+
+            if ($previewMode && $previewObjectId > 0) {
+                $previewObject = $objectRepo->findById($previewObjectId);
+                if ($previewObject && (int) $previewObject['infoblock_id'] === (int) $infoblock['id']) {
+                    $objects = $this->appendPreviewObject($objects, $previewObject);
+                }
+            }
+
             $items = $this->decodeItems($objects, $editMode);
             $infoblocksHtml .= $this->renderInfoblock($section, $infoblock, $component, $items, $editMode);
         }
@@ -63,6 +77,8 @@ final class Renderer
         echo "<html lang=\"ru\">\n";
         echo "<head>\n";
         echo "    <meta charset=\"utf-8\">\n";
+        echo "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n";
+        echo "    <link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css\" rel=\"stylesheet\">\n";
         echo "    <title>{$title}</title>\n";
         if ($descriptionRaw !== '') {
             echo "    <meta name=\"description\" content=\"{$description}\">\n";
@@ -72,10 +88,12 @@ final class Renderer
         }
         echo "</head>\n";
         echo "<body>\n";
+        echo "<div class=\"container mt-4\">\n";
     }
 
     private function renderDocumentEnd(): void
     {
+        echo "</div>\n";
         echo "</body>\n";
         echo "</html>\n";
     }
@@ -130,6 +148,7 @@ final class Renderer
             $items[] = [
                 'id' => $object['id'],
                 'data' => $data,
+                'status' => $object['status'] ?? 'published',
                 'created_at' => $object['created_at'],
                 'updated_at' => $object['updated_at'],
                 'controls' => $controls,
@@ -137,6 +156,18 @@ final class Renderer
         }
 
         return $items;
+    }
+
+    private function appendPreviewObject(array $objects, array $previewObject): array
+    {
+        foreach ($objects as $object) {
+            if ((int) $object['id'] === (int) $previewObject['id']) {
+                return $objects;
+            }
+        }
+
+        $objects[] = $previewObject;
+        return $objects;
     }
 
     private function buildDeleteUrl($id): string

@@ -36,6 +36,8 @@ runMigrations(DB::pdo(), $root . '/migrations', $skipMigrations);
 
 ensureColumn('sections', 'extra_json', "ALTER TABLE sections ADD COLUMN extra_json TEXT NOT NULL DEFAULT '{}'");
 ensureColumn('infoblocks', 'extra_json', "ALTER TABLE infoblocks ADD COLUMN extra_json TEXT NOT NULL DEFAULT '{}'");
+ensureColumn('objects', 'status', "ALTER TABLE objects ADD COLUMN status TEXT NOT NULL DEFAULT 'published'");
+ensureColumn('objects', 'published_at', 'ALTER TABLE objects ADD COLUMN published_at TEXT NULL');
 
 $core = new Core(DB::pdo(), new EventBus());
 $GLOBALS['core'] = $core;

@@ -2,7 +2,7 @@
 
 require __DIR__ . '/../app/bootstrap.php';
 
-$action = isset($_GET['action']) ? (string) $_GET['action'] : 'login';
+$action = isset($_GET['action']) ? (string) $_GET['action'] : 'object_list';
 
 function redirectTo($url): void
 {
@@ -26,12 +26,38 @@ function requireAdmin(): void
     }
 }
 
-function fetchSectionById($id): ?array
+function renderHeader(string $title): void
 {
-    return DB::fetchOne(
-        'SELECT id, title, extra_json FROM sections WHERE id = :id LIMIT 1',
-        ['id' => $id]
-    );
+    $user = Auth::user();
+    $login = $user ? (string) ($user['login'] ?? '') : '';
+
+    echo '<!doctype html><html lang="ru"><head><meta charset="utf-8">';
+    echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
+    echo '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">';
+    echo '<title>' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</title></head><body>';
+    echo '<nav class="navbar navbar-expand-lg navbar-light bg-light">';
+    echo '<div class="container">';
+    echo '<span class="navbar-brand">CMS</span>';
+    echo '<div class="ms-auto">';
+    if ($login !== '') {
+        echo '<span class="me-3">' . htmlspecialchars($login, ENT_QUOTES, 'UTF-8') . '</span>';
+        echo '<a class="btn btn-outline-secondary btn-sm" href="/admin.php?action=logout">Выйти</a>';
+    }
+    echo '</div></div></nav>';
+    echo '<main class="container mt-4">';
+}
+
+function renderFooter(): void
+{
+    echo '</main></body></html>';
+}
+
+function statusBadge(string $status): string
+{
+    $label = $status === 'draft' ? 'Черновик' : ($status === 'archived' ? 'Архив' : 'Опубликован');
+    $class = $status === 'draft' ? 'bg-warning text-dark' : ($status === 'archived' ? 'bg-secondary' : 'bg-success');
+
+    return '<span class="badge ' . $class . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</span>';
 }
 
 function fetchInfoblockById($id): ?array
@@ -45,7 +71,15 @@ function fetchInfoblockById($id): ?array
 function fetchObjectById($id): ?array
 {
     return DB::fetchOne(
-        'SELECT id, infoblock_id, component_id, data_json FROM objects WHERE id = :id LIMIT 1',
+        'SELECT id, infoblock_id, component_id, data_json, status FROM objects WHERE id = :id LIMIT 1',
+        ['id' => $id]
+    );
+}
+
+function fetchSectionById($id): ?array
+{
+    return DB::fetchOne(
+        'SELECT id, title, extra_json FROM sections WHERE id = :id LIMIT 1',
         ['id' => $id]
     );
 }
@@ -64,33 +98,33 @@ function renderFieldInput(array $field, array $data): string
     $value = isset($data[$name]) ? (string) $data[$name] : '';
     $label = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
 
-    $html = '<label>' . $label . '<br>';
+    $html = '<label class="form-label">' . $label . '</label>';
 
     if ($type === 'text') {
-        $html .= '<textarea name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" rows="4" cols="50">'
+        $html .= '<textarea class="form-control" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" rows="4">'
             . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '</textarea>';
     } elseif ($type === 'bool') {
         $checked = $value !== '' && $value !== '0' ? ' checked' : '';
-        $html .= '<input type="checkbox" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" value="1"' . $checked . '>';
+        $html .= '<div class="form-check">';
+        $html .= '<input class="form-check-input" type="checkbox" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" value="1"' . $checked . '>';
+        $html .= '</div>';
     } elseif ($type === 'int' || $type === 'float') {
         $step = $type === 'float' ? ' step="0.01"' : '';
-        $html .= '<input type="number" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" value="'
+        $html .= '<input class="form-control" type="number" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" value="'
             . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '"' . $step . '>';
     } elseif ($type === 'date') {
-        $html .= '<input type="date" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" value="'
+        $html .= '<input class="form-control" type="date" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" value="'
             . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '">';
     } else {
-        $html .= '<input type="text" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" value="'
+        $html .= '<input class="form-control" type="text" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" value="'
             . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '">';
     }
 
     if (!empty($field['required'])) {
-        $html .= ' <strong>*</strong>';
+        $html .= '<div class="form-text">Обязательное поле</div>';
     }
 
-    $html .= '</label><br>';
-
-    return $html;
+    return '<div class="mb-3">' . $html . '</div>';
 }
 
 function extractFormData(array $fields): array
@@ -110,6 +144,32 @@ function extractFormData(array $fields): array
     return $data;
 }
 
+function buildSectionPathFromId($sectionId): string
+{
+    $repo = new SectionRepo();
+    $segments = [];
+    $currentId = $sectionId;
+
+    while ($currentId !== null) {
+        $section = $repo->findById($currentId);
+        if ($section === null) {
+            break;
+        }
+
+        if ($section['slug'] !== '') {
+            $segments[] = $section['slug'];
+        }
+
+        $currentId = $section['parent_id'] !== null ? (int) $section['parent_id'] : null;
+    }
+
+    if (empty($segments)) {
+        return '/';
+    }
+
+    return '/' . implode('/', array_reverse($segments)) . '/';
+}
+
 $error = '';
 $errors = [];
 
@@ -119,22 +179,22 @@ if ($action === 'login') {
         $pass = isset($_POST['pass']) ? (string) $_POST['pass'] : '';
 
         if (Auth::login($login, $pass)) {
-            redirectTo('/admin.php?action=trash_list');
+            redirectTo('/admin.php?action=object_list');
         }
 
         $error = 'Неверный логин или пароль';
     }
 
-    echo '<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Вход</title></head><body>';
+    renderHeader('Вход');
     if ($error !== '') {
-        echo '<p style="color:red">' . htmlspecialchars($error, ENT_QUOTES, 'UTF-8') . '</p>';
+        echo '<div class="alert alert-danger">' . htmlspecialchars($error, ENT_QUOTES, 'UTF-8') . '</div>';
     }
-    echo '<form method="post" action="/admin.php?action=login">';
-    echo '<label>Логин <input type="text" name="login" required></label><br>';
-    echo '<label>Пароль <input type="password" name="pass" required></label><br>';
-    echo '<button type="submit">Войти</button>';
+    echo '<form method="post" action="/admin.php?action=login" class="card card-body">';
+    echo '<div class="mb-3"><label class="form-label">Логин</label><input class="form-control" type="text" name="login" required></div>';
+    echo '<div class="mb-3"><label class="form-label">Пароль</label><input class="form-control" type="password" name="pass" required></div>';
+    echo '<button class="btn btn-primary" type="submit">Войти</button>';
     echo '</form>';
-    echo '</body></html>';
+    renderFooter();
     exit;
 }
 
@@ -164,21 +224,81 @@ if ($action === 'users_create') {
         $error = 'Заполните все поля корректно';
     }
 
-    echo '<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Создать пользователя</title></head><body>';
-    echo '<p><a href="/admin.php?action=trash_list">К списку корзины</a> | <a href="/admin.php?action=logout">Выйти</a></p>';
+    renderHeader('Создать пользователя');
     if ($error !== '') {
-        echo '<p style="color:red">' . htmlspecialchars($error, ENT_QUOTES, 'UTF-8') . '</p>';
+        echo '<div class="alert alert-danger">' . htmlspecialchars($error, ENT_QUOTES, 'UTF-8') . '</div>';
     }
-    echo '<form method="post" action="/admin.php?action=users_create">';
-    echo '<label>Логин <input type="text" name="login" required></label><br>';
-    echo '<label>Пароль <input type="password" name="pass" required></label><br>';
-    echo '<label>Роль <select name="role">';
+    echo '<form method="post" action="/admin.php?action=users_create" class="card card-body">';
+    echo '<div class="mb-3"><label class="form-label">Логин</label><input class="form-control" type="text" name="login" required></div>';
+    echo '<div class="mb-3"><label class="form-label">Пароль</label><input class="form-control" type="password" name="pass" required></div>';
+    echo '<div class="mb-3"><label class="form-label">Роль</label><select class="form-select" name="role">';
     echo '<option value="editor">editor</option>';
     echo '<option value="admin">admin</option>';
-    echo '</select></label><br>';
-    echo '<button type="submit">Создать</button>';
+    echo '</select></div>';
+    echo '<button class="btn btn-primary" type="submit">Создать</button>';
     echo '</form>';
-    echo '</body></html>';
+    renderFooter();
+    exit;
+}
+
+if ($action === 'object_list') {
+    requireEditor();
+
+    $rows = DB::fetchAll(
+        'SELECT o.id, o.section_id, o.infoblock_id, o.data_json, o.status, i.name AS infoblock_name
+        FROM objects o
+        JOIN infoblocks i ON i.id = o.infoblock_id
+        WHERE o.is_deleted = 0 AND o.status IN ("draft", "published")
+        ORDER BY o.id DESC'
+    );
+
+    renderHeader('Объекты');
+    echo '<div class="d-flex justify-content-between align-items-center mb-3">';
+    echo '<h1 class="h3 mb-0">Объекты</h1>';
+    if (Auth::isAdmin()) {
+        echo '<a class="btn btn-outline-secondary btn-sm" href="/admin.php?action=users_create">Пользователи</a>';
+    }
+    echo '</div>';
+
+    if (empty($rows)) {
+        echo '<div class="alert alert-info">Нет объектов.</div>';
+        renderFooter();
+        exit;
+    }
+
+    echo '<table class="table table-striped">';
+    echo '<thead><tr><th>ID</th><th>Инфоблок</th><th>Заголовок</th><th>Статус</th><th>Действия</th></tr></thead><tbody>';
+    foreach ($rows as $row) {
+        $data = json_decode((string) $row['data_json'], true);
+        $title = isset($data['title']) ? (string) $data['title'] : 'Без заголовка';
+        $sectionPath = buildSectionPathFromId((int) $row['section_id']);
+        $previewUrl = $sectionPath . '?preview=1&object_id=' . (int) $row['id'] . '&edit=1';
+
+        echo '<tr>';
+        echo '<td>' . (int) $row['id'] . '</td>';
+        echo '<td>' . htmlspecialchars((string) $row['infoblock_name'], ENT_QUOTES, 'UTF-8') . '</td>';
+        echo '<td>' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</td>';
+        echo '<td>' . statusBadge((string) $row['status']) . '</td>';
+        echo '<td class="d-flex gap-2">';
+        if ($row['status'] === 'draft') {
+            echo '<form method="post" action="/admin.php?action=object_publish&id=' . (int) $row['id'] . '">';
+            echo '<button class="btn btn-sm btn-success" type="submit">Опубликовать</button>';
+            echo '</form>';
+        } else {
+            echo '<form method="post" action="/admin.php?action=object_unpublish&id=' . (int) $row['id'] . '">';
+            echo '<button class="btn btn-sm btn-warning" type="submit">Снять</button>';
+            echo '</form>';
+        }
+        echo '<a class="btn btn-sm btn-outline-primary" href="/admin.php?action=object_edit&id=' . (int) $row['id'] . '">Редактировать</a>';
+        echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars($previewUrl, ENT_QUOTES, 'UTF-8') . '">Предпросмотр</a>';
+        echo '<form method="post" action="/admin.php?action=object_delete&id=' . (int) $row['id'] . '">';
+        echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>';
+        echo '</form>';
+        echo '</td>';
+        echo '</tr>';
+    }
+    echo '</tbody></table>';
+    renderFooter();
     exit;
 }
 
@@ -209,30 +329,29 @@ if ($action === 'object_create') {
         $data = extractFormData($fields);
         try {
             $repo = new ObjectRepo(core()->events());
-            $repo->insert($component, (int) $infoblock['section_id'], (int) $infoblock['id'], $data);
-            redirectTo('/admin.php?action=trash_list');
+            $repo->insert($component, (int) $infoblock['section_id'], (int) $infoblock['id'], $data, 'draft');
+            redirectTo('/admin.php?action=object_list');
         } catch (Throwable $e) {
             $errors = explode("\n", $e->getMessage());
         }
     }
 
-    echo '<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Создать объект</title></head><body>';
-    echo '<p><a href="/admin.php?action=trash_list">К списку корзины</a> | <a href="/admin.php?action=logout">Выйти</a></p>';
-    echo '<h1>Создать объект: ' . htmlspecialchars((string) $infoblock['name'], ENT_QUOTES, 'UTF-8') . '</h1>';
+    renderHeader('Создать объект');
+    echo '<h1 class="h4">Создать объект: ' . htmlspecialchars((string) $infoblock['name'], ENT_QUOTES, 'UTF-8') . '</h1>';
     if (!empty($errors)) {
-        echo '<ul style="color:red">';
+        echo '<div class="alert alert-danger"><ul class="mb-0">';
         foreach ($errors as $err) {
             echo '<li>' . htmlspecialchars($err, ENT_QUOTES, 'UTF-8') . '</li>';
         }
-        echo '</ul>';
+        echo '</ul></div>';
     }
-    echo '<form method="post" action="/admin.php?action=object_create&infoblock_id=' . $infoblockId . '">';
+    echo '<form method="post" action="/admin.php?action=object_create&infoblock_id=' . $infoblockId . '" class="card card-body">';
     foreach ($fields as $field) {
         echo renderFieldInput($field, $data);
     }
-    echo '<button type="submit">Сохранить</button>';
+    echo '<button class="btn btn-primary" type="submit">Сохранить черновик</button>';
     echo '</form>';
-    echo '</body></html>';
+    renderFooter();
     exit;
 }
 
@@ -280,24 +399,53 @@ if ($action === 'object_edit') {
         }
     }
 
-    echo '<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Редактировать объект</title></head><body>';
-    echo '<p><a href="/admin.php?action=trash_list">К списку корзины</a> | <a href="/admin.php?action=logout">Выйти</a></p>';
-    echo '<h1>Редактировать объект</h1>';
+    renderHeader('Редактировать объект');
+    echo '<h1 class="h4">Редактировать объект</h1>';
     if (!empty($errors)) {
-        echo '<ul style="color:red">';
+        echo '<div class="alert alert-danger"><ul class="mb-0">';
         foreach ($errors as $err) {
             echo '<li>' . htmlspecialchars($err, ENT_QUOTES, 'UTF-8') . '</li>';
         }
-        echo '</ul>';
+        echo '</ul></div>';
     }
-    echo '<form method="post" action="/admin.php?action=object_edit&id=' . $id . '">';
+    echo '<form method="post" action="/admin.php?action=object_edit&id=' . $id . '" class="card card-body">';
     foreach ($fields as $field) {
         echo renderFieldInput($field, $data);
     }
-    echo '<button type="submit">Сохранить</button>';
+    echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
     echo '</form>';
-    echo '</body></html>';
+    renderFooter();
     exit;
+}
+
+if ($action === 'object_publish') {
+    requireEditor();
+    $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+    if ($id > 0) {
+        $repo = new ObjectRepo(core()->events());
+        $repo->publish($id);
+    }
+    redirectTo('/admin.php?action=object_list');
+}
+
+if ($action === 'object_unpublish') {
+    requireEditor();
+    $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+    if ($id > 0) {
+        $repo = new ObjectRepo(core()->events());
+        $repo->unpublish($id);
+    }
+    redirectTo('/admin.php?action=object_list');
+}
+
+if ($action === 'object_archive') {
+    requireEditor();
+    $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+    if ($id > 0) {
+        $repo = new ObjectRepo(core()->events());
+        $repo->archive($id);
+    }
+    redirectTo('/admin.php?action=object_list');
 }
 
 if ($action === 'seo_section') {
@@ -331,83 +479,46 @@ if ($action === 'seo_section') {
         redirectTo('/admin.php?action=seo_section&id=' . $id);
     }
 
-    echo '<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>SEO раздела</title></head><body>';
-    echo '<p><a href="/admin.php?action=trash_list">К списку корзины</a> | <a href="/admin.php?action=logout">Выйти</a></p>';
-    echo '<h1>SEO для раздела: ' . htmlspecialchars((string) $section['title'], ENT_QUOTES, 'UTF-8') . '</h1>';
-    echo '<form method="post" action="/admin.php?action=seo_section&id=' . $id . '">';
-    echo '<label>SEO title<br><input type="text" name="seo_title" value="' . htmlspecialchars((string) ($extra['seo_title'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></label><br>';
-    echo '<label>SEO description<br><textarea name="seo_description" rows="3" cols="50">' . htmlspecialchars((string) ($extra['seo_description'] ?? ''), ENT_QUOTES, 'UTF-8') . '</textarea></label><br>';
-    echo '<label>SEO keywords<br><input type="text" name="seo_keywords" value="' . htmlspecialchars((string) ($extra['seo_keywords'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></label><br>';
-    echo '<button type="submit">Сохранить</button>';
+    renderHeader('SEO раздела');
+    echo '<h1 class="h4">SEO для раздела: ' . htmlspecialchars((string) $section['title'], ENT_QUOTES, 'UTF-8') . '</h1>';
+    echo '<form method="post" action="/admin.php?action=seo_section&id=' . $id . '" class="card card-body">';
+    echo '<div class="mb-3"><label class="form-label">SEO title</label><input class="form-control" type="text" name="seo_title" value="' . htmlspecialchars((string) ($extra['seo_title'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
+    echo '<div class="mb-3"><label class="form-label">SEO description</label><textarea class="form-control" name="seo_description" rows="3">' . htmlspecialchars((string) ($extra['seo_description'] ?? ''), ENT_QUOTES, 'UTF-8') . '</textarea></div>';
+    echo '<div class="mb-3"><label class="form-label">SEO keywords</label><input class="form-control" type="text" name="seo_keywords" value="' . htmlspecialchars((string) ($extra['seo_keywords'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
+    echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
     echo '</form>';
-    echo '</body></html>';
+    renderFooter();
     exit;
 }
 
 if ($action === 'object_delete') {
     requireEditor();
     $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
-
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        if ($id > 0) {
-            $repo = new ObjectRepo(core()->events());
-            $repo->softDelete($id);
-        }
-        redirectTo('/admin.php?action=trash_list');
+    if ($id > 0) {
+        $repo = new ObjectRepo(core()->events());
+        $repo->softDelete($id);
     }
-
-    echo '<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Удаление</title></head><body>';
-    echo '<p>Переместить объект в корзину?</p>';
-    echo '<form method="post" action="/admin.php?action=object_delete&id=' . $id . '">';
-    echo '<button type="submit">Удалить</button>';
-    echo '</form>';
-    echo '<p><a href="/admin.php?action=trash_list">Отмена</a></p>';
-    echo '</body></html>';
-    exit;
+    redirectTo('/admin.php?action=object_list');
 }
 
 if ($action === 'object_restore') {
     requireEditor();
     $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
-
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        if ($id > 0) {
-            $repo = new ObjectRepo(core()->events());
-            $repo->restore($id);
-        }
-        redirectTo('/admin.php?action=trash_list');
+    if ($id > 0) {
+        $repo = new ObjectRepo(core()->events());
+        $repo->restore($id);
     }
-
-    echo '<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Восстановление</title></head><body>';
-    echo '<p>Восстановить объект?</p>';
-    echo '<form method="post" action="/admin.php?action=object_restore&id=' . $id . '">';
-    echo '<button type="submit">Восстановить</button>';
-    echo '</form>';
-    echo '<p><a href="/admin.php?action=trash_list">Отмена</a></p>';
-    echo '</body></html>';
-    exit;
+    redirectTo('/admin.php?action=trash_list');
 }
 
 if ($action === 'object_purge') {
     requireEditor();
     $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
-
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        if ($id > 0) {
-            $repo = new ObjectRepo(core()->events());
-            $repo->purge($id);
-        }
-        redirectTo('/admin.php?action=trash_list');
+    if ($id > 0) {
+        $repo = new ObjectRepo(core()->events());
+        $repo->purge($id);
     }
-
-    echo '<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Удаление навсегда</title></head><body>';
-    echo '<p>Удалить объект навсегда?</p>';
-    echo '<form method="post" action="/admin.php?action=object_purge&id=' . $id . '">';
-    echo '<button type="submit">Удалить навсегда</button>';
-    echo '</form>';
-    echo '<p><a href="/admin.php?action=trash_list">Отмена</a></p>';
-    echo '</body></html>';
-    exit;
+    redirectTo('/admin.php?action=trash_list');
 }
 
 if ($action === 'trash_list') {
@@ -422,35 +533,32 @@ if ($action === 'trash_list') {
         $items = $repo->listTrashAll(50);
     }
 
-    echo '<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Корзина</title></head><body>';
-    echo '<p><a href="/admin.php?action=logout">Выйти</a>';
-    if (Auth::isAdmin()) {
-        echo ' | <a href="/admin.php?action=users_create">Создать пользователя</a>';
-    }
-    echo '</p>';
-
-    echo '<h1>Корзина</h1>';
+    renderHeader('Корзина');
+    echo '<h1 class="h4">Корзина</h1>';
 
     if (empty($items)) {
-        echo '<p>Корзина пуста.</p>';
+        echo '<div class="alert alert-info">Корзина пуста.</div>';
     } else {
-        echo '<ul>';
+        echo '<ul class="list-group">';
         foreach ($items as $item) {
             $data = json_decode((string) $item['data_json'], true);
             $title = isset($data['title']) ? (string) $data['title'] : 'Без заголовка';
-            echo '<li>';
+            echo '<li class="list-group-item d-flex justify-content-between align-items-center">';
             echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
-            echo ' <a href="/admin.php?action=object_edit&id=' . (int) $item['id'] . '">Редактировать</a>';
-            echo ' <a href="/admin.php?action=object_restore&id=' . (int) $item['id'] . '">Восстановить</a>';
-            echo ' <a href="/admin.php?action=object_purge&id=' . (int) $item['id'] . '">Удалить навсегда</a>';
+            echo '<span>';
+            echo '<a class="btn btn-sm btn-outline-primary me-2" href="/admin.php?action=object_restore&id=' . (int) $item['id'] . '">Восстановить</a>';
+            echo '<a class="btn btn-sm btn-outline-danger" href="/admin.php?action=object_purge&id=' . (int) $item['id'] . '">Удалить навсегда</a>';
+            echo '</span>';
             echo '</li>';
         }
         echo '</ul>';
     }
 
-    echo '</body></html>';
+    renderFooter();
     exit;
 }
 
 http_response_code(404);
-echo 'Неизвестное действие';
+renderHeader('Ошибка');
+echo '<div class="alert alert-danger">Неизвестное действие</div>';
+renderFooter();
