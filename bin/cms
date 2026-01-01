@@ -1,0 +1,131 @@
+#!/usr/bin/env php
+<?php
+declare(strict_types=1);
+
+/**
+ * Developer/ops CLI helper for cms.devel9.ru
+ * Optional tool: site must not depend on it.
+ *
+ * Usage:
+ *   php bin/cms migrate
+ *   php bin/cms sections:list
+ *   php bin/cms sections:add --parent=/ --slug=news --title="Новости"
+ *   php bin/cms users:add --login=admin --pass=admin --role=admin
+ */
+
+$root = realpath(__DIR__ . '/..');
+if ($root === false) {
+    fwrite(STDERR, "Cannot resolve project root\n");
+    exit(1);
+}
+
+require $root . '/app/bootstrap.php'; // provides $core, runs migrations already (idempotent)
+
+$args = $argv;
+array_shift($args);
+$cmd = $args[0] ?? 'help';
+
+function parse_kv_args(array $args): array {
+    $out = [];
+    foreach ($args as $a) {
+        if (str_starts_with($a, '--') && str_contains($a, '=')) {
+            [$k, $v] = explode('=', substr($a, 2), 2);
+            $out[$k] = $v;
+        }
+    }
+    return $out;
+}
+
+function help(): void {
+    echo "cms.devel9.ru CLI\n\n";
+    echo "Commands:\n";
+    echo "  migrate\n";
+    echo "  sections:list\n";
+    echo "  sections:add --parent=/ --slug=news --title=\"Новости\" [--sort=0]\n";
+    echo "  users:add --login=admin --pass=admin --role=admin|editor\n";
+    echo "\n";
+}
+
+switch ($cmd) {
+    case 'help':
+    case '--help':
+    case '-h':
+        help();
+        exit(0);
+
+    case 'migrate':
+        // migrations run in bootstrap.php; just confirm
+        echo "Migrations OK\n";
+        exit(0);
+
+    case 'sections:list': {
+        $rows = $core->db->fetchAll(
+            "SELECT id, parent_id, slug, title, sort FROM sections ORDER BY parent_id ASC, sort ASC, id ASC"
+        );
+        foreach ($rows as $r) {
+            $pid = $r['parent_id'] === null ? 'NULL' : (string)$r['parent_id'];
+            echo "#{$r['id']} parent={$pid} slug='{$r['slug']}' sort={$r['sort']} title=\"{$r['title']}\"\n";
+        }
+        exit(0);
+    }
+
+    case 'sections:add': {
+        $kv = parse_kv_args($args);
+        $parentPath = $kv['parent'] ?? '/';
+        $slug  = $kv['slug']  ?? '';
+        $title = $kv['title'] ?? '';
+        $sort  = (int)($kv['sort'] ?? 0);
+
+        if ($slug === '' || $title === '') {
+            fwrite(STDERR, "Missing --slug or --title\n");
+            exit(1);
+        }
+
+        $repo = new SectionRepo($core);
+        $parent = $repo->getByPath($parentPath);
+        if (!$parent) {
+            fwrite(STDERR, "Parent section not found by path: {$parentPath}\n");
+            exit(1);
+        }
+
+        $id = $repo->create((int)$parent['id'], $slug, $title, $sort);
+        echo "Created section id={$id} at {$parentPath}{$slug}/\n";
+        exit(0);
+    }
+
+    case 'users:add': {
+        $kv = parse_kv_args($args);
+        $login = $kv['login'] ?? '';
+        $pass  = $kv['pass'] ?? '';
+        $role  = $kv['role'] ?? '';
+
+        if ($login === '' || $pass === '' || !in_array($role, ['admin', 'editor'], true)) {
+            fwrite(STDERR, "Usage: users:add --login=... --pass=... --role=admin|editor\n");
+            exit(1);
+        }
+
+        // ensure users table exists (step 4/5 might add it later, but safe)
+        $core->db->pdo()->exec(
+            "CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                login TEXT UNIQUE NOT NULL,
+                pass_hash TEXT NOT NULL,
+                role TEXT NOT NULL
+            )"
+        );
+
+        $hash = password_hash($pass, PASSWORD_DEFAULT);
+        $core->db->exec(
+            "INSERT INTO users(login, pass_hash, role) VALUES(?, ?, ?)",
+            [$login, $hash, $role]
+        );
+
+        echo "Created user '{$login}' role={$role}\n";
+        exit(0);
+    }
+
+    default:
+        fwrite(STDERR, "Unknown command: {$cmd}\n\n");
+        help();
+        exit(1);
+}
