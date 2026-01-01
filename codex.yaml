@@ -1,0 +1,57 @@
+codex:
+  name: cms.devel9.ru
+  version: "1.0"
+
+filesystem:
+  web_root: public_html
+  rules:
+    - "Only public_html is web-accessible"
+    - "All requests enter via public_html/index.php"
+
+domain:
+  entities:
+    Section:
+      rules:
+        - "Primary routing unit"
+    Component:
+      rules:
+        - "Schema only"
+    Infoblock:
+      rules:
+        - "Component instance in section"
+    Object:
+      rules:
+        - "JSON-based storage"
+    Template:
+      rules:
+        - "Presentation only"
+
+rendering:
+  rules:
+    - "Template-driven"
+    - "No logic in templates"
+
+seo:
+  priority:
+    - object
+    - section
+    - fallback
+
+events:
+  required:
+    - object.before_insert
+    - object.after_insert
+    - object.before_update
+    - object.after_update
+    - object.before_delete
+    - object.after_delete
+    - trash.restore
+    - trash.purge
+
+forbidden:
+  - orm
+  - activerecord
+  - framework
+  - sql_in_templates
+  - logic_in_templates
+  - exposing_app_directory

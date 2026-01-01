@@ -1,0 +1,4 @@
+/var/app.sqlite
+/.idea/
+/.vscode/
+.DS_Store

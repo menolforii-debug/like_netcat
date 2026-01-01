@@ -1,0 +1,18 @@
+note: >
+  Это перевод codex.yaml для людей.
+  Файл не используется LLM и не является нормативным.
+
+project: cms.devel9.ru
+
+rules:
+  - Корень сайта — public_html
+  - CMS — режим сайта
+  - Рендеринг шаблонный
+  - Контент хранится в JSON
+
+domain:
+  Section: Раздел
+  Component: Компонент
+  Infoblock: Инфоблок
+  Object: Объект
+  Template: Шаблон
