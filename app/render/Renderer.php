@@ -54,7 +54,8 @@ final class Renderer
     private function renderDocumentStart(array $seo): void
     {
         $title = htmlspecialchars($seo['title'] ?? '', ENT_QUOTES, 'UTF-8');
-        $description = htmlspecialchars($seo['description'] ?? '', ENT_QUOTES, 'UTF-8');
+        $descriptionRaw = isset($seo['description']) ? trim((string) $seo['description']) : '';
+        $description = htmlspecialchars($descriptionRaw, ENT_QUOTES, 'UTF-8');
         $keywords = isset($seo['keywords']) ? trim((string) $seo['keywords']) : '';
         $keywordsEscaped = htmlspecialchars($keywords, ENT_QUOTES, 'UTF-8');
 
@@ -63,7 +64,9 @@ final class Renderer
         echo "<head>\n";
         echo "    <meta charset=\"utf-8\">\n";
         echo "    <title>{$title}</title>\n";
-        echo "    <meta name=\"description\" content=\"{$description}\">\n";
+        if ($descriptionRaw !== '') {
+            echo "    <meta name=\"description\" content=\"{$description}\">\n";
+        }
         if ($keywords !== '') {
             echo "    <meta name=\"keywords\" content=\"{$keywordsEscaped}\">\n";
         }
