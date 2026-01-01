@@ -1,9 +1,8 @@
 <?php
-declare(strict_types=1);
 
 final class InfoblockRepo
 {
-    public function findBySection(int $sectionId): array
+    public function findBySection($sectionId): array
     {
         return DB::fetchAll(
             'SELECT id, section_id, component_id, name, settings_json, view_template, sort, is_enabled

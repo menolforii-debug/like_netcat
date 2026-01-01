@@ -1,9 +1,8 @@
 <?php
-declare(strict_types=1);
 
 final class ObjectRepo
 {
-    public function findByInfoblock(int $infoblockId): array
+    public function findByInfoblock($infoblockId): array
     {
         return DB::fetchAll(
             'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted

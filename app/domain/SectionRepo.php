@@ -1,9 +1,8 @@
 <?php
-declare(strict_types=1);
 
 final class SectionRepo
 {
-    public function findByPath(string $path): ?array
+    public function findByPath($path): ?array
     {
         $slugPath = trim($path, '/');
         $segments = $slugPath === '' ? [] : explode('/', $slugPath);
@@ -23,7 +22,7 @@ final class SectionRepo
         return $section;
     }
 
-    public function findChildren(int $parentId): array
+    public function findChildren($parentId): array
     {
         return DB::fetchAll(
             'SELECT id, slug, title FROM sections WHERE parent_id = :parent_id ORDER BY id ASC',
@@ -39,7 +38,7 @@ final class SectionRepo
         );
     }
 
-    private function findChildBySlug(int $parentId, string $slug): ?array
+    private function findChildBySlug($parentId, $slug): ?array
     {
         return DB::fetchOne(
             'SELECT id, slug, title FROM sections WHERE parent_id = :parent_id AND slug = :slug LIMIT 1',
