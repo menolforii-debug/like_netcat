@@ -2,8 +2,10 @@
 
 final class Renderer
 {
-    public function renderPath($path, $editMode): void
+    public function renderPath($path): void
     {
+        $editMode = isset($_GET['edit']) && $_GET['edit'] === '1' && Auth::canEdit();
+
         $sectionRepo = new SectionRepo();
         $section = $sectionRepo->findByPath($path);
 
@@ -18,7 +20,7 @@ final class Renderer
 
         $infoblockRepo = new InfoblockRepo();
         $componentRepo = new ComponentRepo();
-        $objectRepo = new ObjectRepo();
+        $objectRepo = new ObjectRepo(core()->events());
 
         $infoblocks = $infoblockRepo->findBySection((int) $section['id']);
         foreach ($infoblocks as $infoblock) {
@@ -28,7 +30,7 @@ final class Renderer
             }
 
             $objects = $objectRepo->findByInfoblock((int) $infoblock['id']);
-            $items = $this->decodeItems($objects);
+            $items = $this->decodeItems($objects, $editMode);
             $this->renderInfoblock($section, $infoblock, $component, $items, $editMode);
         }
     }
@@ -62,7 +64,7 @@ final class Renderer
         require $templatePath;
     }
 
-    private function decodeItems(array $objects): array
+    private function decodeItems(array $objects, $editMode): array
     {
         $items = [];
 
@@ -72,11 +74,19 @@ final class Renderer
                 $data = [];
             }
 
+            $controls = [];
+            if ($editMode) {
+                $controls = [
+                    'delete_url' => '/admin.php?action=object_delete&id=' . (int) $object['id'],
+                ];
+            }
+
             $items[] = [
                 'id' => $object['id'],
                 'data' => $data,
                 'created_at' => $object['created_at'],
                 'updated_at' => $object['updated_at'],
+                'controls' => $controls,
             ];
         }
 
