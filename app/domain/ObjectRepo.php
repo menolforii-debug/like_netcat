@@ -72,6 +72,7 @@ final class ObjectRepo
 
     public function publish($id): void
     {
+        $this->assertWorkflowTransition($id, 'publish', 'published');
         $stmt = DB::pdo()->prepare(
             'UPDATE objects SET status = :status, published_at = :published_at, updated_at = :updated_at WHERE id = :id'
         );
@@ -85,6 +86,7 @@ final class ObjectRepo
 
     public function unpublish($id): void
     {
+        $this->assertWorkflowTransition($id, 'unpublish', 'draft');
         $stmt = DB::pdo()->prepare(
             'UPDATE objects SET status = :status, updated_at = :updated_at WHERE id = :id'
         );
@@ -97,6 +99,7 @@ final class ObjectRepo
 
     public function archive($id): void
     {
+        $this->assertWorkflowTransition($id, 'archive', 'archived');
         $stmt = DB::pdo()->prepare(
             'UPDATE objects SET status = :status, updated_at = :updated_at WHERE id = :id'
         );
@@ -223,6 +226,39 @@ final class ObjectRepo
             ]);
 
             throw $e;
+        }
+    }
+
+    private function assertWorkflowTransition($id, string $action, string $nextStatus): void
+    {
+        $object = $this->findById($id);
+        if ($object === null) {
+            return;
+        }
+
+        $currentStatus = isset($object['status']) ? (string) $object['status'] : 'draft';
+        if ($currentStatus === $nextStatus) {
+            return;
+        }
+
+        $user = Auth::user();
+        if ($user && ($user['role'] ?? null) === 'admin') {
+            return;
+        }
+
+        if (!$user || ($user['role'] ?? null) !== 'editor') {
+            throw new RuntimeException('Недостаточно прав для изменения статуса.');
+        }
+
+        $infoblockRepo = new InfoblockRepo();
+        $infoblock = $infoblockRepo->findById((int) $object['infoblock_id']);
+        $workflow = [];
+        if ($infoblock && isset($infoblock['extra']['workflow']) && is_array($infoblock['extra']['workflow'])) {
+            $workflow = $infoblock['extra']['workflow'];
+        }
+
+        if (!Workflow::canTransition($currentStatus, $action, $workflow)) {
+            throw new RuntimeException('Переход статуса запрещён правилами workflow.');
         }
     }
 

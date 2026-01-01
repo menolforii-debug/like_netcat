@@ -32,6 +32,10 @@ final class Renderer
         $infoblocks = $infoblockRepo->findBySection((int) $section['id']);
         $infoblocksHtml = '';
         foreach ($infoblocks as $infoblock) {
+            if (!Permission::canView(Auth::user(), $infoblock)) {
+                continue;
+            }
+
             $component = $componentRepo->findById((int) $infoblock['component_id']);
             if ($component === null) {
                 continue;
@@ -117,6 +121,7 @@ final class Renderer
     private function renderInfoblock(array $section, array $infoblock, array $component, array $items, $editMode): string
     {
         $core = [];
+        $infoblock['view_template'] = $this->resolveViewTemplate($infoblock, $component);
 
         $templatePath = __DIR__ . '/../../templates/' . $component['keyword'] . '/' . $infoblock['view_template'] . '.php';
         if (!is_file($templatePath)) {
@@ -126,6 +131,21 @@ final class Renderer
         ob_start();
         require $templatePath;
         return (string) ob_get_clean();
+    }
+
+    private function resolveViewTemplate(array $infoblock, array $component): string
+    {
+        $views = [];
+        if (isset($component['views']) && is_array($component['views'])) {
+            $views = $component['views'];
+        }
+
+        $template = isset($infoblock['view_template']) ? trim((string) $infoblock['view_template']) : '';
+        if ($template !== '' && in_array($template, $views, true)) {
+            return $template;
+        }
+
+        return 'list';
     }
 
     private function decodeItems(array $objects, $editMode): array
