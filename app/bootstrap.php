@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 
 $root = dirname(__DIR__);
 
@@ -18,7 +17,7 @@ if (!is_dir($varDir)) {
 DB::connect($varDir . '/app.sqlite');
 runMigrations(DB::pdo(), $root . '/migrations');
 
-function runMigrations(PDO $pdo, string $migrationsDir): void
+function runMigrations(PDO $pdo, $migrationsDir): void
 {
     $pdo->exec('CREATE TABLE IF NOT EXISTS migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL)');
 
@@ -51,7 +50,7 @@ function runMigrations(PDO $pdo, string $migrationsDir): void
     }
 }
 
-function migrationApplied(PDO $pdo, string $name): bool
+function migrationApplied(PDO $pdo, $name): bool
 {
     $stmt = $pdo->prepare('SELECT 1 FROM migrations WHERE name = :name');
     $stmt->execute(['name' => $name]);

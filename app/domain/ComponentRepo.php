@@ -1,9 +1,8 @@
 <?php
-declare(strict_types=1);
 
 final class ComponentRepo
 {
-    public function findById(int $id): ?array
+    public function findById($id): ?array
     {
         return DB::fetchOne(
             'SELECT id, name, keyword, fields_json FROM components WHERE id = :id LIMIT 1',
@@ -11,7 +10,7 @@ final class ComponentRepo
         );
     }
 
-    public function findByKeyword(string $keyword): ?array
+    public function findByKeyword($keyword): ?array
     {
         return DB::fetchOne(
             'SELECT id, name, keyword, fields_json FROM components WHERE keyword = :keyword LIMIT 1',

@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 ?>
 <section>
     <h2><?= htmlspecialchars($infoblock['name'], ENT_QUOTES, 'UTF-8') ?></h2>

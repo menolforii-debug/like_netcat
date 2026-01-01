@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 ?>
 <article>
     <?php $data = $items[0]['data'] ?? []; ?>

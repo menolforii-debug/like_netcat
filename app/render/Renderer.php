@@ -1,9 +1,8 @@
 <?php
-declare(strict_types=1);
 
 final class Renderer
 {
-    public function renderPath(string $path, bool $editMode): void
+    public function renderPath($path, $editMode): void
     {
         $sectionRepo = new SectionRepo();
         $section = $sectionRepo->findByPath($path);
@@ -34,7 +33,7 @@ final class Renderer
         }
     }
 
-    private function renderSection(array $section, array $children, bool $editMode): void
+    private function renderSection(array $section, array $children, $editMode): void
     {
         $component = ['keyword' => 'section'];
         $infoblock = ['view_template' => 'default'];
@@ -51,7 +50,7 @@ final class Renderer
         require $templatePath;
     }
 
-    private function renderInfoblock(array $section, array $infoblock, array $component, array $items, bool $editMode): void
+    private function renderInfoblock(array $section, array $infoblock, array $component, array $items, $editMode): void
     {
         $core = [];
 

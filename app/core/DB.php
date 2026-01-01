@@ -1,11 +1,10 @@
 <?php
-declare(strict_types=1);
 
 final class DB
 {
-    private static ?PDO $pdo = null;
+    private static $pdo = null;
 
-    public static function connect(string $path): void
+    public static function connect($path): void
     {
         if (self::$pdo instanceof PDO) {
             return;
@@ -25,7 +24,7 @@ final class DB
         return self::$pdo;
     }
 
-    public static function fetchOne(string $sql, array $params = []): ?array
+    public static function fetchOne($sql, array $params = []): ?array
     {
         $stmt = self::pdo()->prepare($sql);
         $stmt->execute($params);
@@ -34,7 +33,7 @@ final class DB
         return $row ?: null;
     }
 
-    public static function fetchAll(string $sql, array $params = []): array
+    public static function fetchAll($sql, array $params = []): array
     {
         $stmt = self::pdo()->prepare($sql);
         $stmt->execute($params);
