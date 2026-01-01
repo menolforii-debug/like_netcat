@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    login TEXT NOT NULL UNIQUE,
+    pass_hash TEXT NOT NULL,
+    role TEXT NOT NULL CHECK (role IN ('admin', 'editor'))
+);

@@ -2,8 +2,15 @@
 
 final class Renderer
 {
+<<<<<<< HEAD
     public function renderPath($path, $editMode): void
     {
+=======
+    public function renderPath($path): void
+    {
+        $editMode = isset($_GET['edit']) && $_GET['edit'] === '1' && Auth::canEdit();
+
+>>>>>>> origin/codex/-codex.yaml-7vmunj
         $sectionRepo = new SectionRepo();
         $section = $sectionRepo->findByPath($path);
 
@@ -18,7 +25,11 @@ final class Renderer
 
         $infoblockRepo = new InfoblockRepo();
         $componentRepo = new ComponentRepo();
+<<<<<<< HEAD
         $objectRepo = new ObjectRepo();
+=======
+        $objectRepo = new ObjectRepo(core()->events());
+>>>>>>> origin/codex/-codex.yaml-7vmunj
 
         $infoblocks = $infoblockRepo->findBySection((int) $section['id']);
         foreach ($infoblocks as $infoblock) {
@@ -28,7 +39,11 @@ final class Renderer
             }
 
             $objects = $objectRepo->findByInfoblock((int) $infoblock['id']);
+<<<<<<< HEAD
             $items = $this->decodeItems($objects);
+=======
+            $items = $this->decodeItems($objects, $editMode);
+>>>>>>> origin/codex/-codex.yaml-7vmunj
             $this->renderInfoblock($section, $infoblock, $component, $items, $editMode);
         }
     }
@@ -62,7 +77,11 @@ final class Renderer
         require $templatePath;
     }
 
+<<<<<<< HEAD
     private function decodeItems(array $objects): array
+=======
+    private function decodeItems(array $objects, $editMode): array
+>>>>>>> origin/codex/-codex.yaml-7vmunj
     {
         $items = [];
 
@@ -72,11 +91,25 @@ final class Renderer
                 $data = [];
             }
 
+<<<<<<< HEAD
+=======
+            $controls = [];
+            if ($editMode) {
+                $controls = [
+                    'delete_url' => '/admin.php?action=object_delete&id=' . (int) $object['id'],
+                ];
+            }
+
+>>>>>>> origin/codex/-codex.yaml-7vmunj
             $items[] = [
                 'id' => $object['id'],
                 'data' => $data,
                 'created_at' => $object['created_at'],
                 'updated_at' => $object['updated_at'],
+<<<<<<< HEAD
+=======
+                'controls' => $controls,
+>>>>>>> origin/codex/-codex.yaml-7vmunj
             ];
         }
 

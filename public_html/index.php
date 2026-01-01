@@ -11,7 +11,5 @@ if (isset($_SERVER['REQUEST_URI'])) {
 }
 $path = '/' . ltrim($path, '/');
 
-$editMode = isset($_GET['edit']) && $_GET['edit'] === '1';
-
 $renderer = new Renderer();
-$renderer->renderPath($path, $editMode);
+$renderer->renderPath($path);
