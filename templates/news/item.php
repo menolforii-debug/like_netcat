@@ -1,12 +1,15 @@
 <?php
 ?>
-<article>
-    <?php $data = $items[0]['data'] ?? []; ?>
-    <h2><?= htmlspecialchars($data['title'] ?? 'Без заголовка', ENT_QUOTES, 'UTF-8') ?></h2>
-    <?php if (!empty($data['date'])) : ?>
-        <time><?= htmlspecialchars($data['date'], ENT_QUOTES, 'UTF-8') ?></time>
-    <?php endif; ?>
-    <?php if (!empty($data['text'])) : ?>
-        <p><?= htmlspecialchars($data['text'], ENT_QUOTES, 'UTF-8') ?></p>
-    <?php endif; ?>
+<?php $item = $item ?? ($items[0] ?? null); ?>
+<?php $data = $item['data'] ?? []; ?>
+<article class="card shadow-sm mb-5">
+    <div class="card-body">
+        <h1 class="h4 mb-2"><?= htmlspecialchars($data['title'] ?? 'Без заголовка', ENT_QUOTES, 'UTF-8') ?></h1>
+        <?php if (!empty($data['date'])) : ?>
+            <div class="text-muted small mb-3"><?= htmlspecialchars($data['date'], ENT_QUOTES, 'UTF-8') ?></div>
+        <?php endif; ?>
+        <?php if (!empty($data['text'])) : ?>
+            <div class="text-body"><?= nl2br(htmlspecialchars($data['text'], ENT_QUOTES, 'UTF-8')) ?></div>
+        <?php endif; ?>
+    </div>
 </article>
