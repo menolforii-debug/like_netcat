@@ -56,10 +56,6 @@ function collectSections(SectionRepo $repo, int $parentId): array
 
 function decodeExtra(array $row): array
 {
-    if (isset($row['extra']) && is_array($row['extra'])) {
-        return $row['extra'];
-    }
-
     $decoded = json_decode((string) ($row['extra_json'] ?? '{}'), true);
     if (!is_array($decoded)) {
         return [];
@@ -88,6 +84,162 @@ function componentViews(array $component): array
     }
 
     return ['list'];
+}
+
+function parseComponentFields(array $component): array
+{
+    $decoded = json_decode((string) ($component['fields_json'] ?? '{}'), true);
+    if (!is_array($decoded)) {
+        return [];
+    }
+
+    $fields = $decoded['fields'] ?? $decoded;
+    if (!is_array($fields)) {
+        return [];
+    }
+
+    $normalized = [];
+    foreach ($fields as $field) {
+        if (is_string($field)) {
+            $normalized[] = [
+                'name' => $field,
+                'type' => 'text',
+                'label' => $field,
+                'required' => false,
+                'options' => [],
+            ];
+            continue;
+        }
+
+        if (!is_array($field) || empty($field['name'])) {
+            continue;
+        }
+
+        $normalized[] = [
+            'name' => (string) $field['name'],
+            'type' => isset($field['type']) ? (string) $field['type'] : 'text',
+            'label' => isset($field['label']) ? (string) $field['label'] : (string) $field['name'],
+            'required' => !empty($field['required']),
+            'options' => isset($field['options']) && is_array($field['options']) ? $field['options'] : [],
+        ];
+    }
+
+    return $normalized;
+}
+
+function extractFormData(array $fields): array
+{
+    $data = [];
+    foreach ($fields as $field) {
+        $name = $field['name'];
+        $type = $field['type'] ?? 'text';
+        if ($type === 'checkbox') {
+            $data[$name] = isset($_POST[$name]) ? '1' : '0';
+            continue;
+        }
+        if (isset($_POST[$name])) {
+            $data[$name] = $_POST[$name];
+        }
+    }
+
+    return $data;
+}
+
+function validateRequiredFields(array $fields, array $data): array
+{
+    $errors = [];
+    foreach ($fields as $field) {
+        if (empty($field['required'])) {
+            continue;
+        }
+        $name = $field['name'];
+        $value = $data[$name] ?? '';
+        if ($value === '' || $value === null) {
+            $errors[] = 'Поле "' . $name . '" обязательно.';
+        }
+    }
+
+    return $errors;
+}
+
+function renderFieldInput(array $field, array $data): string
+{
+    $name = $field['name'];
+    $type = $field['type'] ?? 'text';
+    $label = htmlspecialchars((string) ($field['label'] ?? $name), ENT_QUOTES, 'UTF-8');
+    $value = isset($data[$name]) ? (string) $data[$name] : '';
+
+    $html = '<label class="form-label">' . $label . '</label>';
+    switch ($type) {
+        case 'textarea':
+            $html .= '<textarea class="form-control" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" rows="4">' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '</textarea>';
+            break;
+        case 'number':
+            $html .= '<input class="form-control" type="number" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '">';
+            break;
+        case 'date':
+            $html .= '<input class="form-control" type="date" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '">';
+            break;
+        case 'checkbox':
+            $checked = $value !== '' && $value !== '0' ? ' checked' : '';
+            $html .= '<div class="form-check">';
+            $html .= '<input class="form-check-input" type="checkbox" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" value="1"' . $checked . '>';
+            $html .= '</div>';
+            break;
+        case 'select':
+            $html .= '<select class="form-select" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '">';
+            foreach ($field['options'] ?? [] as $optionValue => $optionLabel) {
+                $optionValue = (string) $optionValue;
+                $optionLabel = (string) $optionLabel;
+                $selected = $optionValue === $value ? ' selected' : '';
+                $html .= '<option value="' . htmlspecialchars($optionValue, ENT_QUOTES, 'UTF-8') . '"' . $selected . '>' . htmlspecialchars($optionLabel, ENT_QUOTES, 'UTF-8') . '</option>';
+            }
+            $html .= '</select>';
+            break;
+        default:
+            $html .= '<input class="form-control" type="text" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '">';
+            break;
+    }
+
+    if (!empty($field['required'])) {
+        $html .= '<div class="form-text">Обязательное поле</div>';
+    }
+
+    return '<div class="mb-3">' . $html . '</div>';
+}
+
+function buildSectionPathFromId(SectionRepo $repo, int $sectionId): string
+{
+    $segments = [];
+    $currentId = $sectionId;
+
+    while ($currentId !== null) {
+        $section = $repo->findById($currentId);
+        if ($section === null) {
+            break;
+        }
+
+        if (!empty($section['english_name'])) {
+            $segments[] = $section['english_name'];
+        }
+
+        $currentId = $section['parent_id'] !== null ? (int) $section['parent_id'] : null;
+    }
+
+    if (empty($segments)) {
+        return '/';
+    }
+
+    return '/' . implode('/', array_reverse($segments)) . '/';
+}
+
+function ensurePreviewToken(): string
+{
+    if (empty($_SESSION['preview_token'])) {
+        $_SESSION['preview_token'] = bin2hex(random_bytes(16));
+    }
+
+    return (string) $_SESSION['preview_token'];
 }
 
 if ($action === 'login') {
@@ -135,6 +287,7 @@ $tab = isset($_GET['tab']) ? (string) $_GET['tab'] : 'settings';
 $sectionRepo = new SectionRepo();
 $infoblockRepo = new InfoblockRepo();
 $componentRepo = new ComponentRepo();
+$objectRepo = new ObjectRepo();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'site_create') {
@@ -319,6 +472,197 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'notice' => 'Infoblock deleted']));
     }
+
+    if ($action === 'object_create') {
+        $infoblockId = isset($_POST['infoblock_id']) ? (int) $_POST['infoblock_id'] : 0;
+        $sectionId = isset($_POST['section_id']) ? (int) $_POST['section_id'] : 0;
+        $saveAs = isset($_POST['save_as']) ? (string) $_POST['save_as'] : 'draft';
+
+        $infoblock = null;
+        $infoblocks = $infoblockRepo->listForSection($sectionId);
+        foreach ($infoblocks as $row) {
+            if ((int) $row['id'] === $infoblockId) {
+                $infoblock = $row;
+                break;
+            }
+        }
+
+        if ($infoblock === null) {
+            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Infoblock not found']));
+        }
+
+        $component = $componentRepo->findById((int) $infoblock['component_id']);
+        if ($component === null) {
+            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Component not found']));
+        }
+
+        $fields = parseComponentFields($component);
+        $data = extractFormData($fields);
+        $errors = validateRequiredFields($fields, $data);
+        if (!empty($errors)) {
+            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => implode(' ', $errors)]));
+        }
+
+        $status = $saveAs === 'publish' ? 'published' : 'draft';
+        $objectId = $objectRepo->create([
+            'site_id' => $infoblock['site_id'],
+            'section_id' => $infoblock['section_id'],
+            'infoblock_id' => $infoblock['id'],
+            'component_id' => $infoblock['component_id'],
+            'data' => $data,
+            'status' => $status,
+        ]);
+
+        if ($user) {
+            AdminLog::log($user['id'], 'object_create', 'object', $objectId, [
+                'infoblock_id' => $infoblockId,
+                'data' => $data,
+                'status' => $status,
+            ]);
+        }
+
+        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'notice' => 'Object created']));
+    }
+
+    if ($action === 'object_update') {
+        $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
+        $sectionId = isset($_POST['section_id']) ? (int) $_POST['section_id'] : 0;
+        $saveAs = isset($_POST['save_as']) ? (string) $_POST['save_as'] : '';
+
+        $object = $objectRepo->findById($id);
+        if ($object === null) {
+            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Object not found']));
+        }
+
+        $component = $componentRepo->findById((int) $object['component_id']);
+        if ($component === null) {
+            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Component not found']));
+        }
+
+        $fields = parseComponentFields($component);
+        $data = extractFormData($fields);
+        $errors = validateRequiredFields($fields, $data);
+        if (!empty($errors)) {
+            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => implode(' ', $errors)]));
+        }
+
+        $objectRepo->update($id, ['data' => $data]);
+
+        if ($saveAs === 'publish') {
+            $objectRepo->publish($id);
+        } elseif ($saveAs === 'draft') {
+            $objectRepo->unpublish($id);
+        }
+
+        if ($user) {
+            AdminLog::log($user['id'], 'object_update', 'object', $id, [
+                'data' => $data,
+            ]);
+        }
+
+        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'notice' => 'Object updated']));
+    }
+
+    if ($action === 'object_publish') {
+        $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
+        $sectionId = isset($_POST['section_id']) ? (int) $_POST['section_id'] : 0;
+        if ($id > 0) {
+            $objectRepo->publish($id);
+            if ($user) {
+                AdminLog::log($user['id'], 'object_publish', 'object', $id, []);
+            }
+        }
+        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'notice' => 'Object published']));
+    }
+
+    if ($action === 'object_unpublish') {
+        $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
+        $sectionId = isset($_POST['section_id']) ? (int) $_POST['section_id'] : 0;
+        if ($id > 0) {
+            $objectRepo->unpublish($id);
+            if ($user) {
+                AdminLog::log($user['id'], 'object_unpublish', 'object', $id, []);
+            }
+        }
+        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'notice' => 'Object unpublished']));
+    }
+
+    if ($action === 'object_delete') {
+        $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
+        $sectionId = isset($_POST['section_id']) ? (int) $_POST['section_id'] : 0;
+        if ($id > 0) {
+            $objectRepo->softDelete($id);
+            if ($user) {
+                AdminLog::log($user['id'], 'object_delete', 'object', $id, []);
+            }
+        }
+        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'notice' => 'Object deleted']));
+    }
+}
+
+if ($action === 'object_form') {
+    $objectId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+    $infoblockId = isset($_GET['infoblock_id']) ? (int) $_GET['infoblock_id'] : 0;
+    $sectionId = isset($_GET['section_id']) ? (int) $_GET['section_id'] : 0;
+
+    $object = $objectId > 0 ? $objectRepo->findById($objectId) : null;
+    if ($object !== null) {
+        $infoblockId = (int) $object['infoblock_id'];
+    }
+
+    $infoblock = null;
+    $infoblocks = $infoblockRepo->listForSection($sectionId);
+    foreach ($infoblocks as $row) {
+        if ((int) $row['id'] === $infoblockId) {
+            $infoblock = $row;
+            break;
+        }
+    }
+
+    if ($infoblock === null) {
+        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Infoblock not found']));
+    }
+
+    $component = $componentRepo->findById((int) $infoblock['component_id']);
+    if ($component === null) {
+        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Component not found']));
+    }
+
+    $fields = parseComponentFields($component);
+    $data = [];
+    if ($object !== null) {
+        $data = json_decode((string) $object['data_json'], true);
+        if (!is_array($data)) {
+            $data = [];
+        }
+    }
+
+    AdminLayout::renderHeader('Object');
+    echo '<div class="container" style="max-width: 900px">';
+    echo '<div class="card shadow-sm">';
+    echo '<div class="card-body">';
+    echo '<div class="d-flex justify-content-between align-items-center mb-3">';
+    echo '<h1 class="h5 mb-0">' . ($object ? 'Edit object' : 'New object') . '</h1>';
+    echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']), ENT_QUOTES, 'UTF-8') . '">Back</a>';
+    echo '</div>';
+    echo '<form method="post" action="/admin.php?action=' . ($object ? 'object_update' : 'object_create') . '">';
+    if ($object) {
+        echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
+    } else {
+        echo '<input type="hidden" name="infoblock_id" value="' . (int) $infoblock['id'] . '">';
+    }
+    echo '<input type="hidden" name="section_id" value="' . (int) $sectionId . '">';
+    foreach ($fields as $field) {
+        echo renderFieldInput($field, $data);
+    }
+    echo '<div class="d-flex gap-2">';
+    echo '<button class="btn btn-primary" type="submit" name="save_as" value="draft">Save draft</button>';
+    echo '<button class="btn btn-success" type="submit" name="save_as" value="publish">Publish</button>';
+    echo '</div>';
+    echo '</form>';
+    echo '</div></div></div>';
+    AdminLayout::renderFooter();
+    exit;
 }
 
 $sites = $sectionRepo->listSites();
@@ -367,6 +711,7 @@ if ($selected === null) {
         $tabs = [
             'settings' => 'Settings',
             'infoblocks' => 'Infoblocks',
+            'content' => 'Content',
         ];
         echo '<ul class="nav nav-tabs mb-3">';
         foreach ($tabs as $key => $label) {
@@ -452,7 +797,7 @@ if ($selected === null) {
                 echo '</div>';
                 $checked = !empty($editInfoblock['is_enabled']) ? ' checked' : '';
                 echo '<div class="mb-3 form-check">';
-                echo '<input class="form-check-input" type="checkbox" name="is_enabled" value="1"' . $checked . '>'; 
+                echo '<input class="form-check-input" type="checkbox" name="is_enabled" value="1"' . $checked . '>';
                 echo '<label class="form-check-label">Enabled</label>';
                 echo '</div>';
                 echo '<div class="mb-3"><label class="form-label">settings_json</label><textarea class="form-control" name="settings_json" rows="4">' . htmlspecialchars(json_encode($settings, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), ENT_QUOTES, 'UTF-8') . '</textarea></div>';
@@ -490,6 +835,80 @@ if ($selected === null) {
             echo '</div>';
             echo '<button class="btn btn-success" type="submit">Add</button>';
             echo '</form>';
+        } elseif ($tab === 'content') {
+            $infoblocks = $infoblockRepo->listForSection((int) $selected['id']);
+            $components = $componentRepo->listAll();
+            $componentMap = [];
+            foreach ($components as $component) {
+                $componentMap[(int) $component['id']] = $component;
+            }
+            $previewToken = ensurePreviewToken();
+            $sectionPath = buildSectionPathFromId($sectionRepo, (int) $selected['id']);
+
+            echo '<h2 class="h6">Content</h2>';
+            if (empty($infoblocks)) {
+                echo '<div class="alert alert-light border">No infoblocks in this section.</div>';
+            } else {
+                foreach ($infoblocks as $infoblock) {
+                    $component = $componentMap[(int) $infoblock['component_id']] ?? null;
+                    $componentName = $component ? (string) $component['name'] : 'Unknown';
+                    $objects = $objectRepo->listForInfoblock((int) $infoblock['id']);
+
+                    echo '<div class="border rounded p-3 mb-4">';
+                    echo '<div class="d-flex justify-content-between align-items-center mb-3">';
+                    echo '<h3 class="h6 mb-0">' . htmlspecialchars((string) $infoblock['name'], ENT_QUOTES, 'UTF-8') . ' <span class="text-muted">(' . htmlspecialchars($componentName, ENT_QUOTES, 'UTF-8') . ')</span></h3>';
+                    echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'object_form', 'section_id' => $selected['id'], 'infoblock_id' => $infoblock['id']]), ENT_QUOTES, 'UTF-8') . '">Add object</a>';
+                    echo '</div>';
+
+                    if (empty($objects)) {
+                        echo '<div class="alert alert-light border">Objects отсутствуют.</div>';
+                    } else {
+                        echo '<div class="table-responsive">';
+                        echo '<table class="table table-sm align-middle">';
+                        echo '<thead><tr><th>ID</th><th>Title</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+                        foreach ($objects as $object) {
+                            $data = json_decode((string) $object['data_json'], true);
+                            if (!is_array($data)) {
+                                $data = [];
+                            }
+                            $title = isset($data['title']) ? (string) $data['title'] : 'Без заголовка';
+                            $status = (string) ($object['status'] ?? 'draft');
+                            $previewUrl = $sectionPath . '?object_id=' . (int) $object['id'] . '&preview_token=' . urlencode($previewToken);
+
+                            echo '<tr>';
+                            echo '<td>' . (int) $object['id'] . '</td>';
+                            echo '<td>' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</td>';
+                            echo '<td>' . htmlspecialchars($status, ENT_QUOTES, 'UTF-8') . '</td>';
+                            echo '<td class="d-flex flex-wrap gap-2">';
+                            echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'object_form', 'section_id' => $selected['id'], 'id' => $object['id']]), ENT_QUOTES, 'UTF-8') . '">Edit</a>';
+                            if ($status === 'draft') {
+                                echo '<form method="post" action="/admin.php?action=object_publish">';
+                                echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
+                                echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
+                                echo '<button class="btn btn-sm btn-success" type="submit">Publish</button>';
+                                echo '</form>';
+                            } else {
+                                echo '<form method="post" action="/admin.php?action=object_unpublish">';
+                                echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
+                                echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
+                                echo '<button class="btn btn-sm btn-warning" type="submit">Unpublish</button>';
+                                echo '</form>';
+                            }
+                            echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars($previewUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank">Preview</a>';
+                            echo '<form method="post" action="/admin.php?action=object_delete" onsubmit="return confirm(\"Delete object?\")">';
+                            echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
+                            echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
+                            echo '<button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>';
+                            echo '</form>';
+                            echo '</td>';
+                            echo '</tr>';
+                        }
+                        echo '</tbody></table></div>';
+                    }
+
+                    echo '</div>';
+                }
+            }
         } else {
             echo '<h1 class="h5">Section settings</h1>';
             echo '<p class="text-muted mb-0">Section editor will be implemented later.</p>';

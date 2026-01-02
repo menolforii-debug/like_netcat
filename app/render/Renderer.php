@@ -37,12 +37,30 @@ final class Renderer
 
         $infoblockRepo = new InfoblockRepo();
         $componentRepo = new ComponentRepo();
-        $objectRepo = new ObjectRepo(core()->events());
+        $objectRepo = new ObjectRepo();
 
         $infoblocks = $infoblockRepo->listForSection((int) $section['id'], true);
+        $requestedObjectId = isset($_GET['object_id']) ? (int) $_GET['object_id'] : 0;
+        $previewAllowed = $this->isPreviewAllowed($requestedObjectId);
+        $requestedObject = null;
+        if ($requestedObjectId > 0) {
+            $requestedObject = $objectRepo->findById($requestedObjectId);
+            if ($requestedObject === null || !empty($requestedObject['is_deleted'])) {
+                http_response_code(404);
+                echo 'Object not found';
+                return;
+            }
+
+            if ($requestedObject['status'] !== 'published' && !$previewAllowed) {
+                http_response_code(404);
+                echo 'Object not found';
+                return;
+            }
+        }
 
         $infoblocksHtml = '';
         $infoblockViews = [];
+        $itemTitle = '';
         foreach ($infoblocks as $infoblock) {
             $component = $componentRepo->findById((int) $infoblock['component_id']);
             if ($component === null) {
@@ -50,7 +68,17 @@ final class Renderer
             }
 
             $infoblock['view_template'] = $this->resolveViewTemplate($infoblock, $component);
+
             $objects = $objectRepo->listForInfoblock((int) $infoblock['id']);
+            $objects = array_values(array_filter($objects, static function (array $object): bool {
+                return ($object['status'] ?? '') === 'published' && empty($object['is_deleted']);
+            }));
+
+            if ($requestedObject && (int) $requestedObject['infoblock_id'] === (int) $infoblock['id']) {
+                $objects = [$requestedObject];
+                $itemTitle = $this->resolveItemTitle($requestedObject, $component);
+            }
+
             $items = $this->decodeItems($objects);
 
             $infoblocksHtml .= $this->renderInfoblockWithWrappers($section, $site, $infoblock, $component, $items, false);
@@ -65,7 +93,7 @@ final class Renderer
             'infoblocks_html' => $infoblocksHtml,
         ];
 
-        $seo = $this->resolveSeo($section, $infoblocks, $infoblockViews);
+        $seo = $this->resolveSeo($section, $infoblocks, $infoblockViews, $itemTitle);
         $this->renderDocumentStart($seo);
         $this->renderSection($section, $children, $core, false);
         $this->renderDocumentEnd();
@@ -176,7 +204,7 @@ final class Renderer
             $items[] = [
                 'id' => $object['id'],
                 'data' => $data,
-                'status' => $object['status'] ?? 'published',
+                'status' => $object['status'] ?? 'draft',
                 'created_at' => $object['created_at'],
                 'updated_at' => $object['updated_at'],
                 'controls' => [],
@@ -186,7 +214,7 @@ final class Renderer
         return $items;
     }
 
-    private function resolveSeo(array $section, array $infoblocks, array $infoblockViews): array
+    private function resolveSeo(array $section, array $infoblocks, array $infoblockViews, string $itemTitle): array
     {
         $sectionExtra = $this->decodeExtra($section);
 
@@ -206,8 +234,8 @@ final class Renderer
         }
 
         if ($title === '') {
-            if (!empty($objectData['title'])) {
-                $title = (string) $objectData['title'];
+            if ($itemTitle !== '') {
+                $title = $itemTitle;
             } elseif (count($infoblocks) === 1) {
                 $only = $infoblocks[0];
                 $title = (string) ($section['title'] ?? '') . ' — ' . (string) ($only['name'] ?? '');
@@ -235,6 +263,54 @@ final class Renderer
             'description' => $description,
             'keywords' => $keywords,
         ];
+    }
+
+    private function resolveItemTitle(array $object, array $component): string
+    {
+        $data = json_decode((string) ($object['data_json'] ?? ''), true);
+        if (!is_array($data)) {
+            $data = [];
+        }
+
+        if (!empty($data['title'])) {
+            return (string) $data['title'];
+        }
+
+        $fields = $this->extractFields($component);
+        foreach ($fields as $field) {
+            $type = $field['type'] ?? 'text';
+            if (!in_array($type, ['text', 'textarea', 'string'], true)) {
+                continue;
+            }
+            $name = $field['name'] ?? '';
+            if ($name !== '' && !empty($data[$name])) {
+                return (string) $data[$name];
+            }
+        }
+
+        foreach ($data as $value) {
+            if (is_string($value) && $value !== '') {
+                return $value;
+            }
+        }
+
+        return '';
+    }
+
+    private function extractFields(array $component): array
+    {
+        $fieldsJson = $component['fields_json'] ?? '{}';
+        $decoded = json_decode((string) $fieldsJson, true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        $fields = $decoded['fields'] ?? $decoded;
+        if (!is_array($fields)) {
+            return [];
+        }
+
+        return $fields;
     }
 
     private function buildSectionPath(SectionRepo $repo, $sectionId): string
@@ -319,5 +395,23 @@ final class Renderer
         }
 
         return $decoded;
+    }
+
+    private function isPreviewAllowed($objectId): bool
+    {
+        if ($objectId <= 0) {
+            return false;
+        }
+
+        $token = isset($_GET['preview_token']) ? (string) $_GET['preview_token'] : '';
+        if ($token === '') {
+            return false;
+        }
+
+        if (!Auth::user()) {
+            return false;
+        }
+
+        return isset($_SESSION['preview_token']) && hash_equals($_SESSION['preview_token'], $token);
     }
 }

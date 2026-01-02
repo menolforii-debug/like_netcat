@@ -5,9 +5,6 @@
         <div class="card-body">
             <div class="d-flex align-items-center justify-content-between mb-3">
                 <h2 class="h5 mb-0"><?= htmlspecialchars($infoblock['name'], ENT_QUOTES, 'UTF-8') ?></h2>
-                <?php if (!empty($editMode)) : ?>
-                    <span class="badge bg-secondary">Edit</span>
-                <?php endif; ?>
             </div>
 
             <?php if (empty($items)) : ?>
@@ -27,17 +24,7 @@
                                         <div class="text-muted mt-2"><?= htmlspecialchars($data['text'], ENT_QUOTES, 'UTF-8') ?></div>
                                     <?php endif; ?>
                                 </div>
-                                <div class="text-end">
-                                    <?php if (!empty($editMode) && ($item['status'] ?? '') === 'draft') : ?>
-                                        <span class="badge bg-warning text-dark">Draft</span>
-                                    <?php endif; ?>
-                                </div>
                             </div>
-                            <?php if (!empty($editMode) && !empty($item['controls']['delete_url'])) : ?>
-                                <div class="mt-3">
-                                    <a class="btn btn-sm btn-outline-danger" href="<?= htmlspecialchars($item['controls']['delete_url'], ENT_QUOTES, 'UTF-8') ?>">Удалить</a>
-                                </div>
-                            <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
                 </div>

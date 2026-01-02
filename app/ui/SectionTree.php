@@ -34,6 +34,7 @@ final class SectionTree
         if (empty($nodes)) {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
             return '<div class="text-muted">Разделов нет.</div>';
 =======
             return '<div class="text-muted">No sections.</div>';
@@ -41,6 +42,9 @@ final class SectionTree
 =======
             return '<div class="text-muted">No sections.</div>';
 >>>>>>> origin/codex/add-netcat-style-control-layer-r8uvzo
+=======
+            return '<div class="text-muted">No sections.</div>';
+>>>>>>> origin/codex/add-netcat-style-control-layer-k9g8k9
         }
 
         $html = '<ul class="list-group list-group-flush">';
@@ -51,10 +55,13 @@ final class SectionTree
             $html .= '<li class="list-group-item">';
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
             $html .= '<a class="text-decoration-none' . ($isActive ? ' fw-semibold' : '') . '" href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">' . $title . '</a>';
 =======
 =======
 >>>>>>> origin/codex/add-netcat-style-control-layer-r8uvzo
+=======
+>>>>>>> origin/codex/add-netcat-style-control-layer-k9g8k9
             $html .= '<div class="d-flex align-items-center gap-2">';
             $html .= '<a class="text-decoration-none flex-grow-1' . ($isActive ? ' fw-semibold' : '') . '" href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">' . $title . '</a>';
             $html .= '<form method="post" action="/admin.php?action=section_create" class="m-0">';
@@ -67,9 +74,12 @@ final class SectionTree
             $html .= '</form>';
             $html .= '</div>';
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> origin/codex/add-netcat-style-control-layer-p4203p
 =======
 >>>>>>> origin/codex/add-netcat-style-control-layer-r8uvzo
+=======
+>>>>>>> origin/codex/add-netcat-style-control-layer-k9g8k9
             if (!empty($node['children'])) {
                 $html .= '<div class="ms-3 mt-2">' . self::renderTree($node['children'], $currentId) . '</div>';
             }
