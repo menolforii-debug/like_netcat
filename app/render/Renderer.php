@@ -39,14 +39,11 @@ final class Renderer
         $componentRepo = new ComponentRepo();
         $objectRepo = new ObjectRepo(core()->events());
 
-        $infoblocks = $infoblockRepo->listForSection((int) $section['id']);
-        $enabledInfoblocks = array_values(array_filter($infoblocks, static function (array $infoblock): bool {
-            return !empty($infoblock['is_enabled']);
-        }));
+        $infoblocks = $infoblockRepo->listForSection((int) $section['id'], true);
 
         $infoblocksHtml = '';
         $infoblockViews = [];
-        foreach ($enabledInfoblocks as $infoblock) {
+        foreach ($infoblocks as $infoblock) {
             $component = $componentRepo->findById((int) $infoblock['component_id']);
             if ($component === null) {
                 continue;
@@ -56,7 +53,7 @@ final class Renderer
             $objects = $objectRepo->listForInfoblock((int) $infoblock['id']);
             $items = $this->decodeItems($objects);
 
-            $infoblocksHtml .= $this->renderInfoblock($section, $infoblock, $component, $items, false);
+            $infoblocksHtml .= $this->renderInfoblockWithWrappers($section, $site, $infoblock, $component, $items, false);
             $infoblockViews[] = [
                 'infoblock' => $infoblock,
                 'component' => $component,
@@ -68,7 +65,7 @@ final class Renderer
             'infoblocks_html' => $infoblocksHtml,
         ];
 
-        $seo = $this->resolveSeo($section, $enabledInfoblocks, $infoblockViews);
+        $seo = $this->resolveSeo($section, $infoblocks, $infoblockViews);
         $this->renderDocumentStart($seo);
         $this->renderSection($section, $children, $core, false);
         $this->renderDocumentEnd();
@@ -106,7 +103,35 @@ final class Renderer
         require $templatePath;
     }
 
-    private function renderInfoblock(array $section, array $infoblock, array $component, array $items, $editMode): string
+    private function renderInfoblockWithWrappers(array $section, array $site, array $infoblock, array $component, array $items, $editMode): string
+    {
+        $extra = $this->decodeExtra($infoblock);
+        $beforeImage = isset($extra['before_image']) ? trim((string) $extra['before_image']) : '';
+        $afterImage = isset($extra['after_image']) ? trim((string) $extra['after_image']) : '';
+        $beforeHtml = isset($extra['before_html']) ? (string) $extra['before_html'] : '';
+        $afterHtml = isset($extra['after_html']) ? (string) $extra['after_html'] : '';
+
+        $html = '';
+        if ($beforeImage !== '') {
+            $html .= '<img src="' . htmlspecialchars($beforeImage, ENT_QUOTES, 'UTF-8') . '">';
+        }
+        if ($beforeHtml !== '') {
+            $html .= $beforeHtml;
+        }
+
+        $html .= $this->renderInfoblock($section, $site, $infoblock, $component, $items, $editMode);
+
+        if ($afterHtml !== '') {
+            $html .= $afterHtml;
+        }
+        if ($afterImage !== '') {
+            $html .= '<img src="' . htmlspecialchars($afterImage, ENT_QUOTES, 'UTF-8') . '">';
+        }
+
+        return $html;
+    }
+
+    private function renderInfoblock(array $section, array $site, array $infoblock, array $component, array $items, $editMode): string
     {
         $core = [];
 
@@ -161,17 +186,9 @@ final class Renderer
         return $items;
     }
 
-    private function resolveSeo(array $section, array $enabledInfoblocks, array $infoblockViews): array
+    private function resolveSeo(array $section, array $infoblocks, array $infoblockViews): array
     {
-        $sectionExtra = [];
-        if (isset($section['extra']) && is_array($section['extra'])) {
-            $sectionExtra = $section['extra'];
-        } elseif (isset($section['extra_json'])) {
-            $decoded = json_decode((string) $section['extra_json'], true);
-            if (is_array($decoded)) {
-                $sectionExtra = $decoded;
-            }
-        }
+        $sectionExtra = $this->decodeExtra($section);
 
         $objectData = [];
         foreach ($infoblockViews as $view) {
@@ -191,8 +208,8 @@ final class Renderer
         if ($title === '') {
             if (!empty($objectData['title'])) {
                 $title = (string) $objectData['title'];
-            } elseif (count($enabledInfoblocks) === 1) {
-                $only = $enabledInfoblocks[0];
+            } elseif (count($infoblocks) === 1) {
+                $only = $infoblocks[0];
                 $title = (string) ($section['title'] ?? '') . ' — ' . (string) ($only['name'] ?? '');
             } else {
                 $title = (string) ($section['title'] ?? '');
@@ -288,5 +305,19 @@ final class Renderer
         }
 
         return $current;
+    }
+
+    private function decodeExtra(array $row): array
+    {
+        if (isset($row['extra']) && is_array($row['extra'])) {
+            return $row['extra'];
+        }
+
+        $decoded = json_decode((string) ($row['extra_json'] ?? '{}'), true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        return $decoded;
     }
 }

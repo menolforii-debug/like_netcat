@@ -2,12 +2,17 @@
 
 final class InfoblockRepo
 {
-    public function listForSection($sectionId): array
+    public function listForSection($sectionId, bool $onlyEnabled = false): array
     {
+        $where = 'section_id = :section_id';
+        if ($onlyEnabled) {
+            $where .= ' AND is_enabled = 1';
+        }
+
         return DB::fetchAll(
             'SELECT id, site_id, section_id, component_id, name, view_template, settings_json, extra_json, sort, is_enabled
             FROM infoblocks
-            WHERE section_id = :section_id
+            WHERE ' . $where . '
             ORDER BY sort ASC, id ASC',
             ['section_id' => $sectionId]
         );

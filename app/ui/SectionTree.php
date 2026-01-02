@@ -33,10 +33,14 @@ final class SectionTree
     {
         if (empty($nodes)) {
 <<<<<<< HEAD
+<<<<<<< HEAD
             return '<div class="text-muted">Разделов нет.</div>';
 =======
             return '<div class="text-muted">No sections.</div>';
 >>>>>>> origin/codex/add-netcat-style-control-layer-p4203p
+=======
+            return '<div class="text-muted">No sections.</div>';
+>>>>>>> origin/codex/add-netcat-style-control-layer-r8uvzo
         }
 
         $html = '<ul class="list-group list-group-flush">';
@@ -46,8 +50,11 @@ final class SectionTree
             $link = '/admin.php?section_id=' . (int) $node['id'];
             $html .= '<li class="list-group-item">';
 <<<<<<< HEAD
+<<<<<<< HEAD
             $html .= '<a class="text-decoration-none' . ($isActive ? ' fw-semibold' : '') . '" href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">' . $title . '</a>';
 =======
+=======
+>>>>>>> origin/codex/add-netcat-style-control-layer-r8uvzo
             $html .= '<div class="d-flex align-items-center gap-2">';
             $html .= '<a class="text-decoration-none flex-grow-1' . ($isActive ? ' fw-semibold' : '') . '" href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">' . $title . '</a>';
             $html .= '<form method="post" action="/admin.php?action=section_create" class="m-0">';
@@ -59,7 +66,10 @@ final class SectionTree
             $html .= '<button class="btn btn-sm btn-outline-danger" type="submit">🗑</button>';
             $html .= '</form>';
             $html .= '</div>';
+<<<<<<< HEAD
 >>>>>>> origin/codex/add-netcat-style-control-layer-p4203p
+=======
+>>>>>>> origin/codex/add-netcat-style-control-layer-r8uvzo
             if (!empty($node['children'])) {
                 $html .= '<div class="ms-3 mt-2">' . self::renderTree($node['children'], $currentId) . '</div>';
             }
