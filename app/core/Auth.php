@@ -25,10 +25,7 @@ final class Auth
         }
 
         session_regenerate_id(true);
-        $_SESSION['user'] = [
-            'id' => $user['id'],
-            'login' => $user['login'],
-        ];
+        $_SESSION['user_id'] = (int) $user['id'];
 
         return true;
     }
@@ -40,12 +37,33 @@ final class Auth
 
     public static function logout(): void
     {
-        unset($_SESSION['user']);
+        unset($_SESSION['user_id']);
     }
 
     public static function user(): ?array
     {
-        return $_SESSION['user'] ?? null;
+        $userId = $_SESSION['user_id'] ?? null;
+        if ($userId === null) {
+            return null;
+        }
+
+        if (!self::usersTableExists()) {
+            return null;
+        }
+
+        $user = DB::fetchOne(
+            'SELECT * FROM users WHERE id = :id LIMIT 1',
+            ['id' => (int) $userId]
+        );
+        if ($user === null) {
+            return null;
+        }
+
+        if (!isset($user['role']) || $user['role'] === '') {
+            $user['role'] = 'admin';
+        }
+
+        return $user;
     }
 
     public static function canEdit(): bool

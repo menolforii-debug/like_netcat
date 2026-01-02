@@ -326,31 +326,31 @@ if ($action === 'logs') {
 
     $logs = AdminLog::list($filters, $limit);
 
-    AdminLayout::renderHeader('Logs');
+    AdminLayout::renderHeader('Логи');
     echo '<div class="d-flex align-items-center justify-content-between mb-3">';
-    echo '<h1 class="h4 mb-0">Admin logs</h1>';
-    echo '<span class="badge bg-secondary">Latest first</span>';
+    echo '<h1 class="h4 mb-0">Логи администратора</h1>';
+    echo '<span class="badge bg-secondary">Сначала новые</span>';
     echo '</div>';
     echo '<div class="card shadow-sm mb-4">';
     echo '<div class="card-body">';
     echo '<form class="row g-3" method="get" action="/admin.php">';
     echo '<input type="hidden" name="action" value="logs">';
-    echo '<div class="col-md-3"><label class="form-label">Entity type</label><input class="form-control" type="text" name="entity_type" value="' . htmlspecialchars($filters['entity_type'], ENT_QUOTES, 'UTF-8') . '"></div>';
-    echo '<div class="col-md-3"><label class="form-label">Action</label><input class="form-control" type="text" name="action_filter" value="' . htmlspecialchars($filters['action'], ENT_QUOTES, 'UTF-8') . '"></div>';
-    echo '<div class="col-md-2"><label class="form-label">User ID</label><input class="form-control" type="text" name="user_id" value="' . htmlspecialchars($filters['user_id'], ENT_QUOTES, 'UTF-8') . '"></div>';
-    echo '<div class="col-md-2"><label class="form-label">Limit</label><input class="form-control" type="number" name="limit" value="' . (int) $limit . '"></div>';
-    echo '<div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary w-100" type="submit">Filter</button></div>';
+    echo '<div class="col-md-3"><label class="form-label">Тип сущности</label><input class="form-control" type="text" name="entity_type" value="' . htmlspecialchars($filters['entity_type'], ENT_QUOTES, 'UTF-8') . '"></div>';
+    echo '<div class="col-md-3"><label class="form-label">Действие</label><input class="form-control" type="text" name="action_filter" value="' . htmlspecialchars($filters['action'], ENT_QUOTES, 'UTF-8') . '"></div>';
+    echo '<div class="col-md-2"><label class="form-label">ID пользователя</label><input class="form-control" type="text" name="user_id" value="' . htmlspecialchars($filters['user_id'], ENT_QUOTES, 'UTF-8') . '"></div>';
+    echo '<div class="col-md-2"><label class="form-label">Лимит</label><input class="form-control" type="number" name="limit" value="' . (int) $limit . '"></div>';
+    echo '<div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary w-100" type="submit">Фильтр</button></div>';
     echo '</form>';
     echo '</div>';
     echo '</div>';
 
     if (empty($logs)) {
-        echo '<div class="alert alert-light border">No log entries found.</div>';
+        echo '<div class="alert alert-light border">Записей лога нет.</div>';
     } else {
         echo '<div class="card shadow-sm">';
         echo '<div class="table-responsive">';
         echo '<table class="table table-sm table-striped align-middle mb-0">';
-        echo '<thead><tr><th>Date/Time (UTC)</th><th>User</th><th>Action</th><th>Entity</th><th>Entity ID</th><th>IP</th></tr></thead><tbody>';
+        echo '<thead><tr><th>Дата/время (UTC)</th><th>Пользователь</th><th>Действие</th><th>Сущность</th><th>ID сущности</th><th>IP</th></tr></thead><tbody>';
         foreach ($logs as $log) {
             echo '<tr>';
             echo '<td>' . htmlspecialchars((string) $log['created_at'], ENT_QUOTES, 'UTF-8') . '</td>';
@@ -371,14 +371,30 @@ if ($action === 'logs') {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'site_create') {
-        $title = isset($_POST['title']) ? trim((string) $_POST['title']) : 'New Site';
+        $title = isset($_POST['title']) ? trim((string) $_POST['title']) : 'Новый сайт';
         $siteId = $sectionRepo->createSite($title);
+        // Системные корневые разделы для нового сайта (создаем без дублей).
+        $rootIndex = DB::fetchOne(
+            'SELECT 1 FROM sections WHERE site_id = :site_id AND parent_id IS NULL AND english_name = :english_name LIMIT 1',
+            ['site_id' => $siteId, 'english_name' => 'index']
+        );
+        if ($rootIndex === null) {
+            $sectionRepo->createSection(null, $siteId, 'index', 'Главная');
+        }
+
+        $rootNotFound = DB::fetchOne(
+            'SELECT 1 FROM sections WHERE site_id = :site_id AND parent_id IS NULL AND english_name = :english_name LIMIT 1',
+            ['site_id' => $siteId, 'english_name' => '404']
+        );
+        if ($rootNotFound === null) {
+            $sectionRepo->createSection(null, $siteId, '404', '404');
+        }
         if ($user) {
             AdminLog::log($user['id'], 'site_create', 'site', $siteId, [
                 'title' => $title,
             ]);
         }
-        redirectTo(buildAdminUrl(['section_id' => $siteId, 'notice' => 'Site created']));
+        redirectTo(buildAdminUrl(['section_id' => $siteId, 'notice' => 'Сайт создан']));
     }
 
     if ($action === 'section_create') {
@@ -386,10 +402,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($parentId > 0) {
             $parent = $sectionRepo->findById($parentId);
             if ($parent === null) {
-                redirectTo(buildAdminUrl(['error' => 'Parent not found']));
+                redirectTo(buildAdminUrl(['error' => 'Родитель не найден']));
             }
 
-            $title = 'New section';
+            $title = 'Новый раздел';
             $englishName = 'section-' . date('YmdHis');
             $sectionId = $sectionRepo->createSection($parentId, (int) $parent['site_id'], $englishName, $title);
             if ($user) {
@@ -398,10 +414,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'parent_id' => $parentId,
                 ]);
             }
-            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'notice' => 'Section created']));
+            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'notice' => 'Раздел создан']));
         }
 
-        redirectTo(buildAdminUrl(['error' => 'Parent not found']));
+        redirectTo(buildAdminUrl(['error' => 'Родитель не найден']));
     }
 
     if ($action === 'section_delete') {
@@ -409,7 +425,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($id > 0) {
             $section = $sectionRepo->findById($id);
             if ($section === null) {
-                redirectTo(buildAdminUrl(['error' => 'Node not found']));
+                redirectTo(buildAdminUrl(['error' => 'Узел не найден']));
             }
 
             try {
@@ -422,20 +438,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'parent_id' => $section['parent_id'],
                     ]);
                 }
-                redirectTo(buildAdminUrl(['notice' => 'Node deleted']));
+                redirectTo(buildAdminUrl(['notice' => 'Узел удален']));
             } catch (Throwable $e) {
                 redirectTo(buildAdminUrl(['section_id' => $selectedId, 'error' => $e->getMessage()]));
             }
         }
 
-        redirectTo(buildAdminUrl(['error' => 'Node not found']));
+        redirectTo(buildAdminUrl(['error' => 'Узел не найден']));
     }
 
     if ($action === 'site_update') {
         $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
         $site = $sectionRepo->findById($id);
         if ($site === null || $site['parent_id'] !== null) {
-            redirectTo(buildAdminUrl(['error' => 'Site not found']));
+            redirectTo(buildAdminUrl(['error' => 'Сайт не найден']));
         }
 
         $before = [
@@ -474,14 +490,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
         }
 
-        redirectTo(buildAdminUrl(['section_id' => $id, 'notice' => 'Site updated']));
+        redirectTo(buildAdminUrl(['section_id' => $id, 'notice' => 'Сайт обновлен']));
     }
 
     if ($action === 'section_update') {
         $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
         $section = $sectionRepo->findById($id);
         if ($section === null || $section['parent_id'] === null) {
-            redirectTo(buildAdminUrl(['error' => 'Section not found']));
+            redirectTo(buildAdminUrl(['error' => 'Раздел не найден']));
         }
 
         $title = isset($_POST['title']) ? trim((string) $_POST['title']) : '';
@@ -491,26 +507,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $layout = isset($_POST['layout']) ? trim((string) $_POST['layout']) : '';
 
         if ($title === '' || $englishName === '') {
-            redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Title and english_name are required']));
+            redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Название и english_name обязательны']));
         }
 
         if (!englishNameIsValid($englishName)) {
-            redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'English name must be URL-safe']));
+            redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'English name должен быть URL-безопасным']));
         }
 
         $siteId = (int) $section['site_id'];
         if ($parentId <= 0) {
-            redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Parent is required']));
+            redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Нужен родительский раздел']));
         }
 
         $parent = $sectionRepo->findById($parentId);
         if ($parent === null || (int) $parent['site_id'] !== $siteId) {
-            redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Parent must belong to the same site']));
+            redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Родитель должен относиться к тому же сайту']));
         }
 
-        $existing = $sectionRepo->findByEnglishName($siteId, $englishName, $id);
-        if ($existing !== null) {
-            redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'English name must be unique within site']));
+        if ($sectionRepo->existsSiblingEnglishName($siteId, $parentId, $englishName, $id)) {
+            redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'English name должен быть уникальным в пределах родительского раздела']));
         }
 
         $before = [
@@ -549,14 +564,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
         }
 
-        redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'notice' => 'Section updated']));
+        redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'notice' => 'Раздел обновлен']));
     }
 
     if ($action === 'seo_update') {
         $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
         $section = $sectionRepo->findById($id);
         if ($section === null || $section['parent_id'] === null) {
-            redirectTo(buildAdminUrl(['error' => 'Section not found']));
+            redirectTo(buildAdminUrl(['error' => 'Раздел не найден']));
         }
 
         $before = decodeExtra($section);
@@ -582,7 +597,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
         }
 
-        redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'seo', 'notice' => 'SEO updated']));
+        redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'seo', 'notice' => 'SEO обновлено']));
     }
 
     if ($action === 'infoblock_create') {
@@ -595,12 +610,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $section = $sectionRepo->findById($sectionId);
         if ($section === null || $componentId === 0 || $name === '') {
-            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'error' => 'Missing required fields']));
+            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'error' => 'Заполните обязательные поля']));
         }
 
         $component = $componentRepo->findById($componentId);
         if ($component === null) {
-            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'error' => 'Component not found']));
+            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'error' => 'Компонент не найден']));
         }
 
         if ($viewTemplate === '') {
@@ -631,7 +646,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
         }
 
-        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'notice' => 'Infoblock created']));
+        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'notice' => 'Инфоблок создан']));
     }
 
     if ($action === 'infoblock_update') {
@@ -648,11 +663,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $afterImage = isset($_POST['after_image']) ? (string) $_POST['after_image'] : '';
 
         if ($id === 0 || $name === '') {
-            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'error' => 'Missing required fields']));
+            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'error' => 'Заполните обязательные поля']));
         }
 
         try {
-            $settings = parseJsonField($settingsJson, 'settings_json must be valid JSON');
+            $settings = parseJsonField($settingsJson, 'settings_json должен быть корректным JSON');
         } catch (Throwable $e) {
             redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'error' => $e->getMessage()]));
         }
@@ -684,7 +699,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
         }
 
-        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'notice' => 'Infoblock updated']));
+        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'notice' => 'Инфоблок обновлен']));
     }
 
     if ($action === 'infoblock_delete') {
@@ -692,7 +707,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sectionId = isset($_POST['section_id']) ? (int) $_POST['section_id'] : 0;
         $name = isset($_POST['name']) ? (string) $_POST['name'] : '';
         if ($id === 0) {
-            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'error' => 'Infoblock not found']));
+            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'error' => 'Инфоблок не найден']));
         }
 
         $infoblockRepo->delete($id);
@@ -704,7 +719,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
         }
 
-        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'notice' => 'Infoblock deleted']));
+        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'notice' => 'Инфоблок удален']));
     }
 
     if ($action === 'object_create') {
@@ -722,12 +737,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($infoblock === null) {
-            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Infoblock not found']));
+            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Инфоблок не найден']));
         }
 
         $component = $componentRepo->findById((int) $infoblock['component_id']);
         if ($component === null) {
-            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Component not found']));
+            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Компонент не найден']));
         }
 
         $fields = parseComponentFields($component);
@@ -755,7 +770,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
         }
 
-        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'notice' => 'Object created']));
+        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'notice' => 'Объект создан']));
     }
 
     if ($action === 'object_update') {
@@ -765,12 +780,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $object = $objectRepo->findById($id);
         if ($object === null) {
-            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Object not found']));
+            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Объект не найден']));
         }
 
         $component = $componentRepo->findById((int) $object['component_id']);
         if ($component === null) {
-            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Component not found']));
+            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Компонент не найден']));
         }
 
         $fields = parseComponentFields($component);
@@ -794,7 +809,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
         }
 
-        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'notice' => 'Object updated']));
+        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'notice' => 'Объект обновлен']));
     }
 
     if ($action === 'object_publish') {
@@ -806,7 +821,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 AdminLog::log($user['id'], 'object_publish', 'object', $id, []);
             }
         }
-        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'notice' => 'Object published']));
+        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'notice' => 'Объект опубликован']));
     }
 
     if ($action === 'object_unpublish') {
@@ -818,7 +833,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 AdminLog::log($user['id'], 'object_unpublish', 'object', $id, []);
             }
         }
-        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'notice' => 'Object unpublished']));
+        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'notice' => 'Объект снят с публикации']));
     }
 
     if ($action === 'object_delete') {
@@ -830,7 +845,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 AdminLog::log($user['id'], 'object_delete', 'object', $id, []);
             }
         }
-        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'notice' => 'Object deleted']));
+        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'notice' => 'Объект удален']));
     }
 }
 
@@ -854,12 +869,12 @@ if ($action === 'object_form') {
     }
 
     if ($infoblock === null) {
-        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Infoblock not found']));
+        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Инфоблок не найден']));
     }
 
     $component = $componentRepo->findById((int) $infoblock['component_id']);
     if ($component === null) {
-        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Component not found']));
+        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Компонент не найден']));
     }
 
     $fields = parseComponentFields($component);
@@ -871,13 +886,13 @@ if ($action === 'object_form') {
         }
     }
 
-    AdminLayout::renderHeader('Object');
+    AdminLayout::renderHeader('Объект');
     echo '<div class="container" style="max-width: 900px">';
     echo '<div class="card shadow-sm">';
     echo '<div class="card-body">';
     echo '<div class="d-flex justify-content-between align-items-center mb-3">';
-    echo '<h1 class="h5 mb-0">' . ($object ? 'Edit object' : 'New object') . '</h1>';
-    echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']), ENT_QUOTES, 'UTF-8') . '">Back</a>';
+    echo '<h1 class="h5 mb-0">' . ($object ? 'Редактировать объект' : 'Новый объект') . '</h1>';
+    echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']), ENT_QUOTES, 'UTF-8') . '">Назад</a>';
     echo '</div>';
     echo '<form method="post" action="/admin.php?action=' . ($object ? 'object_update' : 'object_create') . '">';
     if ($object) {
@@ -890,8 +905,8 @@ if ($action === 'object_form') {
         echo renderFieldInput($field, $data);
     }
     echo '<div class="d-flex gap-2">';
-    echo '<button class="btn btn-primary" type="submit" name="save_as" value="draft">Save draft</button>';
-    echo '<button class="btn btn-success" type="submit" name="save_as" value="publish">Publish</button>';
+    echo '<button class="btn btn-primary" type="submit" name="save_as" value="draft">Сохранить черновик</button>';
+    echo '<button class="btn btn-success" type="submit" name="save_as" value="publish">Опубликовать</button>';
     echo '</div>';
     echo '</form>';
     echo '</div></div></div>';
@@ -911,7 +926,7 @@ if ($selectedId !== null) {
     $selected = $sectionRepo->findById($selectedId);
 }
 
-AdminLayout::renderHeader('Admin');
+AdminLayout::renderHeader('Админка');
 renderAlert($notice, 'success');
 renderAlert($errorMessage, 'error');
 
@@ -919,10 +934,10 @@ echo '<div class="d-flex gap-4">';
 
 echo '<div style="width:260px;">';
 echo '<div class="d-flex justify-content-between align-items-center mb-2">';
-echo '<h2 class="h6 mb-0">Sites & Sections</h2>';
+echo '<h2 class="h6 mb-0">Сайты и разделы</h2>';
 echo '</div>';
 echo '<form method="post" action="/admin.php?action=site_create" class="mb-3">';
-echo '<button class="btn btn-sm btn-outline-primary w-100" type="submit">+ Add site</button>';
+echo '<button class="btn btn-sm btn-outline-primary w-100" type="submit">+ Добавить сайт</button>';
 echo '</form>';
 echo SectionTree::render($sections, $selectedId);
 echo '</div>';
@@ -931,7 +946,7 @@ echo '<div class="flex-grow-1">';
 if ($selected === null) {
     echo '<div class="card shadow-sm">';
     echo '<div class="card-body">';
-    echo '<h1 class="h5">Select a site or section from the left tree.</h1>';
+    echo '<h1 class="h5">Выберите сайт или раздел в дереве.</h1>';
     echo '</div></div>';
 } else {
     $isSite = $selected['parent_id'] === null;
@@ -945,28 +960,28 @@ if ($selected === null) {
         $offlineHtml = isset($extra['site_offline_html']) ? (string) $extra['site_offline_html'] : '';
 
         echo '<ul class="nav nav-tabs mb-3">';
-        echo '<li class="nav-item"><a class="nav-link active" href="#">Settings</a></li>';
+        echo '<li class="nav-item"><a class="nav-link active" href="#">Настройки</a></li>';
         echo '</ul>';
-        echo '<h1 class="h5">Site settings</h1>';
+        echo '<h1 class="h5">Настройки сайта</h1>';
         echo '<form method="post" action="/admin.php?action=site_update">';
         echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
-        echo '<div class="mb-3"><label class="form-label">Site title</label><input class="form-control" type="text" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '"></div>';
-        echo '<div class="mb-3"><label class="form-label">Main domain</label><input class="form-control" type="text" name="site_domain" value="' . htmlspecialchars((string) ($extra['site_domain'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
-        echo '<div class="mb-3"><label class="form-label">Domain mirrors (one per line)</label><textarea class="form-control" name="site_mirrors" rows="3">' . htmlspecialchars($mirrorsText, ENT_QUOTES, 'UTF-8') . '</textarea></div>';
+        echo '<div class="mb-3"><label class="form-label">Название сайта</label><input class="form-control" type="text" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '"></div>';
+        echo '<div class="mb-3"><label class="form-label">Основной домен</label><input class="form-control" type="text" name="site_domain" value="' . htmlspecialchars((string) ($extra['site_domain'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
+        echo '<div class="mb-3"><label class="form-label">Зеркала домена (по одному в строке)</label><textarea class="form-control" name="site_mirrors" rows="3">' . htmlspecialchars($mirrorsText, ENT_QUOTES, 'UTF-8') . '</textarea></div>';
         $checked = $enabled ? ' checked' : '';
         echo '<div class="mb-3 form-check">';
         echo '<input class="form-check-input" type="checkbox" name="site_enabled" value="1"' . $checked . '>';
-        echo '<label class="form-check-label">Site enabled</label>';
+        echo '<label class="form-check-label">Сайт включен</label>';
         echo '</div>';
-        echo '<div class="mb-3"><label class="form-label">Offline HTML</label><textarea class="form-control" name="site_offline_html" rows="4">' . htmlspecialchars($offlineHtml, ENT_QUOTES, 'UTF-8') . '</textarea></div>';
-        echo '<button class="btn btn-primary" type="submit">Save</button>';
+        echo '<div class="mb-3"><label class="form-label">HTML для отключенного сайта</label><textarea class="form-control" name="site_offline_html" rows="4">' . htmlspecialchars($offlineHtml, ENT_QUOTES, 'UTF-8') . '</textarea></div>';
+        echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
         echo '</form>';
     } else {
         $tabs = [
-            'section' => 'Section',
+            'section' => 'Раздел',
             'seo' => 'SEO',
-            'infoblocks' => 'Infoblocks',
-            'content' => 'Content',
+            'infoblocks' => 'Инфоблоки',
+            'content' => 'Контент',
         ];
         echo '<ul class="nav nav-tabs mb-3">';
         foreach ($tabs as $key => $label) {
@@ -984,13 +999,13 @@ if ($selected === null) {
                 $options = array_merge($options, collectSections($sectionRepo, $siteId));
             }
 
-            echo '<h1 class="h5">Section settings</h1>';
+            echo '<h1 class="h5">Настройки раздела</h1>';
             echo '<form method="post" action="/admin.php?action=section_update">';
             echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
-            echo '<div class="mb-3"><label class="form-label">Title</label><input class="form-control" type="text" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '" required></div>';
-            echo '<div class="mb-3"><label class="form-label">English name</label><input class="form-control" type="text" name="english_name" value="' . htmlspecialchars((string) ($selected['english_name'] ?? ''), ENT_QUOTES, 'UTF-8') . '" required></div>';
-            echo '<div class="mb-3"><label class="form-label">Parent section</label><select class="form-select" name="parent_id" required>';
-            echo '<option value="">Select parent</option>';
+            echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" type="text" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '" required></div>';
+            echo '<div class="mb-3"><label class="form-label">English name (латиница)</label><input class="form-control" type="text" name="english_name" value="' . htmlspecialchars((string) ($selected['english_name'] ?? ''), ENT_QUOTES, 'UTF-8') . '" required></div>';
+            echo '<div class="mb-3"><label class="form-label">Родительский раздел</label><select class="form-select" name="parent_id" required>';
+            echo '<option value="">Выберите родителя</option>';
             foreach ($options as $option) {
                 if ((int) $option['id'] === (int) $selected['id']) {
                     continue;
@@ -1007,24 +1022,24 @@ if ($selected === null) {
             if (!in_array($currentLayout, ['default', 'home'], true)) {
                 $currentLayout = 'default';
             }
-            echo '<div class="mb-3"><label class="form-label">Sort</label><input class="form-control" type="number" name="sort" value="' . htmlspecialchars((string) ($selected['sort'] ?? 0), ENT_QUOTES, 'UTF-8') . '"></div>';
-            echo '<div class="mb-3"><label class="form-label">Layout</label><select class="form-select" name="layout">';
-            foreach (['default' => 'Default', 'home' => 'Home'] as $value => $label) {
+            echo '<div class="mb-3"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="' . htmlspecialchars((string) ($selected['sort'] ?? 0), ENT_QUOTES, 'UTF-8') . '"></div>';
+            echo '<div class="mb-3"><label class="form-label">Шаблон</label><select class="form-select" name="layout">';
+            foreach (['default' => 'По умолчанию', 'home' => 'Главная'] as $value => $label) {
                 $selectedAttr = $currentLayout === $value ? ' selected' : '';
                 echo '<option value="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '"' . $selectedAttr . '>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</option>';
             }
             echo '</select></div>';
-            echo '<button class="btn btn-primary" type="submit">Save</button>';
+            echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
             echo '</form>';
         } elseif ($tab === 'seo') {
             $extra = decodeExtra($selected);
             echo '<h1 class="h5">SEO</h1>';
             echo '<form method="post" action="/admin.php?action=seo_update">';
             echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
-            echo '<div class="mb-3"><label class="form-label">SEO title</label><input class="form-control" type="text" name="seo_title" value="' . htmlspecialchars((string) ($extra['seo_title'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
-            echo '<div class="mb-3"><label class="form-label">SEO description</label><textarea class="form-control" name="seo_description" rows="3">' . htmlspecialchars((string) ($extra['seo_description'] ?? ''), ENT_QUOTES, 'UTF-8') . '</textarea></div>';
-            echo '<div class="mb-3"><label class="form-label">SEO keywords</label><input class="form-control" type="text" name="seo_keywords" value="' . htmlspecialchars((string) ($extra['seo_keywords'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
-            echo '<button class="btn btn-primary" type="submit">Save</button>';
+            echo '<div class="mb-3"><label class="form-label">SEO заголовок</label><input class="form-control" type="text" name="seo_title" value="' . htmlspecialchars((string) ($extra['seo_title'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
+            echo '<div class="mb-3"><label class="form-label">SEO описание</label><textarea class="form-control" name="seo_description" rows="3">' . htmlspecialchars((string) ($extra['seo_description'] ?? ''), ENT_QUOTES, 'UTF-8') . '</textarea></div>';
+            echo '<div class="mb-3"><label class="form-label">SEO ключевые слова</label><input class="form-control" type="text" name="seo_keywords" value="' . htmlspecialchars((string) ($extra['seo_keywords'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
+            echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
             echo '</form>';
         } elseif ($tab === 'infoblocks') {
             $infoblocks = $infoblockRepo->listForSection((int) $selected['id']);
@@ -1042,29 +1057,29 @@ if ($selected === null) {
             }
             $defaultSort = $maxSort + 10;
 
-            echo '<h2 class="h6">Infoblocks</h2>';
+            echo '<h2 class="h6">Инфоблоки</h2>';
             if (empty($infoblocks)) {
-                echo '<div class="alert alert-light border">No infoblocks yet.</div>';
+                echo '<div class="alert alert-light border">Инфоблоков пока нет.</div>';
             } else {
                 echo '<div class="table-responsive">';
                 echo '<table class="table table-sm align-middle">';
-                echo '<thead><tr><th>Sort</th><th>Name</th><th>Component</th><th>View</th><th>Enabled</th><th>Actions</th></tr></thead><tbody>';
+                echo '<thead><tr><th>Сортировка</th><th>Название</th><th>Компонент</th><th>Шаблон</th><th>Включен</th><th>Действия</th></tr></thead><tbody>';
                 foreach ($infoblocks as $infoblock) {
                     $component = $componentMap[(int) $infoblock['component_id']] ?? null;
-                    $componentName = $component ? (string) $component['name'] : 'Unknown';
+                    $componentName = $component ? (string) $component['name'] : 'Неизвестно';
                     echo '<tr>';
                     echo '<td>' . (int) $infoblock['sort'] . '</td>';
                     echo '<td>' . htmlspecialchars((string) $infoblock['name'], ENT_QUOTES, 'UTF-8') . '</td>';
                     echo '<td>' . htmlspecialchars($componentName, ENT_QUOTES, 'UTF-8') . '</td>';
                     echo '<td>' . htmlspecialchars((string) $infoblock['view_template'], ENT_QUOTES, 'UTF-8') . '</td>';
-                    echo '<td>' . (!empty($infoblock['is_enabled']) ? 'Yes' : 'No') . '</td>';
+                    echo '<td>' . (!empty($infoblock['is_enabled']) ? 'Да' : 'Нет') . '</td>';
                     echo '<td class="d-flex gap-2">';
-                    echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $selectedId, 'tab' => 'infoblocks', 'edit_infoblock_id' => (int) $infoblock['id']]), ENT_QUOTES, 'UTF-8') . '">Edit</a>';
-                    echo '<form method="post" action="/admin.php?action=infoblock_delete" onsubmit="return confirm(\"Delete infoblock?\")">';
+                    echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $selectedId, 'tab' => 'infoblocks', 'edit_infoblock_id' => (int) $infoblock['id']]), ENT_QUOTES, 'UTF-8') . '">Редактировать</a>';
+                    echo '<form method="post" action="/admin.php?action=infoblock_delete" onsubmit="return confirm(\"Удалить инфоблок?\")">';
                     echo '<input type="hidden" name="id" value="' . (int) $infoblock['id'] . '">';
                     echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
                     echo '<input type="hidden" name="name" value="' . htmlspecialchars((string) $infoblock['name'], ENT_QUOTES, 'UTF-8') . '">';
-                    echo '<button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>';
+                    echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>';
                     echo '</form>';
                     echo '</td>';
                     echo '</tr>';
@@ -1087,59 +1102,59 @@ if ($selected === null) {
                 $component = $componentMap[(int) $editInfoblock['component_id']] ?? null;
                 $views = $component ? componentViews($component) : ['list'];
                 echo '<hr class="my-4">';
-                echo '<h3 class="h6">Edit infoblock</h3>';
+                echo '<h3 class="h6">Редактирование инфоблока</h3>';
                 echo '<form method="post" action="/admin.php?action=infoblock_update">';
                 echo '<input type="hidden" name="id" value="' . (int) $editInfoblock['id'] . '">';
                 echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
                 echo '<div class="row">';
-                echo '<div class="col-md-6 mb-3"><label class="form-label">Name</label><input class="form-control" type="text" name="name" value="' . htmlspecialchars((string) $editInfoblock['name'], ENT_QUOTES, 'UTF-8') . '"></div>';
-                echo '<div class="col-md-3 mb-3"><label class="form-label">View template</label><select class="form-select" name="view_template">';
+                echo '<div class="col-md-6 mb-3"><label class="form-label">Название</label><input class="form-control" type="text" name="name" value="' . htmlspecialchars((string) $editInfoblock['name'], ENT_QUOTES, 'UTF-8') . '"></div>';
+                echo '<div class="col-md-3 mb-3"><label class="form-label">Шаблон</label><select class="form-select" name="view_template">';
                 foreach ($views as $view) {
                     $selectedView = $view === $editInfoblock['view_template'] ? ' selected' : '';
                     echo '<option value="' . htmlspecialchars($view, ENT_QUOTES, 'UTF-8') . '"' . $selectedView . '>' . htmlspecialchars($view, ENT_QUOTES, 'UTF-8') . '</option>';
                 }
                 echo '</select></div>';
-                echo '<div class="col-md-3 mb-3"><label class="form-label">Sort</label><input class="form-control" type="number" name="sort" value="' . htmlspecialchars((string) $editInfoblock['sort'], ENT_QUOTES, 'UTF-8') . '"></div>';
+                echo '<div class="col-md-3 mb-3"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="' . htmlspecialchars((string) $editInfoblock['sort'], ENT_QUOTES, 'UTF-8') . '"></div>';
                 echo '</div>';
                 $checked = !empty($editInfoblock['is_enabled']) ? ' checked' : '';
                 echo '<div class="mb-3 form-check">';
                 echo '<input class="form-check-input" type="checkbox" name="is_enabled" value="1"' . $checked . '>';
-                echo '<label class="form-check-label">Enabled</label>';
+                echo '<label class="form-check-label">Включен</label>';
                 echo '</div>';
-                echo '<div class="mb-3"><label class="form-label">settings_json</label><textarea class="form-control" name="settings_json" rows="4">' . htmlspecialchars(json_encode($settings, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), ENT_QUOTES, 'UTF-8') . '</textarea></div>';
+                echo '<div class="mb-3"><label class="form-label">Настройки (JSON)</label><textarea class="form-control" name="settings_json" rows="4">' . htmlspecialchars(json_encode($settings, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), ENT_QUOTES, 'UTF-8') . '</textarea></div>';
                 echo '<div class="row">';
-                echo '<div class="col-md-6 mb-3"><label class="form-label">Before HTML</label><textarea class="form-control" name="before_html" rows="3">' . htmlspecialchars((string) ($extra['before_html'] ?? ''), ENT_QUOTES, 'UTF-8') . '</textarea></div>';
-                echo '<div class="col-md-6 mb-3"><label class="form-label">After HTML</label><textarea class="form-control" name="after_html" rows="3">' . htmlspecialchars((string) ($extra['after_html'] ?? ''), ENT_QUOTES, 'UTF-8') . '</textarea></div>';
+                echo '<div class="col-md-6 mb-3"><label class="form-label">HTML до</label><textarea class="form-control" name="before_html" rows="3">' . htmlspecialchars((string) ($extra['before_html'] ?? ''), ENT_QUOTES, 'UTF-8') . '</textarea></div>';
+                echo '<div class="col-md-6 mb-3"><label class="form-label">HTML после</label><textarea class="form-control" name="after_html" rows="3">' . htmlspecialchars((string) ($extra['after_html'] ?? ''), ENT_QUOTES, 'UTF-8') . '</textarea></div>';
                 echo '</div>';
                 echo '<div class="row">';
-                echo '<div class="col-md-6 mb-3"><label class="form-label">Before image</label><input class="form-control" type="text" name="before_image" value="' . htmlspecialchars((string) ($extra['before_image'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
-                echo '<div class="col-md-6 mb-3"><label class="form-label">After image</label><input class="form-control" type="text" name="after_image" value="' . htmlspecialchars((string) ($extra['after_image'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
+                echo '<div class="col-md-6 mb-3"><label class="form-label">Изображение до</label><input class="form-control" type="text" name="before_image" value="' . htmlspecialchars((string) ($extra['before_image'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
+                echo '<div class="col-md-6 mb-3"><label class="form-label">Изображение после</label><input class="form-control" type="text" name="after_image" value="' . htmlspecialchars((string) ($extra['after_image'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
                 echo '</div>';
-                echo '<button class="btn btn-primary" type="submit">Save</button>';
+                echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
                 echo '</form>';
             }
 
             echo '<hr class="my-4">';
-            echo '<h3 class="h6">Add infoblock</h3>';
+            echo '<h3 class="h6">Добавить инфоблок</h3>';
             echo '<form method="post" action="/admin.php?action=infoblock_create">';
             echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
             echo '<div class="row">';
-            echo '<div class="col-md-4 mb-3"><label class="form-label">Component</label><select class="form-select" name="component_id">';
+            echo '<div class="col-md-4 mb-3"><label class="form-label">Компонент</label><select class="form-select" name="component_id">';
             foreach ($components as $component) {
                 echo '<option value="' . (int) $component['id'] . '">' . htmlspecialchars((string) $component['name'], ENT_QUOTES, 'UTF-8') . '</option>';
             }
             echo '</select></div>';
-            echo '<div class="col-md-4 mb-3"><label class="form-label">Name</label><input class="form-control" type="text" name="name" required></div>';
-            echo '<div class="col-md-4 mb-3"><label class="form-label">View template</label><input class="form-control" type="text" name="view_template" value="list"></div>';
+            echo '<div class="col-md-4 mb-3"><label class="form-label">Название</label><input class="form-control" type="text" name="name" required></div>';
+            echo '<div class="col-md-4 mb-3"><label class="form-label">Шаблон</label><input class="form-control" type="text" name="view_template" value="list"></div>';
             echo '</div>';
             echo '<div class="row">';
-            echo '<div class="col-md-3 mb-3"><label class="form-label">Sort</label><input class="form-control" type="number" name="sort" value="' . (int) $defaultSort . '"></div>';
+            echo '<div class="col-md-3 mb-3"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="' . (int) $defaultSort . '"></div>';
             echo '<div class="col-md-3 mb-3">';
-            echo '<label class="form-label">Enabled</label>';
+            echo '<label class="form-label">Включен</label>';
             echo '<div class="form-check mt-2"><input class="form-check-input" type="checkbox" name="is_enabled" value="1" checked></div>';
             echo '</div>';
             echo '</div>';
-            echo '<button class="btn btn-success" type="submit">Add</button>';
+            echo '<button class="btn btn-success" type="submit">Добавить</button>';
             echo '</form>';
         } elseif ($tab === 'content') {
             $infoblocks = $infoblockRepo->listForSection((int) $selected['id']);
@@ -1151,27 +1166,27 @@ if ($selected === null) {
             $previewToken = ensurePreviewToken();
             $sectionPath = buildSectionPathFromId($sectionRepo, (int) $selected['id']);
 
-            echo '<h2 class="h6">Content</h2>';
+            echo '<h2 class="h6">Контент</h2>';
             if (empty($infoblocks)) {
-                echo '<div class="alert alert-light border">No infoblocks in this section.</div>';
+                echo '<div class="alert alert-light border">В этом разделе нет инфоблоков.</div>';
             } else {
                 foreach ($infoblocks as $infoblock) {
                     $component = $componentMap[(int) $infoblock['component_id']] ?? null;
-                    $componentName = $component ? (string) $component['name'] : 'Unknown';
+                    $componentName = $component ? (string) $component['name'] : 'Неизвестно';
                     $objects = $objectRepo->listForInfoblock((int) $infoblock['id']);
 
                     echo '<div class="border rounded p-3 mb-4">';
                     echo '<div class="d-flex justify-content-between align-items-center mb-3">';
                     echo '<h3 class="h6 mb-0">' . htmlspecialchars((string) $infoblock['name'], ENT_QUOTES, 'UTF-8') . ' <span class="text-muted">(' . htmlspecialchars($componentName, ENT_QUOTES, 'UTF-8') . ')</span></h3>';
-                    echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'object_form', 'section_id' => $selected['id'], 'infoblock_id' => $infoblock['id']]), ENT_QUOTES, 'UTF-8') . '">Add object</a>';
+                    echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'object_form', 'section_id' => $selected['id'], 'infoblock_id' => $infoblock['id']]), ENT_QUOTES, 'UTF-8') . '">Добавить объект</a>';
                     echo '</div>';
 
                     if (empty($objects)) {
-                        echo '<div class="alert alert-light border">Objects отсутствуют.</div>';
+                        echo '<div class="alert alert-light border">Объекты отсутствуют.</div>';
                     } else {
                         echo '<div class="table-responsive">';
                         echo '<table class="table table-sm align-middle">';
-                        echo '<thead><tr><th>ID</th><th>Title</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+                        echo '<thead><tr><th>ID</th><th>Заголовок</th><th>Статус</th><th>Действия</th></tr></thead><tbody>';
                         foreach ($objects as $object) {
                             $data = json_decode((string) $object['data_json'], true);
                             if (!is_array($data)) {
@@ -1179,32 +1194,37 @@ if ($selected === null) {
                             }
                             $title = isset($data['title']) ? (string) $data['title'] : 'Без заголовка';
                             $status = (string) ($object['status'] ?? 'draft');
+                            $statusLabel = match ($status) {
+                                'published' => 'Опубликован',
+                                'draft' => 'Черновик',
+                                default => $status,
+                            };
                             $previewUrl = $sectionPath . '?object_id=' . (int) $object['id'] . '&preview_token=' . urlencode($previewToken);
 
                             echo '<tr>';
                             echo '<td>' . (int) $object['id'] . '</td>';
                             echo '<td>' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</td>';
-                            echo '<td>' . htmlspecialchars($status, ENT_QUOTES, 'UTF-8') . '</td>';
+                            echo '<td>' . htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8') . '</td>';
                             echo '<td class="d-flex flex-wrap gap-2">';
-                            echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'object_form', 'section_id' => $selected['id'], 'id' => $object['id']]), ENT_QUOTES, 'UTF-8') . '">Edit</a>';
+                            echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'object_form', 'section_id' => $selected['id'], 'id' => $object['id']]), ENT_QUOTES, 'UTF-8') . '">Редактировать</a>';
                             if ($status === 'draft') {
                                 echo '<form method="post" action="/admin.php?action=object_publish">';
                                 echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
                                 echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
-                                echo '<button class="btn btn-sm btn-success" type="submit">Publish</button>';
+                                echo '<button class="btn btn-sm btn-success" type="submit">Опубликовать</button>';
                                 echo '</form>';
                             } else {
                                 echo '<form method="post" action="/admin.php?action=object_unpublish">';
                                 echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
                                 echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
-                                echo '<button class="btn btn-sm btn-warning" type="submit">Unpublish</button>';
+                                echo '<button class="btn btn-sm btn-warning" type="submit">Снять с публикации</button>';
                                 echo '</form>';
                             }
-                            echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars($previewUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank">Preview</a>';
-                            echo '<form method="post" action="/admin.php?action=object_delete" onsubmit="return confirm(\"Delete object?\")">';
+                            echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars($previewUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank">Предпросмотр</a>';
+                            echo '<form method="post" action="/admin.php?action=object_delete" onsubmit="return confirm(\"Удалить объект?\")">';
                             echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
                             echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
-                            echo '<button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>';
+                            echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>';
                             echo '</form>';
                             echo '</td>';
                             echo '</tr>';
