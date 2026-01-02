@@ -1178,12 +1178,17 @@ if ($selected === null) {
                             }
                             $title = isset($data['title']) ? (string) $data['title'] : 'Без заголовка';
                             $status = (string) ($object['status'] ?? 'draft');
+                            $statusLabel = match ($status) {
+                                'published' => 'Опубликован',
+                                'draft' => 'Черновик',
+                                default => $status,
+                            };
                             $previewUrl = $sectionPath . '?object_id=' . (int) $object['id'] . '&preview_token=' . urlencode($previewToken);
 
                             echo '<tr>';
                             echo '<td>' . (int) $object['id'] . '</td>';
                             echo '<td>' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</td>';
-                            echo '<td>' . htmlspecialchars($status, ENT_QUOTES, 'UTF-8') . '</td>';
+                            echo '<td>' . htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8') . '</td>';
                             echo '<td class="d-flex flex-wrap gap-2">';
                             echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'object_form', 'section_id' => $selected['id'], 'id' => $object['id']]), ENT_QUOTES, 'UTF-8') . '">Редактировать</a>';
                             if ($status === 'draft') {
