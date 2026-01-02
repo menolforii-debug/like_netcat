@@ -2,52 +2,58 @@
 
 final class ComponentRepo
 {
+    public function listAll(): array
+    {
+        return DB::fetchAll(
+            'SELECT id, keyword, name, fields_json, views_json FROM components ORDER BY id ASC'
+        );
+    }
+
     public function findById($id): ?array
     {
-        $component = DB::fetchOne(
-            'SELECT id, name, keyword, fields_json FROM components WHERE id = :id LIMIT 1',
+        return DB::fetchOne(
+            'SELECT id, keyword, name, fields_json, views_json FROM components WHERE id = :id LIMIT 1',
             ['id' => $id]
         );
-
-        return $this->hydrate($component);
     }
 
     public function findByKeyword($keyword): ?array
     {
-        $component = DB::fetchOne(
-            'SELECT id, name, keyword, fields_json FROM components WHERE keyword = :keyword LIMIT 1',
+        return DB::fetchOne(
+            'SELECT id, keyword, name, fields_json, views_json FROM components WHERE keyword = :keyword LIMIT 1',
             ['keyword' => $keyword]
         );
-
-        return $this->hydrate($component);
     }
 
-    private function hydrate(?array $component): ?array
+    public function create(string $keyword, string $name, array $fields, array $views = []): int
     {
-        if ($component === null) {
-            return null;
-        }
+        $stmt = DB::pdo()->prepare(
+            'INSERT INTO components (keyword, name, fields_json, views_json)
+            VALUES (:keyword, :name, :fields_json, :views_json)'
+        );
+        $stmt->execute([
+            'keyword' => $keyword,
+            'name' => $name,
+            'fields_json' => json_encode($fields, JSON_UNESCAPED_UNICODE),
+            'views_json' => json_encode($views, JSON_UNESCAPED_UNICODE),
+        ]);
 
-        $fields = json_decode((string) ($component['fields_json'] ?? '{}'), true);
-        if (!is_array($fields)) {
-            $fields = [];
-        }
+        return (int) DB::pdo()->lastInsertId();
+    }
 
-        $views = [];
-        if (isset($fields['views']) && is_array($fields['views'])) {
-            foreach ($fields['views'] as $view) {
-                if (is_string($view) && $view !== '') {
-                    $views[] = $view;
-                }
-            }
-        }
-
-        if (!in_array('list', $views, true)) {
-            $views[] = 'list';
-        }
-
-        $component['views'] = array_values(array_unique($views));
-
-        return $component;
+    public function update($id, string $keyword, string $name, array $fields, array $views = []): void
+    {
+        $stmt = DB::pdo()->prepare(
+            'UPDATE components
+            SET keyword = :keyword, name = :name, fields_json = :fields_json, views_json = :views_json
+            WHERE id = :id'
+        );
+        $stmt->execute([
+            'keyword' => $keyword,
+            'name' => $name,
+            'fields_json' => json_encode($fields, JSON_UNESCAPED_UNICODE),
+            'views_json' => json_encode($views, JSON_UNESCAPED_UNICODE),
+            'id' => $id,
+        ]);
     }
 }

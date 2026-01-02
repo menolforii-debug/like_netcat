@@ -15,7 +15,9 @@ final class ObjectRepo
     {
         $sanitized = $this->validateAndPrepareData($component, $data);
 
+        $siteId = $this->resolveSiteId($sectionId);
         $payload = [
+            'site_id' => $siteId,
             'section_id' => $sectionId,
             'infoblock_id' => $infoblockId,
             'component_id' => $component['id'] ?? null,
@@ -26,10 +28,11 @@ final class ObjectRepo
         $now = $this->now();
         $publishedAt = $status === 'published' ? $now : null;
         $stmt = DB::pdo()->prepare(
-            'INSERT INTO objects (section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at)
-            VALUES (:section_id, :infoblock_id, :component_id, :data_json, :created_at, :updated_at, 0, NULL, :status, :published_at)'
+            'INSERT INTO objects (site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at)
+            VALUES (:site_id, :section_id, :infoblock_id, :component_id, :data_json, :created_at, :updated_at, 0, NULL, :status, :published_at)'
         );
         $stmt->execute([
+            'site_id' => $siteId,
             'section_id' => $sectionId,
             'infoblock_id' => $infoblockId,
             'component_id' => $component['id'] ?? null,
@@ -72,7 +75,6 @@ final class ObjectRepo
 
     public function publish($id): void
     {
-        $this->assertWorkflowTransition($id, 'publish', 'published');
         $stmt = DB::pdo()->prepare(
             'UPDATE objects SET status = :status, published_at = :published_at, updated_at = :updated_at WHERE id = :id'
         );
@@ -86,7 +88,6 @@ final class ObjectRepo
 
     public function unpublish($id): void
     {
-        $this->assertWorkflowTransition($id, 'unpublish', 'draft');
         $stmt = DB::pdo()->prepare(
             'UPDATE objects SET status = :status, updated_at = :updated_at WHERE id = :id'
         );
@@ -99,7 +100,6 @@ final class ObjectRepo
 
     public function archive($id): void
     {
-        $this->assertWorkflowTransition($id, 'archive', 'archived');
         $stmt = DB::pdo()->prepare(
             'UPDATE objects SET status = :status, updated_at = :updated_at WHERE id = :id'
         );
@@ -113,7 +113,7 @@ final class ObjectRepo
     public function listForInfoblock($infoblockId): array
     {
         return DB::fetchAll(
-            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
+            'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
             FROM objects
             WHERE infoblock_id = :infoblock_id AND is_deleted = 0 AND status = :status
             ORDER BY id ASC',
@@ -127,7 +127,7 @@ final class ObjectRepo
     public function listForInfoblockEdit($infoblockId): array
     {
         return DB::fetchAll(
-            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
+            'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
             FROM objects
             WHERE infoblock_id = :infoblock_id AND is_deleted = 0 AND status IN ("draft", "published")
             ORDER BY id ASC',
@@ -138,7 +138,7 @@ final class ObjectRepo
     public function findById($id): ?array
     {
         return DB::fetchOne(
-            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
+            'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
             FROM objects WHERE id = :id LIMIT 1',
             ['id' => $id]
         );
@@ -187,7 +187,7 @@ final class ObjectRepo
         $limit = (int) $limit;
 
         return DB::fetchAll(
-            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
+            'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
             FROM objects
             WHERE infoblock_id = :infoblock_id AND is_deleted = 1
             ORDER BY deleted_at DESC
@@ -201,7 +201,7 @@ final class ObjectRepo
         $limit = (int) $limit;
 
         return DB::fetchAll(
-            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
+            'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
             FROM objects
             WHERE is_deleted = 1
             ORDER BY deleted_at DESC
@@ -229,37 +229,14 @@ final class ObjectRepo
         }
     }
 
-    private function assertWorkflowTransition($id, string $action, string $nextStatus): void
+    private function resolveSiteId($sectionId): int
     {
-        $object = $this->findById($id);
-        if ($object === null) {
-            return;
+        $row = DB::fetchOne('SELECT site_id FROM sections WHERE id = :id LIMIT 1', ['id' => $sectionId]);
+        if ($row && isset($row['site_id'])) {
+            return (int) $row['site_id'];
         }
 
-        $currentStatus = isset($object['status']) ? (string) $object['status'] : 'draft';
-        if ($currentStatus === $nextStatus) {
-            return;
-        }
-
-        $user = Auth::user();
-        if ($user && ($user['role'] ?? null) === 'admin') {
-            return;
-        }
-
-        if (!$user || ($user['role'] ?? null) !== 'editor') {
-            throw new RuntimeException('Недостаточно прав для изменения статуса.');
-        }
-
-        $infoblockRepo = new InfoblockRepo();
-        $infoblock = $infoblockRepo->findById((int) $object['infoblock_id']);
-        $workflow = [];
-        if ($infoblock && isset($infoblock['extra']['workflow']) && is_array($infoblock['extra']['workflow'])) {
-            $workflow = $infoblock['extra']['workflow'];
-        }
-
-        if (!Workflow::canTransition($currentStatus, $action, $workflow)) {
-            throw new RuntimeException('Переход статуса запрещён правилами workflow.');
-        }
+        return 0;
     }
 
     private function now(): string

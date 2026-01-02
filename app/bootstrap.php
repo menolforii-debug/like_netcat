@@ -7,8 +7,7 @@ require $root . '/app/core/DB.php';
 require $root . '/app/core/EventBus.php';
 require $root . '/app/core/Core.php';
 require $root . '/app/core/Auth.php';
-require $root . '/app/core/Permission.php';
-require $root . '/app/core/Workflow.php';
+require $root . '/app/core/AdminLog.php';
 require $root . '/app/core/Seo.php';
 require $root . '/app/core/FieldValidator.php';
 require $root . '/app/domain/SectionRepo.php';
@@ -29,23 +28,16 @@ if (!is_dir($varDir)) {
 
 DB::connect($varDir . '/app.sqlite');
 
-$skipMigrations = [];
-if (DB::hasColumn('sections', 'slug')) {
-    $skipMigrations[] = '002_section_slug.sql';
-}
-if (DB::hasColumn('objects', 'deleted_at')) {
-    $skipMigrations[] = '021_objects_deleted_at.sql';
-}
-if (DB::hasColumn('sections', 'sort')) {
-    $skipMigrations[] = '040_sections_sort.sql';
-}
-
+$skipMigrations = [
+    '002_section_slug.sql',
+    '003_content.sql',
+    '020_users.sql',
+    '021_objects_deleted_at.sql',
+    '030_system_fields.sql',
+    '040_object_status.sql',
+    '040_sections_sort.sql',
+];
 runMigrations(DB::pdo(), $root . '/migrations', $skipMigrations);
-
-ensureColumn('sections', 'extra_json', "ALTER TABLE sections ADD COLUMN extra_json TEXT NOT NULL DEFAULT '{}'");
-ensureColumn('infoblocks', 'extra_json', "ALTER TABLE infoblocks ADD COLUMN extra_json TEXT NOT NULL DEFAULT '{}'");
-ensureColumn('objects', 'status', "ALTER TABLE objects ADD COLUMN status TEXT NOT NULL DEFAULT 'published'");
-ensureColumn('objects', 'published_at', 'ALTER TABLE objects ADD COLUMN published_at TEXT NULL');
 
 $core = new Core(DB::pdo(), new EventBus());
 $GLOBALS['core'] = $core;
@@ -53,6 +45,7 @@ $GLOBALS['core'] = $core;
 if (DB::hasTable('users') && usersCount() === 0) {
     seedAdminUser();
 }
+ensureDefaultSite(isset($_SERVER['HTTP_HOST']) ? (string) $_SERVER['HTTP_HOST'] : '');
 
 function core(): Core
 {
@@ -111,19 +104,6 @@ function migrationApplied(PDO $pdo, $name): bool
     return (bool) $stmt->fetchColumn();
 }
 
-function ensureColumn($table, $column, $ddl): void
-{
-    if (!DB::hasTable($table)) {
-        return;
-    }
-
-    if (DB::hasColumn($table, $column)) {
-        return;
-    }
-
-    DB::pdo()->exec($ddl);
-}
-
 function usersCount(): int
 {
     $row = DB::fetchOne('SELECT COUNT(*) AS cnt FROM users');
@@ -133,10 +113,54 @@ function usersCount(): int
 
 function seedAdminUser(): void
 {
-    $stmt = DB::pdo()->prepare('INSERT INTO users (login, pass_hash, role) VALUES (:login, :pass_hash, :role)');
+    $stmt = DB::pdo()->prepare('INSERT INTO users (login, pass_hash) VALUES (:login, :pass_hash)');
     $stmt->execute([
         'login' => 'admin',
         'pass_hash' => password_hash('admin', PASSWORD_DEFAULT),
-        'role' => 'admin',
     ]);
+}
+
+function ensureDefaultSite(string $host): void
+{
+    if (!DB::hasTable('sections')) {
+        return;
+    }
+
+    $row = DB::fetchOne('SELECT COUNT(*) AS cnt FROM sections WHERE parent_id IS NULL');
+    $count = $row ? (int) $row['cnt'] : 0;
+    if ($count > 0) {
+        return;
+    }
+
+    $host = normalizeHost($host);
+    if ($host === '') {
+        $host = 'localhost';
+    }
+
+    $repo = new SectionRepo();
+    $siteId = $repo->createSite('Default Site', [
+        'site_domain' => $host,
+        'site_mirrors' => [],
+        'site_enabled' => true,
+        'site_offline_html' => '<h1>Site offline</h1>',
+    ]);
+
+    $children = $repo->listChildren($siteId);
+    if (empty($children)) {
+        $repo->createSection($siteId, $siteId, 'news', 'News', 0, []);
+    }
+}
+
+function normalizeHost(string $host): string
+{
+    $host = strtolower(trim($host));
+    if ($host === '') {
+        return '';
+    }
+
+    if (str_contains($host, ':')) {
+        $host = explode(':', $host, 2)[0];
+    }
+
+    return $host;
 }

@@ -2,50 +2,59 @@
 
 final class InfoblockRepo
 {
-    public function findBySection($sectionId): array
+    public function listForSection($sectionId): array
     {
-        $rows = DB::fetchAll(
-            'SELECT id, section_id, component_id, name, settings_json, view_template, sort, is_enabled, extra_json
+        return DB::fetchAll(
+            'SELECT id, site_id, section_id, component_id, name, view_template, settings_json, extra_json, sort, is_enabled
             FROM infoblocks
-            WHERE section_id = :section_id AND is_enabled = 1
+            WHERE section_id = :section_id
             ORDER BY sort ASC, id ASC',
             ['section_id' => $sectionId]
         );
-
-        foreach ($rows as $index => $row) {
-            $rows[$index] = $this->hydrate($row);
-        }
-
-        return $rows;
     }
 
-    public function findById($id): ?array
+    public function create(array $data): int
     {
-        $row = DB::fetchOne(
-            'SELECT id, section_id, component_id, name, settings_json, view_template, sort, is_enabled, extra_json
-            FROM infoblocks
-            WHERE id = :id LIMIT 1',
-            ['id' => $id]
+        $stmt = DB::pdo()->prepare(
+            'INSERT INTO infoblocks (site_id, section_id, component_id, name, view_template, settings_json, extra_json, sort, is_enabled)
+            VALUES (:site_id, :section_id, :component_id, :name, :view_template, :settings_json, :extra_json, :sort, :is_enabled)'
         );
+        $stmt->execute([
+            'site_id' => $data['site_id'],
+            'section_id' => $data['section_id'],
+            'component_id' => $data['component_id'],
+            'name' => $data['name'],
+            'view_template' => $data['view_template'],
+            'settings_json' => json_encode($data['settings'] ?? [], JSON_UNESCAPED_UNICODE),
+            'extra_json' => json_encode($data['extra'] ?? [], JSON_UNESCAPED_UNICODE),
+            'sort' => $data['sort'] ?? 0,
+            'is_enabled' => $data['is_enabled'] ?? 1,
+        ]);
 
-        return $this->hydrate($row);
+        return (int) DB::pdo()->lastInsertId();
     }
 
-    private function hydrate(?array $row): ?array
+    public function update($id, array $data): void
     {
-        if ($row === null) {
-            return null;
-        }
+        $stmt = DB::pdo()->prepare(
+            'UPDATE infoblocks
+            SET name = :name, view_template = :view_template, settings_json = :settings_json, extra_json = :extra_json, sort = :sort, is_enabled = :is_enabled
+            WHERE id = :id'
+        );
+        $stmt->execute([
+            'name' => $data['name'],
+            'view_template' => $data['view_template'],
+            'settings_json' => json_encode($data['settings'] ?? [], JSON_UNESCAPED_UNICODE),
+            'extra_json' => json_encode($data['extra'] ?? [], JSON_UNESCAPED_UNICODE),
+            'sort' => $data['sort'] ?? 0,
+            'is_enabled' => $data['is_enabled'] ?? 1,
+            'id' => $id,
+        ]);
+    }
 
-        $extra = json_decode((string) ($row['extra_json'] ?? '{}'), true);
-        if (!is_array($extra)) {
-            $extra = [];
-        }
-        $row['extra'] = $extra;
-
-        $viewTemplate = isset($row['view_template']) ? trim((string) $row['view_template']) : '';
-        $row['view_template'] = $viewTemplate !== '' ? $viewTemplate : 'list';
-
-        return $row;
+    public function delete($id): void
+    {
+        $stmt = DB::pdo()->prepare('DELETE FROM infoblocks WHERE id = :id');
+        $stmt->execute(['id' => $id]);
     }
 }

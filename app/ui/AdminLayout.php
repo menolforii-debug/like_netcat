@@ -22,8 +22,7 @@ final class AdminLayout
         echo '</ul>';
         echo '<div class="d-flex align-items-center text-white">';
         $login = htmlspecialchars((string) ($user['login'] ?? ''), ENT_QUOTES, 'UTF-8');
-        $role = htmlspecialchars((string) ($user['role'] ?? ''), ENT_QUOTES, 'UTF-8');
-        echo '<span class="me-3">' . $login . ' (' . $role . ')</span>';
+        echo '<span class="me-3">' . $login . '</span>';
         echo '<a class="btn btn-outline-light btn-sm" href="/admin.php?action=logout">Выйти</a>';
         echo '</div>';
         echo '</div>';
