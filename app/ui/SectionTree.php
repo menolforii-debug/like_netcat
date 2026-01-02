@@ -38,6 +38,7 @@ final class SectionTree
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
             return '<div class="text-muted">Разделов нет.</div>';
 =======
             return '<div class="text-muted">No sections.</div>';
@@ -57,6 +58,9 @@ final class SectionTree
 =======
             return '<div class="text-muted">No sections.</div>';
 >>>>>>> origin/codex/add-netcat-style-control-layer-cda74t
+=======
+            return '<div class="text-muted">No sections.</div>';
+>>>>>>> origin/codex/add-netcat-style-control-layer-9adb3x
         }
 
         $html = '<ul class="list-group list-group-flush">';
@@ -65,6 +69,7 @@ final class SectionTree
             $title = htmlspecialchars((string) $node['title'], ENT_QUOTES, 'UTF-8');
             $link = '/admin.php?section_id=' . (int) $node['id'];
             $html .= '<li class="list-group-item">';
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -83,6 +88,8 @@ final class SectionTree
 >>>>>>> origin/codex/add-netcat-style-control-layer-wgkqxy
 =======
 >>>>>>> origin/codex/add-netcat-style-control-layer-cda74t
+=======
+>>>>>>> origin/codex/add-netcat-style-control-layer-9adb3x
             $html .= '<div class="d-flex align-items-center gap-2">';
             $html .= '<a class="text-decoration-none flex-grow-1' . ($isActive ? ' fw-semibold' : '') . '" href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">' . $title . '</a>';
             $html .= '<form method="post" action="/admin.php?action=section_create" class="m-0">';
@@ -99,6 +106,7 @@ final class SectionTree
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> origin/codex/add-netcat-style-control-layer-p4203p
 =======
 >>>>>>> origin/codex/add-netcat-style-control-layer-r8uvzo
@@ -110,6 +118,8 @@ final class SectionTree
 >>>>>>> origin/codex/add-netcat-style-control-layer-wgkqxy
 =======
 >>>>>>> origin/codex/add-netcat-style-control-layer-cda74t
+=======
+>>>>>>> origin/codex/add-netcat-style-control-layer-9adb3x
             if (!empty($node['children'])) {
                 $html .= '<div class="ms-3 mt-2">' . self::renderTree($node['children'], $currentId) . '</div>';
             }

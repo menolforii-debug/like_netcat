@@ -4,6 +4,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 <?php $data = $items[0]['data'] ?? []; ?>
 =======
 <?php $item = $item ?? ($items[0] ?? null); ?>
@@ -21,6 +22,8 @@
     <div class="card-body">
         <h1 class="h4 mb-2"><?= htmlspecialchars($data['title'] ?? 'Без заголовка', ENT_QUOTES, 'UTF-8') ?></h1>
 =======
+=======
+>>>>>>> origin/codex/add-netcat-style-control-layer-9adb3x
 <?php $item = $item ?? ($items[0] ?? null); ?>
 <?php $data = $item['data'] ?? []; ?>
 <article class="card shadow-sm mb-5">
@@ -28,7 +31,10 @@
         <h1 class="h4 mb-0"><?= htmlspecialchars($data['title'] ?? 'Без заголовка', ENT_QUOTES, 'UTF-8') ?></h1>
     </div>
     <div class="card-body">
+<<<<<<< HEAD
 >>>>>>> origin/codex/add-netcat-style-control-layer-cda74t
+=======
+>>>>>>> origin/codex/add-netcat-style-control-layer-9adb3x
         <?php if (!empty($data['date'])) : ?>
             <div class="text-muted small mb-3"><?= htmlspecialchars($data['date'], ENT_QUOTES, 'UTF-8') ?></div>
         <?php endif; ?>

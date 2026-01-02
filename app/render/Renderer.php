@@ -94,25 +94,16 @@ final class Renderer
         ];
 
         $seo = $this->resolveSeo($section, $infoblocks, $infoblockViews, $itemTitle);
-        $this->renderDocumentStart($seo);
-        $this->renderSection($section, $children, $core, false);
-        $this->renderDocumentEnd();
-    }
+        $layoutKey = $this->resolveLayoutKey($path, $section);
 
-    private function renderDocumentStart(array $seo): void
-    {
-        $title = (string) ($seo['title'] ?? '');
-        Layout::renderDocumentStart($title, $seo);
-        Layout::renderNavbar('CMS', [
-            ['label' => 'Админ', 'href' => '/admin.php'],
-        ]);
-        echo '<main class="container mb-5">';
-    }
-
-    private function renderDocumentEnd(): void
-    {
-        echo '</main>';
-        Layout::renderDocumentEnd();
+        Layout::render($layoutKey, [
+            'title' => (string) ($seo['title'] ?? ''),
+            'meta' => $seo,
+            'site' => $site,
+            'section' => $section,
+        ], function () use ($section, $children, $core): void {
+            $this->renderSection($section, $children, $core, false);
+        });
     }
 
     private function renderSection(array $section, array $children, array $core, $editMode): void
@@ -393,6 +384,24 @@ final class Renderer
         }
 
         return $decoded;
+    }
+
+    private function resolveLayoutKey(string $path, array $section): string
+    {
+        $layoutKey = trim($path, '/') === '' ? 'home' : 'default';
+        $extra = $this->decodeExtra($section);
+        if (!empty($extra['layout']) && is_string($extra['layout'])) {
+            $candidate = trim($extra['layout']);
+            if ($candidate !== '' && Layout::layoutExists($candidate)) {
+                $layoutKey = $candidate;
+            }
+        }
+
+        if (!Layout::layoutExists($layoutKey)) {
+            return 'default';
+        }
+
+        return $layoutKey;
     }
 
     private function isPreviewAllowed($objectId): bool

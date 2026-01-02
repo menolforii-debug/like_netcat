@@ -58,6 +58,33 @@ final class Layout
         echo '</nav>';
     }
 
+    public static function render(string $layoutKey, array $ctx, callable $body): void
+    {
+        $layoutKey = trim($layoutKey) !== '' ? $layoutKey : 'default';
+        $layoutPath = self::layoutPath($layoutKey);
+        if (!is_file($layoutPath)) {
+            $layoutKey = 'default';
+            $layoutPath = self::layoutPath($layoutKey);
+        }
+
+        $ctx['title'] = (string) ($ctx['title'] ?? '');
+        $ctx['meta'] = isset($ctx['meta']) && is_array($ctx['meta']) ? $ctx['meta'] : [];
+        $ctx['site'] = isset($ctx['site']) && is_array($ctx['site']) ? $ctx['site'] : [];
+        $ctx['section'] = $ctx['section'] ?? null;
+
+        require $layoutPath;
+    }
+
+    public static function layoutExists(string $layoutKey): bool
+    {
+        return is_file(self::layoutPath($layoutKey));
+    }
+
+    private static function layoutPath(string $layoutKey): string
+    {
+        return __DIR__ . '/layouts/' . $layoutKey . '.php';
+    }
+
     public static function sowAssetsAvailable(): bool
     {
         $root = dirname(__DIR__, 2);

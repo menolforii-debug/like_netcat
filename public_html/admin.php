@@ -488,6 +488,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $englishName = isset($_POST['english_name']) ? trim((string) $_POST['english_name']) : '';
         $parentId = isset($_POST['parent_id']) ? (int) $_POST['parent_id'] : 0;
         $sort = isset($_POST['sort']) ? (int) $_POST['sort'] : 0;
+        $layout = isset($_POST['layout']) ? trim((string) $_POST['layout']) : '';
 
         if ($title === '' || $englishName === '') {
             redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Title and english_name are required']));
@@ -519,13 +520,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'sort' => $section['sort'],
         ];
 
+        $extra = decodeExtra($section);
+        if (in_array($layout, ['default', 'home'], true)) {
+            $extra['layout'] = $layout;
+        } else {
+            unset($extra['layout']);
+        }
+
         $sectionRepo->update($id, [
             'parent_id' => $parentId,
             'site_id' => $siteId,
             'english_name' => $englishName,
             'title' => $title,
             'sort' => $sort,
-            'extra' => decodeExtra($section),
+            'extra' => $extra,
         ]);
 
         if ($user) {
@@ -536,6 +544,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'english_name' => $englishName,
                     'parent_id' => $parentId,
                     'sort' => $sort,
+                    'layout' => $extra['layout'] ?? '',
                 ],
             ]);
         }
@@ -993,7 +1002,18 @@ if ($selected === null) {
                 echo '<option value="' . (int) $option['id'] . '"' . $selectedAttr . '>' . htmlspecialchars((string) $option['title'], ENT_QUOTES, 'UTF-8') . '</option>';
             }
             echo '</select></div>';
+            $extra = decodeExtra($selected);
+            $currentLayout = isset($extra['layout']) ? (string) $extra['layout'] : 'default';
+            if (!in_array($currentLayout, ['default', 'home'], true)) {
+                $currentLayout = 'default';
+            }
             echo '<div class="mb-3"><label class="form-label">Sort</label><input class="form-control" type="number" name="sort" value="' . htmlspecialchars((string) ($selected['sort'] ?? 0), ENT_QUOTES, 'UTF-8') . '"></div>';
+            echo '<div class="mb-3"><label class="form-label">Layout</label><select class="form-select" name="layout">';
+            foreach (['default' => 'Default', 'home' => 'Home'] as $value => $label) {
+                $selectedAttr = $currentLayout === $value ? ' selected' : '';
+                echo '<option value="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '"' . $selectedAttr . '>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</option>';
+            }
+            echo '</select></div>';
             echo '<button class="btn btn-primary" type="submit">Save</button>';
             echo '</form>';
         } elseif ($tab === 'seo') {
