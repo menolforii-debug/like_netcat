@@ -508,9 +508,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Parent must belong to the same site']));
         }
 
-        $existing = $sectionRepo->findByEnglishName($siteId, $englishName, $id);
-        if ($existing !== null) {
-            redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'English name must be unique within site']));
+        if ($sectionRepo->existsSiblingEnglishName($siteId, $parentId, $englishName, $id)) {
+            redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'English name must be unique within the parent section']));
         }
 
         $before = [
