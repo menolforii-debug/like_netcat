@@ -15,7 +15,9 @@ final class ObjectRepo
     {
         $sanitized = $this->validateAndPrepareData($component, $data);
 
+        $siteId = $this->resolveSiteId($sectionId);
         $payload = [
+            'site_id' => $siteId,
             'section_id' => $sectionId,
             'infoblock_id' => $infoblockId,
             'component_id' => $component['id'] ?? null,
@@ -26,10 +28,11 @@ final class ObjectRepo
         $now = $this->now();
         $publishedAt = $status === 'published' ? $now : null;
         $stmt = DB::pdo()->prepare(
-            'INSERT INTO objects (section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at)
-            VALUES (:section_id, :infoblock_id, :component_id, :data_json, :created_at, :updated_at, 0, NULL, :status, :published_at)'
+            'INSERT INTO objects (site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at)
+            VALUES (:site_id, :section_id, :infoblock_id, :component_id, :data_json, :created_at, :updated_at, 0, NULL, :status, :published_at)'
         );
         $stmt->execute([
+            'site_id' => $siteId,
             'section_id' => $sectionId,
             'infoblock_id' => $infoblockId,
             'component_id' => $component['id'] ?? null,
@@ -110,7 +113,7 @@ final class ObjectRepo
     public function listForInfoblock($infoblockId): array
     {
         return DB::fetchAll(
-            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
+            'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
             FROM objects
             WHERE infoblock_id = :infoblock_id AND is_deleted = 0 AND status = :status
             ORDER BY id ASC',
@@ -124,7 +127,7 @@ final class ObjectRepo
     public function listForInfoblockEdit($infoblockId): array
     {
         return DB::fetchAll(
-            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
+            'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
             FROM objects
             WHERE infoblock_id = :infoblock_id AND is_deleted = 0 AND status IN ("draft", "published")
             ORDER BY id ASC',
@@ -135,7 +138,7 @@ final class ObjectRepo
     public function findById($id): ?array
     {
         return DB::fetchOne(
-            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
+            'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
             FROM objects WHERE id = :id LIMIT 1',
             ['id' => $id]
         );
@@ -184,7 +187,7 @@ final class ObjectRepo
         $limit = (int) $limit;
 
         return DB::fetchAll(
-            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
+            'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
             FROM objects
             WHERE infoblock_id = :infoblock_id AND is_deleted = 1
             ORDER BY deleted_at DESC
@@ -198,7 +201,7 @@ final class ObjectRepo
         $limit = (int) $limit;
 
         return DB::fetchAll(
-            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
+            'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
             FROM objects
             WHERE is_deleted = 1
             ORDER BY deleted_at DESC
@@ -224,6 +227,16 @@ final class ObjectRepo
 
             throw $e;
         }
+    }
+
+    private function resolveSiteId($sectionId): int
+    {
+        $row = DB::fetchOne('SELECT site_id FROM sections WHERE id = :id LIMIT 1', ['id' => $sectionId]);
+        if ($row && isset($row['site_id'])) {
+            return (int) $row['site_id'];
+        }
+
+        return 0;
     }
 
     private function now(): string
