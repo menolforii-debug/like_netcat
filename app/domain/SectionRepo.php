@@ -25,7 +25,7 @@ final class SectionRepo
     public function findById($id): ?array
     {
         $section = DB::fetchOne(
-            'SELECT id, parent_id, slug, title, extra_json FROM sections WHERE id = :id LIMIT 1',
+            'SELECT id, parent_id, slug, title, sort, extra_json FROM sections WHERE id = :id LIMIT 1',
             ['id' => $id]
         );
 
@@ -35,7 +35,7 @@ final class SectionRepo
     public function findChildren($parentId): array
     {
         $rows = DB::fetchAll(
-            'SELECT id, slug, title, extra_json FROM sections WHERE parent_id = :parent_id ORDER BY id ASC',
+            'SELECT id, parent_id, slug, title, sort, extra_json FROM sections WHERE parent_id = :parent_id ORDER BY sort ASC, id ASC',
             ['parent_id' => $parentId]
         );
 
@@ -45,7 +45,7 @@ final class SectionRepo
     private function findRoot(): ?array
     {
         $section = DB::fetchOne(
-            'SELECT id, parent_id, slug, title, extra_json FROM sections WHERE parent_id IS NULL AND slug = :slug LIMIT 1',
+            'SELECT id, parent_id, slug, title, sort, extra_json FROM sections WHERE parent_id IS NULL AND slug = :slug LIMIT 1',
             ['slug' => '']
         );
 
@@ -55,7 +55,7 @@ final class SectionRepo
     private function findChildBySlug($parentId, $slug): ?array
     {
         $section = DB::fetchOne(
-            'SELECT id, parent_id, slug, title, extra_json FROM sections WHERE parent_id = :parent_id AND slug = :slug LIMIT 1',
+            'SELECT id, parent_id, slug, title, sort, extra_json FROM sections WHERE parent_id = :parent_id AND slug = :slug LIMIT 1',
             [
                 'parent_id' => $parentId,
                 'slug' => $slug,
