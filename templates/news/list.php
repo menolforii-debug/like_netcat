@@ -1,36 +1,34 @@
 <?php
 ?>
-<section class="mb-4">
-    <h2 class="h4 mb-3"><?= htmlspecialchars($infoblock['name'], ENT_QUOTES, 'UTF-8') ?></h2>
+<section class="mb-5">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h2 class="h5 mb-0"><?= htmlspecialchars($infoblock['name'], ENT_QUOTES, 'UTF-8') ?></h2>
+            </div>
 
-    <?php if (empty($items)) : ?>
-        <p class="text-muted">Нет новостей.</p>
-    <?php else : ?>
-        <ul class="list-group">
-            <?php foreach ($items as $item) : ?>
-                <?php $data = $item['data'] ?? []; ?>
-                <li class="list-group-item">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <?php if (!empty($data['date'])) : ?>
-                                <time class="text-muted small me-2"><?= htmlspecialchars($data['date'], ENT_QUOTES, 'UTF-8') ?></time>
-                            <?php endif; ?>
-                            <strong><?= htmlspecialchars($data['title'] ?? 'Без заголовка', ENT_QUOTES, 'UTF-8') ?></strong>
-                            <?php if (!empty($data['text'])) : ?>
-                                <div class="mt-2"><?= htmlspecialchars($data['text'], ENT_QUOTES, 'UTF-8') ?></div>
-                            <?php endif; ?>
+            <?php if (empty($items)) : ?>
+                <div class="alert alert-light border mb-0">Нет новостей.</div>
+            <?php else : ?>
+                <div class="list-group list-group-flush">
+                    <?php foreach ($items as $item) : ?>
+                        <?php $data = $item['data'] ?? []; ?>
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <?php if (!empty($data['date'])) : ?>
+                                        <div class="text-muted small mb-1"><?= htmlspecialchars($data['date'], ENT_QUOTES, 'UTF-8') ?></div>
+                                    <?php endif; ?>
+                                    <div class="fw-semibold"><?= htmlspecialchars($data['title'] ?? 'Без заголовка', ENT_QUOTES, 'UTF-8') ?></div>
+                                    <?php if (!empty($data['text'])) : ?>
+                                        <div class="text-muted mt-2"><?= htmlspecialchars($data['text'], ENT_QUOTES, 'UTF-8') ?></div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
                         </div>
-                        <?php if (!empty($editMode) && ($item['status'] ?? '') === 'draft') : ?>
-                            <span class="badge bg-warning text-dark">Draft</span>
-                        <?php endif; ?>
-                    </div>
-                    <?php if (!empty($editMode) && !empty($item['controls']['delete_url'])) : ?>
-                        <div class="mt-2">
-                            <a class="btn btn-sm btn-outline-danger" href="<?= htmlspecialchars($item['controls']['delete_url'], ENT_QUOTES, 'UTF-8') ?>">Удалить</a>
-                        </div>
-                    <?php endif; ?>
-                </li>
-            <?php endforeach; ?>
-        </ul>
-    <?php endif; ?>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
 </section>

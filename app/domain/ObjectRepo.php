@@ -2,72 +2,66 @@
 
 final class ObjectRepo
 {
-    private $events;
-    private $validator;
-
-    public function __construct(EventBus $events)
+    public function listForInfoblock($infoblockId, bool $includeDeleted = false): array
     {
-        $this->events = $events;
-        $this->validator = new FieldValidator();
+        $where = 'infoblock_id = :infoblock_id';
+        if (!$includeDeleted) {
+            $where .= ' AND is_deleted = 0';
+        }
+
+        return DB::fetchAll(
+            'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
+            FROM objects
+            WHERE ' . $where . '
+            ORDER BY id ASC',
+            ['infoblock_id' => $infoblockId]
+        );
     }
 
-    public function insert(array $component, $sectionId, $infoblockId, array $data, $status = 'published'): int
+    public function findById($id): ?array
     {
-        $sanitized = $this->validateAndPrepareData($component, $data);
+        return DB::fetchOne(
+            'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
+            FROM objects WHERE id = :id LIMIT 1',
+            ['id' => $id]
+        );
+    }
 
-        $payload = [
-            'section_id' => $sectionId,
-            'infoblock_id' => $infoblockId,
-            'component_id' => $component['id'] ?? null,
-            'data' => $sanitized,
-        ];
-        $this->events->emit('object.before_insert', $payload);
-
+    public function create(array $data): int
+    {
+        $status = isset($data['status']) ? (string) $data['status'] : 'draft';
         $now = $this->now();
         $publishedAt = $status === 'published' ? $now : null;
+
         $stmt = DB::pdo()->prepare(
-            'INSERT INTO objects (section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at)
-            VALUES (:section_id, :infoblock_id, :component_id, :data_json, :created_at, :updated_at, 0, NULL, :status, :published_at)'
+            'INSERT INTO objects (site_id, section_id, infoblock_id, component_id, data_json, status, published_at, created_at, updated_at, is_deleted, deleted_at)
+            VALUES (:site_id, :section_id, :infoblock_id, :component_id, :data_json, :status, :published_at, :created_at, :updated_at, 0, NULL)'
         );
         $stmt->execute([
-            'section_id' => $sectionId,
-            'infoblock_id' => $infoblockId,
-            'component_id' => $component['id'] ?? null,
-            'data_json' => json_encode($sanitized, JSON_UNESCAPED_UNICODE),
-            'created_at' => $now,
-            'updated_at' => $now,
+            'site_id' => $data['site_id'],
+            'section_id' => $data['section_id'],
+            'infoblock_id' => $data['infoblock_id'],
+            'component_id' => $data['component_id'],
+            'data_json' => json_encode($data['data'] ?? [], JSON_UNESCAPED_UNICODE),
             'status' => $status,
             'published_at' => $publishedAt,
+            'created_at' => $now,
+            'updated_at' => $now,
         ]);
 
-        $id = (int) DB::pdo()->lastInsertId();
-        $payload['id'] = $id;
-        $this->events->emit('object.after_insert', $payload);
-
-        return $id;
+        return (int) DB::pdo()->lastInsertId();
     }
 
-    public function update(array $component, $id, array $data): void
+    public function update($id, array $data): void
     {
-        $sanitized = $this->validateAndPrepareData($component, $data);
-
-        $payload = [
-            'id' => $id,
-            'component_id' => $component['id'] ?? null,
-            'data' => $sanitized,
-        ];
-        $this->events->emit('object.before_update', $payload);
-
         $stmt = DB::pdo()->prepare(
             'UPDATE objects SET data_json = :data_json, updated_at = :updated_at WHERE id = :id'
         );
         $stmt->execute([
-            'data_json' => json_encode($sanitized, JSON_UNESCAPED_UNICODE),
+            'data_json' => json_encode($data['data'] ?? [], JSON_UNESCAPED_UNICODE),
             'updated_at' => $this->now(),
             'id' => $id,
         ]);
-
-        $this->events->emit('object.after_update', $payload);
     }
 
     public function publish($id): void
@@ -86,7 +80,7 @@ final class ObjectRepo
     public function unpublish($id): void
     {
         $stmt = DB::pdo()->prepare(
-            'UPDATE objects SET status = :status, updated_at = :updated_at WHERE id = :id'
+            'UPDATE objects SET status = :status, published_at = NULL, updated_at = :updated_at WHERE id = :id'
         );
         $stmt->execute([
             'status' => 'draft',
@@ -95,135 +89,16 @@ final class ObjectRepo
         ]);
     }
 
-    public function archive($id): void
-    {
-        $stmt = DB::pdo()->prepare(
-            'UPDATE objects SET status = :status, updated_at = :updated_at WHERE id = :id'
-        );
-        $stmt->execute([
-            'status' => 'archived',
-            'updated_at' => $this->now(),
-            'id' => $id,
-        ]);
-    }
-
-    public function listForInfoblock($infoblockId): array
-    {
-        return DB::fetchAll(
-            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
-            FROM objects
-            WHERE infoblock_id = :infoblock_id AND is_deleted = 0 AND status = :status
-            ORDER BY id ASC',
-            [
-                'infoblock_id' => $infoblockId,
-                'status' => 'published',
-            ]
-        );
-    }
-
-    public function listForInfoblockEdit($infoblockId): array
-    {
-        return DB::fetchAll(
-            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
-            FROM objects
-            WHERE infoblock_id = :infoblock_id AND is_deleted = 0 AND status IN ("draft", "published")
-            ORDER BY id ASC',
-            ['infoblock_id' => $infoblockId]
-        );
-    }
-
-    public function findById($id): ?array
-    {
-        return DB::fetchOne(
-            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
-            FROM objects WHERE id = :id LIMIT 1',
-            ['id' => $id]
-        );
-    }
-
     public function softDelete($id): void
     {
-        $this->events->emit('object.before_delete', ['id' => $id]);
-
-        $now = $this->now();
         $stmt = DB::pdo()->prepare(
             'UPDATE objects SET is_deleted = 1, deleted_at = :deleted_at, updated_at = :updated_at WHERE id = :id'
         );
         $stmt->execute([
-            'deleted_at' => $now,
-            'updated_at' => $now,
-            'id' => $id,
-        ]);
-
-        $this->events->emit('object.after_delete', ['id' => $id]);
-    }
-
-    public function restore($id): void
-    {
-        $stmt = DB::pdo()->prepare(
-            'UPDATE objects SET is_deleted = 0, deleted_at = NULL, updated_at = :updated_at WHERE id = :id'
-        );
-        $stmt->execute([
+            'deleted_at' => $this->now(),
             'updated_at' => $this->now(),
             'id' => $id,
         ]);
-
-        $this->events->emit('trash.restore', ['id' => $id]);
-    }
-
-    public function purge($id): void
-    {
-        $stmt = DB::pdo()->prepare('DELETE FROM objects WHERE id = :id');
-        $stmt->execute(['id' => $id]);
-
-        $this->events->emit('trash.purge', ['id' => $id]);
-    }
-
-    public function listTrash($infoblockId, $limit = 50): array
-    {
-        $limit = (int) $limit;
-
-        return DB::fetchAll(
-            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
-            FROM objects
-            WHERE infoblock_id = :infoblock_id AND is_deleted = 1
-            ORDER BY deleted_at DESC
-            LIMIT ' . $limit,
-            ['infoblock_id' => $infoblockId]
-        );
-    }
-
-    public function listTrashAll($limit = 50): array
-    {
-        $limit = (int) $limit;
-
-        return DB::fetchAll(
-            'SELECT id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
-            FROM objects
-            WHERE is_deleted = 1
-            ORDER BY deleted_at DESC
-            LIMIT ' . $limit
-        );
-    }
-
-    private function validateAndPrepareData(array $component, array $data): array
-    {
-        try {
-            $sanitized = $this->validator->validate($component, $data);
-            $this->events->emit('object.validated', [
-                'component_id' => $component['id'] ?? null,
-                'data' => $sanitized,
-            ]);
-
-            return $sanitized;
-        } catch (Throwable $e) {
-            $this->events->emit('object.validation_failed', [
-                'component_id' => $component['id'] ?? null,
-                'error' => $e->getMessage(),
-            ]);
-
-            throw $e;
-        }
     }
 
     private function now(): string

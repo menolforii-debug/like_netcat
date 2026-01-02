@@ -2,94 +2,203 @@
 
 final class SectionRepo
 {
-    public function findByPath($path): ?array
+    public function findSiteByHost(string $host): ?array
     {
-        $slugPath = trim($path, '/');
-        $segments = $slugPath === '' ? [] : explode('/', $slugPath);
-
-        $section = $this->findRoot();
-        if ($section === null) {
+        $host = $this->normalizeHost($host);
+        if ($host === '') {
             return null;
         }
 
-        foreach ($segments as $slug) {
-            $section = $this->findChildBySlug((int) $section['id'], $slug);
-            if ($section === null) {
-                return null;
+        $sites = $this->listSites();
+        foreach ($sites as $site) {
+            $settings = $this->getSiteSettings($site);
+            $domain = $this->normalizeHost((string) ($settings['site_domain'] ?? ''));
+            if ($domain !== '' && $domain === $host) {
+                return $site;
+            }
+
+            foreach ($settings['site_mirrors'] as $mirror) {
+                $mirrorHost = $this->normalizeHost($mirror);
+                if ($mirrorHost !== '' && $mirrorHost === $host) {
+                    return $site;
+                }
             }
         }
 
-        return $section;
+        return null;
+    }
+
+    public function listSites(): array
+    {
+        return DB::fetchAll(
+            'SELECT id, parent_id, site_id, english_name, title, sort, extra_json
+            FROM sections
+            WHERE parent_id IS NULL
+            ORDER BY id ASC'
+        );
+    }
+
+    public function findByEnglishName($siteId, string $englishName, $excludeId = null): ?array
+    {
+        $params = [
+            'site_id' => $siteId,
+            'english_name' => $englishName,
+        ];
+        $where = 'site_id = :site_id AND english_name = :english_name';
+        if ($excludeId !== null) {
+            $where .= ' AND id != :exclude_id';
+            $params['exclude_id'] = $excludeId;
+        }
+
+        return DB::fetchOne(
+            'SELECT id, parent_id, site_id, english_name, title, sort, extra_json
+            FROM sections
+            WHERE ' . $where . '
+            LIMIT 1',
+            $params
+        );
+    }
+
+    public function getSiteSettings(array $site): array
+    {
+        $extra = $this->decodeExtra($site);
+        $mirrors = [];
+        if (isset($extra['site_mirrors']) && is_array($extra['site_mirrors'])) {
+            foreach ($extra['site_mirrors'] as $mirror) {
+                if (is_string($mirror) && $mirror !== '') {
+                    $mirrors[] = $mirror;
+                }
+            }
+        }
+
+        return [
+            'site_domain' => isset($extra['site_domain']) ? (string) $extra['site_domain'] : '',
+            'site_mirrors' => array_values(array_unique($mirrors)),
+            'site_enabled' => array_key_exists('site_enabled', $extra) ? (bool) $extra['site_enabled'] : true,
+            'site_offline_html' => isset($extra['site_offline_html']) ? (string) $extra['site_offline_html'] : '<h1>Site offline</h1>',
+        ];
     }
 
     public function findById($id): ?array
     {
-        $section = DB::fetchOne(
-            'SELECT id, parent_id, slug, title, extra_json FROM sections WHERE id = :id LIMIT 1',
+        return DB::fetchOne(
+            'SELECT id, parent_id, site_id, english_name, title, sort, extra_json
+            FROM sections
+            WHERE id = :id
+            LIMIT 1',
             ['id' => $id]
         );
-
-        return $this->withExtra($section);
     }
 
-    public function findChildren($parentId): array
+    public function listChildren($parentId): array
     {
-        $rows = DB::fetchAll(
-            'SELECT id, slug, title, extra_json FROM sections WHERE parent_id = :parent_id ORDER BY id ASC',
+        return DB::fetchAll(
+            'SELECT id, parent_id, site_id, english_name, title, sort, extra_json
+            FROM sections
+            WHERE parent_id = :parent_id
+            ORDER BY sort ASC, id ASC',
             ['parent_id' => $parentId]
         );
-
-        return $this->withExtraList($rows);
     }
 
-    private function findRoot(): ?array
+    public function createSite(string $title, array $extra = []): int
     {
-        $section = DB::fetchOne(
-            'SELECT id, parent_id, slug, title, extra_json FROM sections WHERE parent_id IS NULL AND slug = :slug LIMIT 1',
-            ['slug' => '']
+        $stmt = DB::pdo()->prepare(
+            'INSERT INTO sections (parent_id, site_id, english_name, title, sort, extra_json)
+            VALUES (NULL, 0, NULL, :title, 0, :extra_json)'
         );
+        $stmt->execute([
+            'title' => $title,
+            'extra_json' => json_encode($extra, JSON_UNESCAPED_UNICODE),
+        ]);
 
-        return $this->withExtra($section);
+        $id = (int) DB::pdo()->lastInsertId();
+        $update = DB::pdo()->prepare('UPDATE sections SET site_id = :site_id WHERE id = :id');
+        $update->execute([
+            'site_id' => $id,
+            'id' => $id,
+        ]);
+
+        return $id;
     }
 
-    private function findChildBySlug($parentId, $slug): ?array
+    public function createSection($parentId, $siteId, string $englishName, string $title, int $sort = 0, array $extra = []): int
     {
-        $section = DB::fetchOne(
-            'SELECT id, parent_id, slug, title, extra_json FROM sections WHERE parent_id = :parent_id AND slug = :slug LIMIT 1',
-            [
-                'parent_id' => $parentId,
-                'slug' => $slug,
-            ]
+        $stmt = DB::pdo()->prepare(
+            'INSERT INTO sections (parent_id, site_id, english_name, title, sort, extra_json)
+            VALUES (:parent_id, :site_id, :english_name, :title, :sort, :extra_json)'
         );
+        $stmt->execute([
+            'parent_id' => $parentId,
+            'site_id' => $siteId,
+            'english_name' => $englishName,
+            'title' => $title,
+            'sort' => $sort,
+            'extra_json' => json_encode($extra, JSON_UNESCAPED_UNICODE),
+        ]);
 
-        return $this->withExtra($section);
+        return (int) DB::pdo()->lastInsertId();
     }
 
-    private function withExtra(?array $section): ?array
+    public function update($id, array $data): void
     {
-        if ($section === null) {
-            return null;
-        }
-
-        $extra = json_decode((string) ($section['extra_json'] ?? '{}'), true);
-        if (!is_array($extra)) {
-            $extra = [];
-        }
-        $section['extra'] = $extra;
-
-        return $section;
+        $stmt = DB::pdo()->prepare(
+            'UPDATE sections
+            SET parent_id = :parent_id, site_id = :site_id, english_name = :english_name, title = :title, sort = :sort, extra_json = :extra_json
+            WHERE id = :id'
+        );
+        $stmt->execute([
+            'parent_id' => $data['parent_id'],
+            'site_id' => $data['site_id'],
+            'english_name' => $data['english_name'],
+            'title' => $data['title'],
+            'sort' => $data['sort'] ?? 0,
+            'extra_json' => json_encode($data['extra'] ?? [], JSON_UNESCAPED_UNICODE),
+            'id' => $id,
+        ]);
     }
 
-    private function withExtraList(array $rows): array
+    public function delete($id): void
     {
-        foreach ($rows as $index => $row) {
-            $extra = json_decode((string) ($row['extra_json'] ?? '{}'), true);
-            if (!is_array($extra)) {
-                $extra = [];
-            }
-            $rows[$index]['extra'] = $extra;
+        $child = DB::fetchOne('SELECT 1 FROM sections WHERE parent_id = :id LIMIT 1', ['id' => $id]);
+        if ($child) {
+            throw new RuntimeException('Нельзя удалить раздел с дочерними разделами.');
         }
 
-        return $rows;
+        $infoblock = DB::fetchOne('SELECT 1 FROM infoblocks WHERE section_id = :id LIMIT 1', ['id' => $id]);
+        if ($infoblock) {
+            throw new RuntimeException('Нельзя удалить раздел с инфоблоками.');
+        }
+
+        $stmt = DB::pdo()->prepare('DELETE FROM sections WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+    }
+
+    private function decodeExtra(array $row): array
+    {
+        if (isset($row['extra']) && is_array($row['extra'])) {
+            return $row['extra'];
+        }
+
+        $decoded = json_decode((string) ($row['extra_json'] ?? '{}'), true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        return $decoded;
+    }
+
+    private function normalizeHost(string $host): string
+    {
+        $host = strtolower(trim($host));
+        if ($host === '') {
+            return '';
+        }
+
+        if (str_contains($host, ':')) {
+            $host = explode(':', $host, 2)[0];
+        }
+
+        return $host;
     }
 }
