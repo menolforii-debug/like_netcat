@@ -19,6 +19,7 @@ final class SectionTree
         $root = [];
         foreach ($items as $id => $section) {
             $parentId = $section['parent_id'] !== null ? (int) $section['parent_id'] : null;
+
             if ($parentId !== null && isset($items[$parentId])) {
                 $items[$parentId]['children'][] = &$items[$id];
             } else {
@@ -32,101 +33,44 @@ final class SectionTree
     private static function renderTree(array $nodes, ?int $currentId): string
     {
         if (empty($nodes)) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
             return '<div class="text-muted">Разделов нет.</div>';
-=======
-            return '<div class="text-muted">No sections.</div>';
->>>>>>> origin/codex/add-netcat-style-control-layer-p4203p
-=======
-            return '<div class="text-muted">No sections.</div>';
->>>>>>> origin/codex/add-netcat-style-control-layer-r8uvzo
-=======
-            return '<div class="text-muted">No sections.</div>';
->>>>>>> origin/codex/add-netcat-style-control-layer-k9g8k9
-=======
-            return '<div class="text-muted">No sections.</div>';
->>>>>>> origin/codex/add-netcat-style-control-layer-7kxozg
-=======
-            return '<div class="text-muted">No sections.</div>';
->>>>>>> origin/codex/add-netcat-style-control-layer-wgkqxy
-=======
-            return '<div class="text-muted">No sections.</div>';
->>>>>>> origin/codex/add-netcat-style-control-layer-cda74t
-=======
-            return '<div class="text-muted">No sections.</div>';
->>>>>>> origin/codex/add-netcat-style-control-layer-9adb3x
         }
 
         $html = '<ul class="list-group list-group-flush">';
+
         foreach ($nodes as $node) {
             $isActive = $currentId !== null && (int) $node['id'] === $currentId;
             $title = htmlspecialchars((string) $node['title'], ENT_QUOTES, 'UTF-8');
             $link = '/admin.php?section_id=' . (int) $node['id'];
+
             $html .= '<li class="list-group-item">';
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-            $html .= '<a class="text-decoration-none' . ($isActive ? ' fw-semibold' : '') . '" href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">' . $title . '</a>';
-=======
-=======
->>>>>>> origin/codex/add-netcat-style-control-layer-r8uvzo
-=======
->>>>>>> origin/codex/add-netcat-style-control-layer-k9g8k9
-=======
->>>>>>> origin/codex/add-netcat-style-control-layer-7kxozg
-=======
->>>>>>> origin/codex/add-netcat-style-control-layer-wgkqxy
-=======
->>>>>>> origin/codex/add-netcat-style-control-layer-cda74t
-=======
->>>>>>> origin/codex/add-netcat-style-control-layer-9adb3x
+
             $html .= '<div class="d-flex align-items-center gap-2">';
             $html .= '<a class="text-decoration-none flex-grow-1' . ($isActive ? ' fw-semibold' : '') . '" href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">' . $title . '</a>';
+
             $html .= '<form method="post" action="/admin.php?action=section_create" class="m-0">';
             $html .= '<input type="hidden" name="parent_id" value="' . (int) $node['id'] . '">';
             $html .= '<button class="btn btn-sm btn-outline-primary" type="submit">+</button>';
             $html .= '</form>';
-            $html .= '<form method="post" action="/admin.php?action=section_delete" class="m-0" onsubmit="return confirm(\"Delete this node?\")">';
+
+            $html .= '<form method="post" action="/admin.php?action=section_delete" class="m-0" onsubmit="return confirm(\'Delete this node?\')">';
             $html .= '<input type="hidden" name="id" value="' . (int) $node['id'] . '">';
             $html .= '<button class="btn btn-sm btn-outline-danger" type="submit">🗑</button>';
             $html .= '</form>';
+
             $html .= '</div>';
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> origin/codex/add-netcat-style-control-layer-p4203p
-=======
->>>>>>> origin/codex/add-netcat-style-control-layer-r8uvzo
-=======
->>>>>>> origin/codex/add-netcat-style-control-layer-k9g8k9
-=======
->>>>>>> origin/codex/add-netcat-style-control-layer-7kxozg
-=======
->>>>>>> origin/codex/add-netcat-style-control-layer-wgkqxy
-=======
->>>>>>> origin/codex/add-netcat-style-control-layer-cda74t
-=======
->>>>>>> origin/codex/add-netcat-style-control-layer-9adb3x
+
             if (!empty($node['children'])) {
                 $html .= '<div class="ms-3 mt-2">' . self::renderTree($node['children'], $currentId) . '</div>';
             }
+
             $html .= '</li>';
         }
+
         $html .= '</ul>';
 
         return $html;
     }
 }
+
+
