@@ -28,16 +28,7 @@ if (!is_dir($varDir)) {
 
 DB::connect($varDir . '/app.sqlite');
 
-$skipMigrations = [
-    '002_section_slug.sql',
-    '003_content.sql',
-    '020_users.sql',
-    '021_objects_deleted_at.sql',
-    '030_system_fields.sql',
-    '040_object_status.sql',
-    '040_sections_sort.sql',
-];
-runMigrations(DB::pdo(), $root . '/migrations', $skipMigrations);
+runMigrations(DB::pdo(), $root . '/migrations');
 
 $core = new Core(DB::pdo(), new EventBus());
 $GLOBALS['core'] = $core;
@@ -52,7 +43,7 @@ function core(): Core
     return $GLOBALS['core'];
 }
 
-function runMigrations(PDO $pdo, $migrationsDir, array $skipMigrations = []): void
+function runMigrations(PDO $pdo, $migrationsDir): void
 {
     $pdo->exec('CREATE TABLE IF NOT EXISTS migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL)');
 
@@ -65,17 +56,6 @@ function runMigrations(PDO $pdo, $migrationsDir, array $skipMigrations = []): vo
 
     foreach ($files as $file) {
         $name = basename($file);
-        if (in_array($name, $skipMigrations, true)) {
-            if (!migrationApplied($pdo, $name)) {
-                $stmt = $pdo->prepare('INSERT INTO migrations (name, applied_at) VALUES (:name, :applied_at)');
-                $stmt->execute([
-                    'name' => $name,
-                    'applied_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('c'),
-                ]);
-            }
-            continue;
-        }
-
         if (migrationApplied($pdo, $name)) {
             continue;
         }
