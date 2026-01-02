@@ -22,11 +22,15 @@ final class Layout
             echo "    <meta name=\"keywords\" content=\"" . htmlspecialchars($keywords, ENT_QUOTES, 'UTF-8') . "\">\n";
         }
         echo "</head>\n";
-        echo "<body>\n";
+        echo "<body class=\"bg-light\">\n";
+        echo "<div class=\"page-wrapper d-flex flex-column min-vh-100\">\n";
+        echo "<div class=\"content-wrapper flex-grow-1\">\n";
     }
 
     public static function renderDocumentEnd(): void
     {
+        echo "</div>\n";
+        echo "</div>\n";
         self::renderJs();
         echo "</body>\n";
         echo "</html>\n";
@@ -35,9 +39,9 @@ final class Layout
     public static function renderNavbar(string $brand, array $links = []): void
     {
         $brandEscaped = htmlspecialchars($brand, ENT_QUOTES, 'UTF-8');
-        echo '<nav class="navbar navbar-expand-lg bg-light border-bottom mb-4">';
+        echo '<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">';
         echo '<div class="container">';
-        echo '<a class="navbar-brand" href="/">' . $brandEscaped . '</a>';
+        echo '<a class="navbar-brand fw-semibold" href="/">' . $brandEscaped . '</a>';
         echo '<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">';
         echo '<span class="navbar-toggler-icon"></span>';
         echo '</button>';

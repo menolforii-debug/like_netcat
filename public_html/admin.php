@@ -278,19 +278,20 @@ if ($action === 'login') {
         $error = 'Неверный логин или пароль';
     }
 
-    Layout::renderDocumentStart('Вход');
-    echo '<div class="container py-5" style="max-width: 420px">';
+    AdminLayout::renderHeader('Вход', false);
+    echo '<div class="row justify-content-center">';
+    echo '<div class="col-12 col-md-6 col-lg-4">';
     echo '<div class="card shadow-sm">';
     echo '<div class="card-body">';
-    echo '<h1 class="h4 mb-3">Вход в админку</h1>';
+    echo '<h1 class="h4 mb-3 text-center">Вход в админку</h1>';
     renderAlert($error, 'error');
     echo '<form method="post" action="/admin.php?action=login">';
     echo '<div class="mb-3"><label class="form-label">Логин</label><input class="form-control" type="text" name="login" required></div>';
     echo '<div class="mb-3"><label class="form-label">Пароль</label><input class="form-control" type="password" name="pass" required></div>';
     echo '<button class="btn btn-primary w-100" type="submit">Войти</button>';
     echo '</form>';
-    echo '</div></div></div>';
-    Layout::renderDocumentEnd();
+    echo '</div></div></div></div>';
+    AdminLayout::renderFooter();
     exit;
 }
 
@@ -326,8 +327,13 @@ if ($action === 'logs') {
     $logs = AdminLog::list($filters, $limit);
 
     AdminLayout::renderHeader('Logs');
-    echo '<h1 class="h4 mb-3">Admin logs</h1>';
-    echo '<form class="row g-3 mb-4" method="get" action="/admin.php">';
+    echo '<div class="d-flex align-items-center justify-content-between mb-3">';
+    echo '<h1 class="h4 mb-0">Admin logs</h1>';
+    echo '<span class="badge bg-secondary">Latest first</span>';
+    echo '</div>';
+    echo '<div class="card shadow-sm mb-4">';
+    echo '<div class="card-body">';
+    echo '<form class="row g-3" method="get" action="/admin.php">';
     echo '<input type="hidden" name="action" value="logs">';
     echo '<div class="col-md-3"><label class="form-label">Entity type</label><input class="form-control" type="text" name="entity_type" value="' . htmlspecialchars($filters['entity_type'], ENT_QUOTES, 'UTF-8') . '"></div>';
     echo '<div class="col-md-3"><label class="form-label">Action</label><input class="form-control" type="text" name="action_filter" value="' . htmlspecialchars($filters['action'], ENT_QUOTES, 'UTF-8') . '"></div>';
@@ -335,12 +341,15 @@ if ($action === 'logs') {
     echo '<div class="col-md-2"><label class="form-label">Limit</label><input class="form-control" type="number" name="limit" value="' . (int) $limit . '"></div>';
     echo '<div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary w-100" type="submit">Filter</button></div>';
     echo '</form>';
+    echo '</div>';
+    echo '</div>';
 
     if (empty($logs)) {
         echo '<div class="alert alert-light border">No log entries found.</div>';
     } else {
+        echo '<div class="card shadow-sm">';
         echo '<div class="table-responsive">';
-        echo '<table class="table table-sm table-striped align-middle">';
+        echo '<table class="table table-sm table-striped align-middle mb-0">';
         echo '<thead><tr><th>Date/Time (UTC)</th><th>User</th><th>Action</th><th>Entity</th><th>Entity ID</th><th>IP</th></tr></thead><tbody>';
         foreach ($logs as $log) {
             echo '<tr>';
@@ -353,6 +362,7 @@ if ($action === 'logs') {
             echo '</tr>';
         }
         echo '</tbody></table></div>';
+        echo '</div>';
     }
 
     AdminLayout::renderFooter();
