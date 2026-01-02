@@ -4,12 +4,22 @@ final class Renderer
 {
     public function renderPath($path): void
     {
-        $editMode = isset($_GET['edit']) && $_GET['edit'] === '1' && Auth::canEdit();
-        $previewMode = $editMode && isset($_GET['preview']) && $_GET['preview'] === '1';
-        $previewObjectId = isset($_GET['object_id']) ? (int) $_GET['object_id'] : 0;
-
         $sectionRepo = new SectionRepo();
-        $section = $sectionRepo->findByPath($path);
+        $host = isset($_SERVER['HTTP_HOST']) ? (string) $_SERVER['HTTP_HOST'] : '';
+        $site = $sectionRepo->findSiteByHost($host);
+        if ($site === null) {
+            http_response_code(404);
+            echo 'Site not found';
+            return;
+        }
+
+        $this->renderSitePath($site, $path);
+    }
+
+    public function renderSitePath(array $site, string $path): void
+    {
+        $sectionRepo = new SectionRepo();
+        $section = $this->resolveSectionByPath($sectionRepo, $site, $path);
 
         if ($section === null) {
             http_response_code(404);
@@ -20,82 +30,61 @@ final class Renderer
         $sectionPath = $this->buildSectionPath($sectionRepo, (int) $section['id']);
         $section['path'] = $sectionPath;
 
-        $children = $sectionRepo->findChildren((int) $section['id']);
+        $children = $sectionRepo->listChildren((int) $section['id']);
         foreach ($children as $index => $child) {
-            $children[$index]['path'] = $this->joinPath($sectionPath, $child['slug']);
+            $children[$index]['path'] = $this->joinPath($sectionPath, $child['english_name'] ?? '');
         }
 
         $infoblockRepo = new InfoblockRepo();
         $componentRepo = new ComponentRepo();
         $objectRepo = new ObjectRepo(core()->events());
 
-        $infoblocks = $infoblockRepo->findBySection((int) $section['id']);
+        $infoblocks = $infoblockRepo->listForSection((int) $section['id'], true);
+
         $infoblocksHtml = '';
+        $infoblockViews = [];
         foreach ($infoblocks as $infoblock) {
             $component = $componentRepo->findById((int) $infoblock['component_id']);
             if ($component === null) {
                 continue;
             }
 
-            if ($editMode) {
-                $objects = $objectRepo->listForInfoblockEdit((int) $infoblock['id']);
-            } else {
-                $objects = $objectRepo->listForInfoblock((int) $infoblock['id']);
-            }
+            $infoblock['view_template'] = $this->resolveViewTemplate($infoblock, $component);
+            $objects = $objectRepo->listForInfoblock((int) $infoblock['id']);
+            $items = $this->decodeItems($objects);
 
-            if ($previewMode && $previewObjectId > 0) {
-                $previewObject = $objectRepo->findById($previewObjectId);
-                if ($previewObject && (int) $previewObject['infoblock_id'] === (int) $infoblock['id']) {
-                    $objects = $this->appendPreviewObject($objects, $previewObject);
-                }
-            }
-
-            $items = $this->decodeItems($objects, $editMode);
-            $infoblocksHtml .= $this->renderInfoblock($section, $infoblock, $component, $items, $editMode);
+            $infoblocksHtml .= $this->renderInfoblockWithWrappers($section, $site, $infoblock, $component, $items, false);
+            $infoblockViews[] = [
+                'infoblock' => $infoblock,
+                'component' => $component,
+                'items' => $items,
+            ];
         }
 
         $core = [
             'infoblocks_html' => $infoblocksHtml,
         ];
 
-        $seo = Seo::resolve($section, null);
-
+        $seo = $this->resolveSeo($section, $infoblocks, $infoblockViews);
         $this->renderDocumentStart($seo);
-        $this->renderSection($section, $children, $core, $editMode);
+        $this->renderSection($section, $children, $core, false);
         $this->renderDocumentEnd();
     }
 
     private function renderDocumentStart(array $seo): void
     {
-        $title = htmlspecialchars($seo['title'] ?? '', ENT_QUOTES, 'UTF-8');
-        $descriptionRaw = isset($seo['description']) ? trim((string) $seo['description']) : '';
-        $description = htmlspecialchars($descriptionRaw, ENT_QUOTES, 'UTF-8');
-        $keywords = isset($seo['keywords']) ? trim((string) $seo['keywords']) : '';
-        $keywordsEscaped = htmlspecialchars($keywords, ENT_QUOTES, 'UTF-8');
-
-        echo "<!doctype html>\n";
-        echo "<html lang=\"ru\">\n";
-        echo "<head>\n";
-        echo "    <meta charset=\"utf-8\">\n";
-        echo "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n";
-        echo "    <link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css\" rel=\"stylesheet\">\n";
-        echo "    <title>{$title}</title>\n";
-        if ($descriptionRaw !== '') {
-            echo "    <meta name=\"description\" content=\"{$description}\">\n";
-        }
-        if ($keywords !== '') {
-            echo "    <meta name=\"keywords\" content=\"{$keywordsEscaped}\">\n";
-        }
-        echo "</head>\n";
-        echo "<body>\n";
-        echo "<div class=\"container mt-4\">\n";
+        $title = (string) ($seo['title'] ?? '');
+        Layout::renderDocumentStart($title, $seo);
+        Layout::renderNavbar('CMS', [
+            ['label' => 'Админ', 'href' => '/admin.php'],
+        ]);
+        echo '<main class="container mb-5">';
     }
 
     private function renderDocumentEnd(): void
     {
-        echo "</div>\n";
-        echo "</body>\n";
-        echo "</html>\n";
+        echo '</main>';
+        Layout::renderDocumentEnd();
     }
 
     private function renderSection(array $section, array $children, array $core, $editMode): void
@@ -114,7 +103,35 @@ final class Renderer
         require $templatePath;
     }
 
-    private function renderInfoblock(array $section, array $infoblock, array $component, array $items, $editMode): string
+    private function renderInfoblockWithWrappers(array $section, array $site, array $infoblock, array $component, array $items, $editMode): string
+    {
+        $extra = $this->decodeExtra($infoblock);
+        $beforeImage = isset($extra['before_image']) ? trim((string) $extra['before_image']) : '';
+        $afterImage = isset($extra['after_image']) ? trim((string) $extra['after_image']) : '';
+        $beforeHtml = isset($extra['before_html']) ? (string) $extra['before_html'] : '';
+        $afterHtml = isset($extra['after_html']) ? (string) $extra['after_html'] : '';
+
+        $html = '';
+        if ($beforeImage !== '') {
+            $html .= '<img src="' . htmlspecialchars($beforeImage, ENT_QUOTES, 'UTF-8') . '">';
+        }
+        if ($beforeHtml !== '') {
+            $html .= $beforeHtml;
+        }
+
+        $html .= $this->renderInfoblock($section, $site, $infoblock, $component, $items, $editMode);
+
+        if ($afterHtml !== '') {
+            $html .= $afterHtml;
+        }
+        if ($afterImage !== '') {
+            $html .= '<img src="' . htmlspecialchars($afterImage, ENT_QUOTES, 'UTF-8') . '">';
+        }
+
+        return $html;
+    }
+
+    private function renderInfoblock(array $section, array $site, array $infoblock, array $component, array $items, $editMode): string
     {
         $core = [];
 
@@ -128,7 +145,25 @@ final class Renderer
         return (string) ob_get_clean();
     }
 
-    private function decodeItems(array $objects, $editMode): array
+    private function resolveViewTemplate(array $infoblock, array $component): string
+    {
+        $views = [];
+        if (isset($component['views_json'])) {
+            $decoded = json_decode((string) $component['views_json'], true);
+            if (is_array($decoded)) {
+                $views = $decoded;
+            }
+        }
+
+        $template = isset($infoblock['view_template']) ? trim((string) $infoblock['view_template']) : '';
+        if ($template !== '' && in_array($template, $views, true)) {
+            return $template;
+        }
+
+        return 'list';
+    }
+
+    private function decodeItems(array $objects): array
     {
         $items = [];
 
@@ -138,41 +173,68 @@ final class Renderer
                 $data = [];
             }
 
-            $controls = [];
-            if ($editMode) {
-                $controls = [
-                    'delete_url' => $this->buildDeleteUrl((int) $object['id']),
-                ];
-            }
-
             $items[] = [
                 'id' => $object['id'],
                 'data' => $data,
                 'status' => $object['status'] ?? 'published',
                 'created_at' => $object['created_at'],
                 'updated_at' => $object['updated_at'],
-                'controls' => $controls,
+                'controls' => [],
             ];
         }
 
         return $items;
     }
 
-    private function appendPreviewObject(array $objects, array $previewObject): array
+    private function resolveSeo(array $section, array $infoblocks, array $infoblockViews): array
     {
-        foreach ($objects as $object) {
-            if ((int) $object['id'] === (int) $previewObject['id']) {
-                return $objects;
+        $sectionExtra = $this->decodeExtra($section);
+
+        $objectData = [];
+        foreach ($infoblockViews as $view) {
+            if (($view['infoblock']['view_template'] ?? '') === 'item' && !empty($view['items'])) {
+                $objectData = $view['items'][0]['data'] ?? [];
+                break;
             }
         }
 
-        $objects[] = $previewObject;
-        return $objects;
-    }
+        $title = '';
+        if (!empty($objectData['seo_title'])) {
+            $title = (string) $objectData['seo_title'];
+        } elseif (!empty($sectionExtra['seo_title'])) {
+            $title = (string) $sectionExtra['seo_title'];
+        }
 
-    private function buildDeleteUrl($id): string
-    {
-        return '/admin.php?action=object_delete&id=' . (int) $id;
+        if ($title === '') {
+            if (!empty($objectData['title'])) {
+                $title = (string) $objectData['title'];
+            } elseif (count($infoblocks) === 1) {
+                $only = $infoblocks[0];
+                $title = (string) ($section['title'] ?? '') . ' — ' . (string) ($only['name'] ?? '');
+            } else {
+                $title = (string) ($section['title'] ?? '');
+            }
+        }
+
+        $description = '';
+        if (!empty($objectData['seo_description'])) {
+            $description = (string) $objectData['seo_description'];
+        } elseif (!empty($sectionExtra['seo_description'])) {
+            $description = (string) $sectionExtra['seo_description'];
+        }
+
+        $keywords = '';
+        if (!empty($objectData['seo_keywords'])) {
+            $keywords = (string) $objectData['seo_keywords'];
+        } elseif (!empty($sectionExtra['seo_keywords'])) {
+            $keywords = (string) $sectionExtra['seo_keywords'];
+        }
+
+        return [
+            'title' => $title,
+            'description' => $description,
+            'keywords' => $keywords,
+        ];
     }
 
     private function buildSectionPath(SectionRepo $repo, $sectionId): string
@@ -186,8 +248,8 @@ final class Renderer
                 break;
             }
 
-            if ($section['slug'] !== '') {
-                $segments[] = $section['slug'];
+            if (!empty($section['english_name'])) {
+                $segments[] = $section['english_name'];
             }
 
             $currentId = $section['parent_id'] !== null ? (int) $section['parent_id'] : null;
@@ -200,23 +262,62 @@ final class Renderer
         return '/' . implode('/', array_reverse($segments)) . '/';
     }
 
-    private function joinPath($basePath, $slug): string
+    private function joinPath($basePath, $englishName): string
     {
         $basePath = rtrim($basePath, '/');
-        $slug = trim($slug, '/');
+        $englishName = trim((string) $englishName, '/');
 
         if ($basePath === '') {
             $basePath = '/';
         }
 
-        if ($slug === '') {
+        if ($englishName === '') {
             return $basePath . '/';
         }
 
         if ($basePath === '/') {
-            return '/' . $slug . '/';
+            return '/' . $englishName . '/';
         }
 
-        return $basePath . '/' . $slug . '/';
+        return $basePath . '/' . $englishName . '/';
+    }
+
+    private function resolveSectionByPath(SectionRepo $repo, array $site, string $path): ?array
+    {
+        $segments = trim($path, '/') === '' ? [] : explode('/', trim($path, '/'));
+        $current = $site;
+
+        foreach ($segments as $segment) {
+            $children = $repo->listChildren((int) $current['id']);
+            $next = null;
+            foreach ($children as $child) {
+                if (($child['english_name'] ?? null) === $segment) {
+                    $next = $child;
+                    break;
+                }
+            }
+
+            if ($next === null) {
+                return null;
+            }
+
+            $current = $next;
+        }
+
+        return $current;
+    }
+
+    private function decodeExtra(array $row): array
+    {
+        if (isset($row['extra']) && is_array($row['extra'])) {
+            return $row['extra'];
+        }
+
+        $decoded = json_decode((string) ($row['extra_json'] ?? '{}'), true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        return $decoded;
     }
 }
