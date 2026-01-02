@@ -38,6 +38,27 @@ final class SectionRepo
         );
     }
 
+    public function findByEnglishName($siteId, string $englishName, $excludeId = null): ?array
+    {
+        $params = [
+            'site_id' => $siteId,
+            'english_name' => $englishName,
+        ];
+        $where = 'site_id = :site_id AND english_name = :english_name';
+        if ($excludeId !== null) {
+            $where .= ' AND id != :exclude_id';
+            $params['exclude_id'] = $excludeId;
+        }
+
+        return DB::fetchOne(
+            'SELECT id, parent_id, site_id, english_name, title, sort, extra_json
+            FROM sections
+            WHERE ' . $where . '
+            LIMIT 1',
+            $params
+        );
+    }
+
     public function getSiteSettings(array $site): array
     {
         $extra = $this->decodeExtra($site);

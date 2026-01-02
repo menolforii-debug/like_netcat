@@ -242,6 +242,29 @@ function ensurePreviewToken(): string
     return (string) $_SESSION['preview_token'];
 }
 
+function parseMirrorLines(string $value): array
+{
+    $lines = preg_split('/\r\n|\r|\n/', $value);
+    if ($lines === false) {
+        return [];
+    }
+
+    $mirrors = [];
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line !== '') {
+            $mirrors[] = $line;
+        }
+    }
+
+    return array_values(array_unique($mirrors));
+}
+
+function englishNameIsValid(string $englishName): bool
+{
+    return (bool) preg_match('/^[A-Za-z0-9_-]+$/', $englishName);
+}
+
 if ($action === 'login') {
     $error = '';
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -282,7 +305,7 @@ $user = Auth::user();
 $notice = isset($_GET['notice']) ? (string) $_GET['notice'] : '';
 $errorMessage = isset($_GET['error']) ? (string) $_GET['error'] : '';
 $selectedId = isset($_GET['section_id']) ? (int) $_GET['section_id'] : null;
-$tab = isset($_GET['tab']) ? (string) $_GET['tab'] : 'settings';
+$tab = isset($_GET['tab']) ? (string) $_GET['tab'] : 'section';
 
 $sectionRepo = new SectionRepo();
 $infoblockRepo = new InfoblockRepo();
@@ -349,6 +372,151 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         redirectTo(buildAdminUrl(['error' => 'Node not found']));
+    }
+
+    if ($action === 'site_update') {
+        $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
+        $site = $sectionRepo->findById($id);
+        if ($site === null || $site['parent_id'] !== null) {
+            redirectTo(buildAdminUrl(['error' => 'Site not found']));
+        }
+
+        $before = [
+            'title' => $site['title'],
+            'extra' => decodeExtra($site),
+        ];
+
+        $title = isset($_POST['title']) ? trim((string) $_POST['title']) : '';
+        $siteDomain = isset($_POST['site_domain']) ? trim((string) $_POST['site_domain']) : '';
+        $siteMirrorsRaw = isset($_POST['site_mirrors']) ? (string) $_POST['site_mirrors'] : '';
+        $siteEnabled = isset($_POST['site_enabled']) ? true : false;
+        $offlineHtml = isset($_POST['site_offline_html']) ? (string) $_POST['site_offline_html'] : '';
+
+        $extra = decodeExtra($site);
+        $extra['site_domain'] = $siteDomain;
+        $extra['site_mirrors'] = parseMirrorLines($siteMirrorsRaw);
+        $extra['site_enabled'] = $siteEnabled;
+        $extra['site_offline_html'] = $offlineHtml;
+
+        $sectionRepo->update($id, [
+            'parent_id' => null,
+            'site_id' => $site['site_id'],
+            'english_name' => null,
+            'title' => $title !== '' ? $title : $site['title'],
+            'sort' => $site['sort'] ?? 0,
+            'extra' => $extra,
+        ]);
+
+        if ($user) {
+            AdminLog::log($user['id'], 'site_update', 'site', $id, [
+                'before' => $before,
+                'after' => [
+                    'title' => $title !== '' ? $title : $site['title'],
+                    'extra' => $extra,
+                ],
+            ]);
+        }
+
+        redirectTo(buildAdminUrl(['section_id' => $id, 'notice' => 'Site updated']));
+    }
+
+    if ($action === 'section_update') {
+        $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
+        $section = $sectionRepo->findById($id);
+        if ($section === null || $section['parent_id'] === null) {
+            redirectTo(buildAdminUrl(['error' => 'Section not found']));
+        }
+
+        $title = isset($_POST['title']) ? trim((string) $_POST['title']) : '';
+        $englishName = isset($_POST['english_name']) ? trim((string) $_POST['english_name']) : '';
+        $parentId = isset($_POST['parent_id']) ? (int) $_POST['parent_id'] : 0;
+        $sort = isset($_POST['sort']) ? (int) $_POST['sort'] : 0;
+
+        if ($title === '' || $englishName === '') {
+            redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Title and english_name are required']));
+        }
+
+        if (!englishNameIsValid($englishName)) {
+            redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'English name must be URL-safe']));
+        }
+
+        $siteId = (int) $section['site_id'];
+        if ($parentId <= 0) {
+            redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Parent is required']));
+        }
+
+        $parent = $sectionRepo->findById($parentId);
+        if ($parent === null || (int) $parent['site_id'] !== $siteId) {
+            redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Parent must belong to the same site']));
+        }
+
+        $existing = $sectionRepo->findByEnglishName($siteId, $englishName, $id);
+        if ($existing !== null) {
+            redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'English name must be unique within site']));
+        }
+
+        $before = [
+            'title' => $section['title'],
+            'english_name' => $section['english_name'],
+            'parent_id' => $section['parent_id'],
+            'sort' => $section['sort'],
+        ];
+
+        $sectionRepo->update($id, [
+            'parent_id' => $parentId,
+            'site_id' => $siteId,
+            'english_name' => $englishName,
+            'title' => $title,
+            'sort' => $sort,
+            'extra' => decodeExtra($section),
+        ]);
+
+        if ($user) {
+            AdminLog::log($user['id'], 'section_update', 'section', $id, [
+                'before' => $before,
+                'after' => [
+                    'title' => $title,
+                    'english_name' => $englishName,
+                    'parent_id' => $parentId,
+                    'sort' => $sort,
+                ],
+            ]);
+        }
+
+        redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'notice' => 'Section updated']));
+    }
+
+    if ($action === 'seo_update') {
+        $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
+        $section = $sectionRepo->findById($id);
+        if ($section === null || $section['parent_id'] === null) {
+            redirectTo(buildAdminUrl(['error' => 'Section not found']));
+        }
+
+        $before = decodeExtra($section);
+
+        $extra = $before;
+        $extra['seo_title'] = isset($_POST['seo_title']) ? trim((string) $_POST['seo_title']) : '';
+        $extra['seo_description'] = isset($_POST['seo_description']) ? trim((string) $_POST['seo_description']) : '';
+        $extra['seo_keywords'] = isset($_POST['seo_keywords']) ? trim((string) $_POST['seo_keywords']) : '';
+
+        $sectionRepo->update($id, [
+            'parent_id' => $section['parent_id'],
+            'site_id' => $section['site_id'],
+            'english_name' => $section['english_name'],
+            'title' => $section['title'],
+            'sort' => $section['sort'] ?? 0,
+            'extra' => $extra,
+        ]);
+
+        if ($user) {
+            AdminLog::log($user['id'], 'seo_update', 'section', $id, [
+                'before' => $before,
+                'after' => $extra,
+            ]);
+        }
+
+        redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'seo', 'notice' => 'SEO updated']));
     }
 
     if ($action === 'infoblock_create') {
@@ -705,11 +873,32 @@ if ($selected === null) {
     echo '<div class="card-body">';
 
     if ($isSite) {
+        $extra = decodeExtra($selected);
+        $mirrorsText = isset($extra['site_mirrors']) && is_array($extra['site_mirrors']) ? implode("\n", $extra['site_mirrors']) : '';
+        $enabled = !empty($extra['site_enabled']);
+        $offlineHtml = isset($extra['site_offline_html']) ? (string) $extra['site_offline_html'] : '';
+
+        echo '<ul class="nav nav-tabs mb-3">';
+        echo '<li class="nav-item"><a class="nav-link active" href="#">Settings</a></li>';
+        echo '</ul>';
         echo '<h1 class="h5">Site settings</h1>';
-        echo '<p class="text-muted mb-0">Site settings UI will be implemented later.</p>';
+        echo '<form method="post" action="/admin.php?action=site_update">';
+        echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
+        echo '<div class="mb-3"><label class="form-label">Site title</label><input class="form-control" type="text" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '"></div>';
+        echo '<div class="mb-3"><label class="form-label">Main domain</label><input class="form-control" type="text" name="site_domain" value="' . htmlspecialchars((string) ($extra['site_domain'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
+        echo '<div class="mb-3"><label class="form-label">Domain mirrors (one per line)</label><textarea class="form-control" name="site_mirrors" rows="3">' . htmlspecialchars($mirrorsText, ENT_QUOTES, 'UTF-8') . '</textarea></div>';
+        $checked = $enabled ? ' checked' : '';
+        echo '<div class="mb-3 form-check">';
+        echo '<input class="form-check-input" type="checkbox" name="site_enabled" value="1"' . $checked . '>';
+        echo '<label class="form-check-label">Site enabled</label>';
+        echo '</div>';
+        echo '<div class="mb-3"><label class="form-label">Offline HTML</label><textarea class="form-control" name="site_offline_html" rows="4">' . htmlspecialchars($offlineHtml, ENT_QUOTES, 'UTF-8') . '</textarea></div>';
+        echo '<button class="btn btn-primary" type="submit">Save</button>';
+        echo '</form>';
     } else {
         $tabs = [
-            'settings' => 'Settings',
+            'section' => 'Section',
+            'seo' => 'SEO',
             'infoblocks' => 'Infoblocks',
             'content' => 'Content',
         ];
@@ -720,7 +909,47 @@ if ($selected === null) {
         }
         echo '</ul>';
 
-        if ($tab === 'infoblocks') {
+        if ($tab === 'section') {
+            $siteId = (int) $selected['site_id'];
+            $site = $sectionRepo->findById($siteId);
+            $options = [];
+            if ($site !== null) {
+                $options[] = $site;
+                $options = array_merge($options, collectSections($sectionRepo, $siteId));
+            }
+
+            echo '<h1 class="h5">Section settings</h1>';
+            echo '<form method="post" action="/admin.php?action=section_update">';
+            echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
+            echo '<div class="mb-3"><label class="form-label">Title</label><input class="form-control" type="text" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '" required></div>';
+            echo '<div class="mb-3"><label class="form-label">English name</label><input class="form-control" type="text" name="english_name" value="' . htmlspecialchars((string) ($selected['english_name'] ?? ''), ENT_QUOTES, 'UTF-8') . '" required></div>';
+            echo '<div class="mb-3"><label class="form-label">Parent section</label><select class="form-select" name="parent_id" required>';
+            echo '<option value="">Select parent</option>';
+            foreach ($options as $option) {
+                if ((int) $option['id'] === (int) $selected['id']) {
+                    continue;
+                }
+                if ((int) $option['site_id'] !== $siteId) {
+                    continue;
+                }
+                $selectedAttr = (int) $selected['parent_id'] === (int) $option['id'] ? ' selected' : '';
+                echo '<option value="' . (int) $option['id'] . '"' . $selectedAttr . '>' . htmlspecialchars((string) $option['title'], ENT_QUOTES, 'UTF-8') . '</option>';
+            }
+            echo '</select></div>';
+            echo '<div class="mb-3"><label class="form-label">Sort</label><input class="form-control" type="number" name="sort" value="' . htmlspecialchars((string) ($selected['sort'] ?? 0), ENT_QUOTES, 'UTF-8') . '"></div>';
+            echo '<button class="btn btn-primary" type="submit">Save</button>';
+            echo '</form>';
+        } elseif ($tab === 'seo') {
+            $extra = decodeExtra($selected);
+            echo '<h1 class="h5">SEO</h1>';
+            echo '<form method="post" action="/admin.php?action=seo_update">';
+            echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
+            echo '<div class="mb-3"><label class="form-label">SEO title</label><input class="form-control" type="text" name="seo_title" value="' . htmlspecialchars((string) ($extra['seo_title'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
+            echo '<div class="mb-3"><label class="form-label">SEO description</label><textarea class="form-control" name="seo_description" rows="3">' . htmlspecialchars((string) ($extra['seo_description'] ?? ''), ENT_QUOTES, 'UTF-8') . '</textarea></div>';
+            echo '<div class="mb-3"><label class="form-label">SEO keywords</label><input class="form-control" type="text" name="seo_keywords" value="' . htmlspecialchars((string) ($extra['seo_keywords'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
+            echo '<button class="btn btn-primary" type="submit">Save</button>';
+            echo '</form>';
+        } elseif ($tab === 'infoblocks') {
             $infoblocks = $infoblockRepo->listForSection((int) $selected['id']);
             $components = $componentRepo->listAll();
             $componentMap = [];
@@ -909,9 +1138,6 @@ if ($selected === null) {
                     echo '</div>';
                 }
             }
-        } else {
-            echo '<h1 class="h5">Section settings</h1>';
-            echo '<p class="text-muted mb-0">Section editor will be implemented later.</p>';
         }
     }
 

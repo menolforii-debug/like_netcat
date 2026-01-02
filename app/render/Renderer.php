@@ -227,9 +227,7 @@ final class Renderer
         }
 
         $title = '';
-        if (!empty($objectData['seo_title'])) {
-            $title = (string) $objectData['seo_title'];
-        } elseif (!empty($sectionExtra['seo_title'])) {
+        if (!empty($sectionExtra['seo_title'])) {
             $title = (string) $sectionExtra['seo_title'];
         }
 
