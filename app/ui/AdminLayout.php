@@ -16,7 +16,7 @@ final class AdminLayout
         echo '<li class="nav-item"><a class="nav-link" href="/admin.php">Dashboard</a></li>';
         echo '<li class="nav-item"><a class="nav-link" href="#">Components</a></li>';
         echo '<li class="nav-item"><a class="nav-link" href="#">Users</a></li>';
-        echo '<li class="nav-item"><a class="nav-link" href="#">Logs</a></li>';
+        echo '<li class="nav-item"><a class="nav-link" href="/admin.php?action=logs">Logs</a></li>';
         echo '<li class="nav-item"><a class="nav-link" href="/">Back to site</a></li>';
         echo '</ul>';
         echo '<div class="d-flex">';

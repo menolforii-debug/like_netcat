@@ -2,6 +2,7 @@
 ?>
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 <?php $data = $items[0]['data'] ?? []; ?>
 =======
 <?php $item = $item ?? ($items[0] ?? null); ?>
@@ -11,6 +12,10 @@
 <?php $item = $item ?? ($items[0] ?? null); ?>
 <?php $data = $item['data'] ?? []; ?>
 >>>>>>> origin/codex/add-netcat-style-control-layer-7kxozg
+=======
+<?php $item = $item ?? ($items[0] ?? null); ?>
+<?php $data = $item['data'] ?? []; ?>
+>>>>>>> origin/codex/add-netcat-style-control-layer-wgkqxy
 <article class="card shadow-sm mb-5">
     <div class="card-body">
         <h1 class="h4 mb-2"><?= htmlspecialchars($data['title'] ?? 'Без заголовка', ENT_QUOTES, 'UTF-8') ?></h1>

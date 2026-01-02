@@ -312,6 +312,53 @@ $infoblockRepo = new InfoblockRepo();
 $componentRepo = new ComponentRepo();
 $objectRepo = new ObjectRepo();
 
+if ($action === 'logs') {
+    $filters = [
+        'entity_type' => isset($_GET['entity_type']) ? trim((string) $_GET['entity_type']) : '',
+        'action' => isset($_GET['action_filter']) ? trim((string) $_GET['action_filter']) : '',
+        'user_id' => isset($_GET['user_id']) ? trim((string) $_GET['user_id']) : '',
+    ];
+    $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 100;
+    if ($limit <= 0) {
+        $limit = 100;
+    }
+
+    $logs = AdminLog::list($filters, $limit);
+
+    AdminLayout::renderHeader('Logs');
+    echo '<h1 class="h4 mb-3">Admin logs</h1>';
+    echo '<form class="row g-3 mb-4" method="get" action="/admin.php">';
+    echo '<input type="hidden" name="action" value="logs">';
+    echo '<div class="col-md-3"><label class="form-label">Entity type</label><input class="form-control" type="text" name="entity_type" value="' . htmlspecialchars($filters['entity_type'], ENT_QUOTES, 'UTF-8') . '"></div>';
+    echo '<div class="col-md-3"><label class="form-label">Action</label><input class="form-control" type="text" name="action_filter" value="' . htmlspecialchars($filters['action'], ENT_QUOTES, 'UTF-8') . '"></div>';
+    echo '<div class="col-md-2"><label class="form-label">User ID</label><input class="form-control" type="text" name="user_id" value="' . htmlspecialchars($filters['user_id'], ENT_QUOTES, 'UTF-8') . '"></div>';
+    echo '<div class="col-md-2"><label class="form-label">Limit</label><input class="form-control" type="number" name="limit" value="' . (int) $limit . '"></div>';
+    echo '<div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary w-100" type="submit">Filter</button></div>';
+    echo '</form>';
+
+    if (empty($logs)) {
+        echo '<div class="alert alert-light border">No log entries found.</div>';
+    } else {
+        echo '<div class="table-responsive">';
+        echo '<table class="table table-sm table-striped align-middle">';
+        echo '<thead><tr><th>Date/Time (UTC)</th><th>User</th><th>Action</th><th>Entity</th><th>Entity ID</th><th>IP</th></tr></thead><tbody>';
+        foreach ($logs as $log) {
+            echo '<tr>';
+            echo '<td>' . htmlspecialchars((string) $log['created_at'], ENT_QUOTES, 'UTF-8') . '</td>';
+            echo '<td>' . htmlspecialchars((string) $log['user_id'], ENT_QUOTES, 'UTF-8') . '</td>';
+            echo '<td>' . htmlspecialchars((string) $log['action'], ENT_QUOTES, 'UTF-8') . '</td>';
+            echo '<td>' . htmlspecialchars((string) $log['entity_type'], ENT_QUOTES, 'UTF-8') . '</td>';
+            echo '<td>' . htmlspecialchars((string) ($log['entity_id'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>';
+            echo '<td>' . htmlspecialchars((string) ($log['ip'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>';
+            echo '</tr>';
+        }
+        echo '</tbody></table></div>';
+    }
+
+    AdminLayout::renderFooter();
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'site_create') {
         $title = isset($_POST['title']) ? trim((string) $_POST['title']) : 'New Site';
