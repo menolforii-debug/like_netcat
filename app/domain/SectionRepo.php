@@ -59,6 +59,27 @@ final class SectionRepo
         );
     }
 
+    public function existsSiblingEnglishName($siteId, $parentId, string $englishName, $excludeId = null): bool
+    {
+        $params = [
+            'site_id' => $siteId,
+            'parent_id' => $parentId,
+            'english_name' => $englishName,
+        ];
+        $where = 'site_id = :site_id AND parent_id = :parent_id AND english_name = :english_name';
+        if ($excludeId !== null) {
+            $where .= ' AND id != :exclude_id';
+            $params['exclude_id'] = $excludeId;
+        }
+
+        $row = DB::fetchOne(
+            'SELECT 1 FROM sections WHERE ' . $where . ' LIMIT 1',
+            $params
+        );
+
+        return $row !== null;
+    }
+
     public function getSiteSettings(array $site): array
     {
         $extra = $this->decodeExtra($site);
