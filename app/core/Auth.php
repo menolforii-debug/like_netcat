@@ -9,14 +9,14 @@ final class Auth
         }
     }
 
-    public static function login($login, $password): bool
+    public static function authenticate(string $login, string $password): bool
     {
         if (!self::usersTableExists()) {
             return false;
         }
 
         $user = DB::fetchOne(
-            'SELECT id, login, pass_hash, role FROM users WHERE login = :login LIMIT 1',
+            'SELECT id, login, pass_hash FROM users WHERE login = :login LIMIT 1',
             ['login' => $login]
         );
 
@@ -28,10 +28,14 @@ final class Auth
         $_SESSION['user'] = [
             'id' => $user['id'],
             'login' => $user['login'],
-            'role' => $user['role'],
         ];
 
         return true;
+    }
+
+    public static function login(string $login, string $password): bool
+    {
+        return self::authenticate($login, $password);
     }
 
     public static function logout(): void
@@ -46,22 +50,23 @@ final class Auth
 
     public static function canEdit(): bool
     {
-        $user = self::user();
-        if (!$user) {
-            return false;
-        }
-
-        return in_array($user['role'], ['admin', 'editor'], true);
+        return self::user() !== null;
     }
 
     public static function isAdmin(): bool
     {
-        $user = self::user();
-        if (!$user) {
-            return false;
-        }
+        return self::user() !== null;
+    }
 
-        return $user['role'] === 'admin';
+    public static function createUser(string $login, string $password): int
+    {
+        $stmt = DB::pdo()->prepare('INSERT INTO users (login, pass_hash) VALUES (:login, :pass_hash)');
+        $stmt->execute([
+            'login' => $login,
+            'pass_hash' => password_hash($password, PASSWORD_DEFAULT),
+        ]);
+
+        return (int) DB::pdo()->lastInsertId();
     }
 
     private static function usersTableExists(): bool
