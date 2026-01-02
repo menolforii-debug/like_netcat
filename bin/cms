@@ -9,8 +9,8 @@ declare(strict_types=1);
  * Usage:
  *   php bin/cms migrate
  *   php bin/cms sections:list
- *   php bin/cms sections:add --parent=/ --slug=news --title="Новости"
- *   php bin/cms users:add --login=admin --pass=admin --role=admin
+ *   php bin/cms sections:add --parent-id=1 --english-name=news --title="Новости"
+ *   php bin/cms users:add --login=admin --pass=admin
  */
 
 $root = realpath(__DIR__ . '/..');
@@ -41,8 +41,8 @@ function help(): void {
     echo "Commands:\n";
     echo "  migrate\n";
     echo "  sections:list\n";
-    echo "  sections:add --parent=/ --slug=news --title=\"Новости\" [--sort=0]\n";
-    echo "  users:add --login=admin --pass=admin --role=admin|editor\n";
+    echo "  sections:add --parent-id=1 --english-name=news --title=\"Новости\" [--sort=0]\n";
+    echo "  users:add --login=admin --pass=admin\n";
     echo "\n";
 }
 
@@ -60,36 +60,43 @@ switch ($cmd) {
 
     case 'sections:list': {
         $rows = $core->db->fetchAll(
-            "SELECT id, parent_id, slug, title, sort FROM sections ORDER BY parent_id ASC, sort ASC, id ASC"
+            "SELECT id, parent_id, site_id, english_name, title, sort FROM sections ORDER BY parent_id ASC, sort ASC, id ASC"
         );
         foreach ($rows as $r) {
             $pid = $r['parent_id'] === null ? 'NULL' : (string)$r['parent_id'];
-            echo "#{$r['id']} parent={$pid} slug='{$r['slug']}' sort={$r['sort']} title=\"{$r['title']}\"\n";
+            $english = $r['english_name'] ?? '';
+            echo "#{$r['id']} parent={$pid} site_id={$r['site_id']} english_name='{$english}' sort={$r['sort']} title=\"{$r['title']}\"\n";
         }
         exit(0);
     }
 
     case 'sections:add': {
         $kv = parse_kv_args($args);
-        $parentPath = $kv['parent'] ?? '/';
-        $slug  = $kv['slug']  ?? '';
+        $parentId = isset($kv['parent-id']) ? (int) $kv['parent-id'] : null;
+        $englishName  = $kv['english-name'] ?? '';
         $title = $kv['title'] ?? '';
         $sort  = (int)($kv['sort'] ?? 0);
 
-        if ($slug === '' || $title === '') {
-            fwrite(STDERR, "Missing --slug or --title\n");
+        if ($title === '' || ($parentId !== null && $englishName === '')) {
+            fwrite(STDERR, "Missing --title or --english-name\n");
             exit(1);
         }
 
-        $repo = new SectionRepo($core);
-        $parent = $repo->getByPath($parentPath);
+        $repo = new SectionRepo();
+        if ($parentId === null) {
+            $id = $repo->createSite($title);
+            echo "Created site section id={$id}\n";
+            exit(0);
+        }
+
+        $parent = $repo->findById($parentId);
         if (!$parent) {
-            fwrite(STDERR, "Parent section not found by path: {$parentPath}\n");
+            fwrite(STDERR, "Parent section not found by id: {$parentId}\n");
             exit(1);
         }
 
-        $id = $repo->create((int)$parent['id'], $slug, $title, $sort);
-        echo "Created section id={$id} at {$parentPath}{$slug}/\n";
+        $id = $repo->createSection($parentId, (int) $parent['site_id'], $englishName, $title, $sort);
+        echo "Created section id={$id} parent={$parentId} english_name={$englishName}\n";
         exit(0);
     }
 
@@ -97,30 +104,19 @@ switch ($cmd) {
         $kv = parse_kv_args($args);
         $login = $kv['login'] ?? '';
         $pass  = $kv['pass'] ?? '';
-        $role  = $kv['role'] ?? '';
 
-        if ($login === '' || $pass === '' || !in_array($role, ['admin', 'editor'], true)) {
-            fwrite(STDERR, "Usage: users:add --login=... --pass=... --role=admin|editor\n");
+        if ($login === '' || $pass === '') {
+            fwrite(STDERR, "Usage: users:add --login=... --pass=...\n");
             exit(1);
         }
 
-        // ensure users table exists (step 4/5 might add it later, but safe)
-        $core->db->pdo()->exec(
-            "CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                login TEXT UNIQUE NOT NULL,
-                pass_hash TEXT NOT NULL,
-                role TEXT NOT NULL
-            )"
-        );
-
         $hash = password_hash($pass, PASSWORD_DEFAULT);
         $core->db->exec(
-            "INSERT INTO users(login, pass_hash, role) VALUES(?, ?, ?)",
-            [$login, $hash, $role]
+            "INSERT INTO users(login, pass_hash) VALUES(?, ?)",
+            [$login, $hash]
         );
 
-        echo "Created user '{$login}' role={$role}\n";
+        echo "Created user '{$login}'\n";
         exit(0);
     }
 
