@@ -313,7 +313,6 @@ final class Renderer
     {
         $segments = [];
         $currentId = $sectionId;
-
         while ($currentId !== null) {
             $section = $repo->findById($currentId);
             if ($section === null) {
@@ -321,7 +320,11 @@ final class Renderer
             }
 
             if (!empty($section['english_name'])) {
-                $segments[] = $section['english_name'];
+                if ($section['parent_id'] === null && $section['english_name'] === 'index') {
+                    // Пропускаем системную "Главную" в пути.
+                } else {
+                    $segments[] = $section['english_name'];
+                }
             }
 
             $currentId = $section['parent_id'] !== null ? (int) $section['parent_id'] : null;
@@ -357,6 +360,14 @@ final class Renderer
     private function resolveSectionByPath(SectionRepo $repo, array $site, string $path): ?array
     {
         $segments = trim($path, '/') === '' ? [] : explode('/', trim($path, '/'));
+        if (empty($segments)) {
+            $index = $repo->findRootByEnglishName((int) $site['id'], 'index');
+            if ($index !== null) {
+                return $index;
+            }
+
+            return $site;
+        }
         $current = $site;
 
         foreach ($segments as $segment) {

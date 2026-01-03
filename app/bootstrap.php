@@ -113,9 +113,22 @@ function ensureDefaultSite(string $host): void
         'site_offline_html' => '<h1>Site offline</h1>',
     ]);
 
-    $children = $repo->listChildren($siteId);
-    if (empty($children)) {
-        $repo->createSection($siteId, $siteId, 'news', 'News', 0, []);
+    $rootIndex = $repo->findRootByEnglishName($siteId, 'index');
+    if ($rootIndex === null) {
+        $indexId = $repo->createSection(null, $siteId, 'index', 'Главная', 0, []);
+        $rootIndex = $repo->findById($indexId);
+    }
+
+    $rootNotFound = $repo->findRootByEnglishName($siteId, '404');
+    if ($rootNotFound === null) {
+        $repo->createSection(null, $siteId, '404', '404', 0, []);
+    }
+
+    if ($rootIndex !== null) {
+        $children = $repo->listChildren((int) $rootIndex['id']);
+        if (empty($children)) {
+            $repo->createSection((int) $rootIndex['id'], $siteId, 'news', 'News', 0, []);
+        }
     }
 }
 

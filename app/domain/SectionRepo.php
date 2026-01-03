@@ -33,7 +33,7 @@ final class SectionRepo
         return DB::fetchAll(
             'SELECT id, parent_id, site_id, english_name, title, sort, extra_json
             FROM sections
-            WHERE parent_id IS NULL
+            WHERE parent_id IS NULL AND english_name IS NULL
             ORDER BY id ASC'
         );
     }
@@ -127,6 +127,20 @@ final class SectionRepo
 
     public function listChildren($parentId): array
     {
+        $parent = $this->findById($parentId);
+        if ($parent !== null && $parent['parent_id'] === null) {
+            return DB::fetchAll(
+                'SELECT id, parent_id, site_id, english_name, title, sort, extra_json
+                FROM sections
+                WHERE (parent_id = :parent_id OR (parent_id IS NULL AND site_id = :site_id AND id != :parent_id))
+                ORDER BY sort ASC, id ASC',
+                [
+                    'parent_id' => $parentId,
+                    'site_id' => $parentId,
+                ]
+            );
+        }
+
         return DB::fetchAll(
             'SELECT id, parent_id, site_id, english_name, title, sort, extra_json
             FROM sections
