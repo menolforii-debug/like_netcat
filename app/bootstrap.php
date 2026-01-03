@@ -14,6 +14,7 @@ require $root . '/app/domain/SectionRepo.php';
 require $root . '/app/domain/ComponentRepo.php';
 require $root . '/app/domain/InfoblockRepo.php';
 require $root . '/app/domain/ObjectRepo.php';
+require $root . '/app/domain/UserRepo.php';
 require $root . '/app/render/Renderer.php';
 require $root . '/app/ui/Layout.php';
 require $root . '/app/ui/AdminLayout.php';
@@ -33,9 +34,6 @@ runMigrations(DB::pdo(), $root . '/migrations');
 $core = new Core(DB::pdo(), new EventBus());
 $GLOBALS['core'] = $core;
 
-if (DB::hasTable('users') && usersCount() === 0) {
-    seedAdminUser();
-}
 ensureDefaultSite(isset($_SERVER['HTTP_HOST']) ? (string) $_SERVER['HTTP_HOST'] : '');
 
 function core(): Core
@@ -91,15 +89,6 @@ function usersCount(): int
     return $row ? (int) $row['cnt'] : 0;
 }
 
-function seedAdminUser(): void
-{
-    $stmt = DB::pdo()->prepare('INSERT INTO users (login, pass_hash) VALUES (:login, :pass_hash)');
-    $stmt->execute([
-        'login' => 'admin',
-        'pass_hash' => password_hash('admin', PASSWORD_DEFAULT),
-    ]);
-}
-
 function ensureDefaultSite(string $host): void
 {
     if (!DB::hasTable('sections')) {
@@ -125,9 +114,22 @@ function ensureDefaultSite(string $host): void
         'site_offline_html' => '<h1>Site offline</h1>',
     ]);
 
-    $children = $repo->listChildren($siteId);
-    if (empty($children)) {
-        $repo->createSection($siteId, $siteId, 'news', 'News', 0, []);
+    $rootIndex = $repo->findRootByEnglishName($siteId, 'index');
+    if ($rootIndex === null) {
+        $indexId = $repo->createSection($siteId, $siteId, 'index', 'Главная', 0, []);
+        $rootIndex = $repo->findById($indexId);
+    }
+
+    $rootNotFound = $repo->findRootByEnglishName($siteId, '404');
+    if ($rootNotFound === null) {
+        $repo->createSection($siteId, $siteId, '404', '404', 0, []);
+    }
+
+    if ($rootIndex !== null) {
+        $children = $repo->listChildren((int) $rootIndex['id']);
+        if (empty($children)) {
+            $repo->createSection((int) $rootIndex['id'], $siteId, 'news', 'News', 0, []);
+        }
     }
 }
 

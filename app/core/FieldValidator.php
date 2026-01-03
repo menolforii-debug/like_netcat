@@ -35,6 +35,10 @@ final class FieldValidator
             }
         }
 
+        if (isset($sanitized['english_name']) && !$this->isUrlSafe((string) $sanitized['english_name'])) {
+            $errors[] = 'Поле "english_name" должно быть URL-безопасным.';
+        }
+
         $this->applySeoMapping($fields, $sanitized);
 
         if (!empty($errors)) {
@@ -90,6 +94,7 @@ final class FieldValidator
         switch ($type) {
             case 'string':
             case 'text':
+            case 'html':
                 return (string) $value;
             case 'int':
                 if (!is_numeric($value)) {
@@ -97,6 +102,7 @@ final class FieldValidator
                     return null;
                 }
                 return (int) $value;
+            case 'number':
             case 'float':
                 if (!is_numeric($value)) {
                     $errors[] = 'Поле "' . $name . '" должно быть числом.';
@@ -109,6 +115,21 @@ final class FieldValidator
                 $value = (string) $value;
                 if (!$this->isValidDate($value)) {
                     $errors[] = 'Поле "' . $name . '" должно быть датой YYYY-MM-DD.';
+                    return null;
+                }
+                return $value;
+            case 'datetime':
+                $value = (string) $value;
+                if (!$this->isValidDateTime($value)) {
+                    $errors[] = 'Поле "' . $name . '" должно быть корректной датой и временем.';
+                    return null;
+                }
+                return $value;
+            case 'url_safe':
+            case 'slug':
+                $value = (string) $value;
+                if (!$this->isUrlSafe($value)) {
+                    $errors[] = 'Поле "' . $name . '" должно быть URL-безопасным.';
                     return null;
                 }
                 return $value;
@@ -139,6 +160,21 @@ final class FieldValidator
         return checkdate((int) $parts[1], (int) $parts[2], (int) $parts[0]);
     }
 
+    private function isValidDateTime(string $value): bool
+    {
+        try {
+            new DateTimeImmutable($value);
+            return true;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    private function isUrlSafe(string $value): bool
+    {
+        return (bool) preg_match('/^[A-Za-z0-9_-]+$/', $value);
+    }
+
     private function applySeoMapping(array $fields, array &$data): void
     {
         $seoTitle = $data['seo_title'] ?? '';
@@ -150,6 +186,9 @@ final class FieldValidator
             }
 
             $name = $field['name'];
+            if (($name === 'english_name' || $name === 'slug') && isset($data[$name]) && !$this->isUrlSafe((string) $data[$name])) {
+                continue;
+            }
             if ($name === 'title' && $seoTitle === '' && isset($data[$name])) {
                 $data['seo_title'] = (string) $data[$name];
                 $seoTitle = $data['seo_title'];
