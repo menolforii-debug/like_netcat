@@ -320,7 +320,7 @@ final class Renderer
             }
 
             if (!empty($section['english_name'])) {
-                if ($section['parent_id'] === null && $section['english_name'] === 'index') {
+                if ($section['english_name'] === 'index' && (int) $section['parent_id'] === (int) $section['site_id']) {
                     // Пропускаем системную "Главную" в пути.
                 } else {
                     $segments[] = $section['english_name'];

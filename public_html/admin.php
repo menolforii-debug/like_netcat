@@ -548,19 +548,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $siteId = $sectionRepo->createSite($title);
         // Системные корневые разделы для нового сайта (создаем без дублей).
         $rootIndex = DB::fetchOne(
-            'SELECT 1 FROM sections WHERE site_id = :site_id AND parent_id IS NULL AND english_name = :english_name LIMIT 1',
-            ['site_id' => $siteId, 'english_name' => 'index']
+            'SELECT 1 FROM sections WHERE site_id = :site_id AND parent_id = :parent_id AND english_name = :english_name LIMIT 1',
+            ['site_id' => $siteId, 'parent_id' => $siteId, 'english_name' => 'index']
         );
         if ($rootIndex === null) {
-            $sectionRepo->createSection(null, $siteId, 'index', 'Главная');
+            $sectionRepo->createSection($siteId, $siteId, 'index', 'Главная');
         }
 
         $rootNotFound = DB::fetchOne(
-            'SELECT 1 FROM sections WHERE site_id = :site_id AND parent_id IS NULL AND english_name = :english_name LIMIT 1',
-            ['site_id' => $siteId, 'english_name' => '404']
+            'SELECT 1 FROM sections WHERE site_id = :site_id AND parent_id = :parent_id AND english_name = :english_name LIMIT 1',
+            ['site_id' => $siteId, 'parent_id' => $siteId, 'english_name' => '404']
         );
         if ($rootNotFound === null) {
-            $sectionRepo->createSection(null, $siteId, '404', '404');
+            $sectionRepo->createSection($siteId, $siteId, '404', '404');
         }
         if ($user) {
             AdminLog::log($user['id'], 'site_create', 'site', $siteId, [
@@ -602,7 +602,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             try {
-                if ($section['parent_id'] === null && in_array($section['english_name'], ['index', '404'], true)) {
+                if ((int) $section['parent_id'] === (int) $section['site_id'] && in_array($section['english_name'], ['index', '404'], true)) {
                     redirectTo(buildAdminUrl(['section_id' => $id, 'error' => 'Нельзя удалить системный раздел']));
                 }
                 $sectionRepo->delete($id);
@@ -681,7 +681,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $parentId = isset($_POST['parent_id']) ? (int) $_POST['parent_id'] : 0;
         $sort = isset($_POST['sort']) ? (int) $_POST['sort'] : 0;
         $layout = isset($_POST['layout']) ? trim((string) $_POST['layout']) : '';
-        $isSystemRoot = $section['parent_id'] === null && in_array($section['english_name'], ['index', '404'], true);
+        $isSystemRoot = (int) $section['parent_id'] === (int) $section['site_id'] && in_array($section['english_name'], ['index', '404'], true);
         if ($isSystemRoot) {
             $englishName = (string) $section['english_name'];
         }
@@ -1190,7 +1190,7 @@ if ($selected === null) {
             echo csrfTokenField();
             echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
             echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" type="text" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '" required></div>';
-            $isSystemRoot = $selected['parent_id'] === null && in_array($selected['english_name'], ['index', '404'], true);
+            $isSystemRoot = (int) $selected['parent_id'] === (int) $selected['site_id'] && in_array($selected['english_name'], ['index', '404'], true);
             $englishNameAttributes = $isSystemRoot ? ' disabled' : ' required';
             $englishNameHint = $isSystemRoot ? '<div class="form-text">Системный раздел: English name фиксирован.</div>' : '';
             echo '<div class="mb-3"><label class="form-label">English name (латиница)</label><input class="form-control" type="text" name="english_name" value="' . htmlspecialchars((string) ($selected['english_name'] ?? ''), ENT_QUOTES, 'UTF-8') . '"' . $englishNameAttributes . '>' . $englishNameHint . '</div>';

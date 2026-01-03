@@ -116,13 +116,13 @@ function ensureDefaultSite(string $host): void
 
     $rootIndex = $repo->findRootByEnglishName($siteId, 'index');
     if ($rootIndex === null) {
-        $indexId = $repo->createSection(null, $siteId, 'index', 'Главная', 0, []);
+        $indexId = $repo->createSection($siteId, $siteId, 'index', 'Главная', 0, []);
         $rootIndex = $repo->findById($indexId);
     }
 
     $rootNotFound = $repo->findRootByEnglishName($siteId, '404');
     if ($rootNotFound === null) {
-        $repo->createSection(null, $siteId, '404', '404', 0, []);
+        $repo->createSection($siteId, $siteId, '404', '404', 0, []);
     }
 
     if ($rootIndex !== null) {

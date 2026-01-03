@@ -46,7 +46,7 @@ final class SectionTree
             $isActive = $currentId !== null && (int) $node['id'] === $currentId;
             $title = htmlspecialchars((string) $node['title'], ENT_QUOTES, 'UTF-8');
             $link = '/admin.php?section_id=' . (int) $node['id'];
-            $isSystemRoot = $node['parent_id'] === null
+            $isSystemRoot = (int) $node['parent_id'] === (int) $node['site_id']
                 && isset($node['english_name'])
                 && in_array($node['english_name'], ['index', '404'], true);
 
