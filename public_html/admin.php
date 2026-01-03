@@ -315,8 +315,13 @@ $objectRepo = new ObjectRepo();
 
 if ($action === 'components') {
     $components = $componentRepo->listAll();
+    $editComponentId = isset($_GET['edit_component_id']) ? (int) $_GET['edit_component_id'] : 0;
+    $editComponent = $editComponentId > 0 ? $componentRepo->findById($editComponentId) : null;
 
     AdminLayout::renderHeader('Компоненты');
+    renderAlert($notice, 'success');
+    renderAlert($errorMessage, 'error');
+
     echo '<div class="d-flex align-items-center justify-content-between mb-3">';
     echo '<h1 class="h4 mb-0">Компоненты</h1>';
     echo '</div>';
@@ -324,29 +329,68 @@ if ($action === 'components') {
     if (empty($components)) {
         echo '<div class="alert alert-light border">Компонентов пока нет.</div>';
     } else {
-        echo '<div class="card shadow-sm">';
+        echo '<div class="card shadow-sm mb-4">';
         echo '<div class="table-responsive">';
         echo '<table class="table table-sm table-striped align-middle mb-0">';
-        echo '<thead><tr><th>ID</th><th>Ключ</th><th>Название</th></tr></thead><tbody>';
+        echo '<thead><tr><th>ID</th><th>Ключ</th><th>Название</th><th>Действия</th></tr></thead><tbody>';
         foreach ($components as $component) {
             echo '<tr>';
             echo '<td>' . (int) $component['id'] . '</td>';
             echo '<td>' . htmlspecialchars((string) $component['keyword'], ENT_QUOTES, 'UTF-8') . '</td>';
             echo '<td>' . htmlspecialchars((string) $component['name'], ENT_QUOTES, 'UTF-8') . '</td>';
+            echo '<td class="d-flex gap-2">';
+            echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'components', 'edit_component_id' => (int) $component['id']]), ENT_QUOTES, 'UTF-8') . '">Редактировать</a>';
+            echo '<form method="post" action="/admin.php?action=component_delete" onsubmit="return confirm(\'Удалить компонент?\')">';
+            echo '<input type="hidden" name="id" value="' . (int) $component['id'] . '">';
+            echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>';
+            echo '</form>';
+            echo '</td>';
             echo '</tr>';
         }
         echo '</tbody></table></div>';
         echo '</div>';
     }
 
+    $fieldsJson = $editComponent ? (string) ($editComponent['fields_json'] ?? '{}') : '{"fields": []}';
+    $viewsJson = $editComponent ? (string) ($editComponent['views_json'] ?? '[]') : '[]';
+    $formAction = $editComponent ? 'component_update' : 'component_create';
+    $formTitle = $editComponent ? 'Редактирование компонента' : 'Добавить компонент';
+    $buttonLabel = $editComponent ? 'Сохранить' : 'Добавить';
+
+    echo '<div class="card shadow-sm">';
+    echo '<div class="card-body">';
+    echo '<h2 class="h5">' . $formTitle . '</h2>';
+    echo '<form method="post" action="/admin.php?action=' . $formAction . '">';
+    if ($editComponent) {
+        echo '<input type="hidden" name="id" value="' . (int) $editComponent['id'] . '">';
+    }
+    echo '<div class="mb-3"><label class="form-label">Ключ</label><input class="form-control" type="text" name="keyword" value="' . htmlspecialchars((string) ($editComponent['keyword'] ?? ''), ENT_QUOTES, 'UTF-8') . '" required></div>';
+    echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" type="text" name="name" value="' . htmlspecialchars((string) ($editComponent['name'] ?? ''), ENT_QUOTES, 'UTF-8') . '" required></div>';
+    echo '<div class="mb-3"><label class="form-label">Поля (JSON)</label><textarea class="form-control" name="fields_json" rows="4">' . htmlspecialchars($fieldsJson, ENT_QUOTES, 'UTF-8') . '</textarea></div>';
+    echo '<div class="mb-3"><label class="form-label">Шаблоны (JSON)</label><textarea class="form-control" name="views_json" rows="3">' . htmlspecialchars($viewsJson, ENT_QUOTES, 'UTF-8') . '</textarea></div>';
+    echo '<button class="btn btn-primary" type="submit">' . $buttonLabel . '</button>';
+    if ($editComponent) {
+        echo '<a class="btn btn-link" href="' . htmlspecialchars(buildAdminUrl(['action' => 'components']), ENT_QUOTES, 'UTF-8') . '">Отмена</a>';
+    }
+    echo '</form>';
+    echo '</div></div>';
+
     AdminLayout::renderFooter();
     exit;
 }
 
-if ($action === 'users') {
+if ($action === 'user') {
     $users = DB::fetchAll('SELECT id, login FROM users ORDER BY id ASC');
+    $editUserId = isset($_GET['edit_user_id']) ? (int) $_GET['edit_user_id'] : 0;
+    $editUser = null;
+    if ($editUserId > 0) {
+        $editUser = DB::fetchOne('SELECT id, login FROM users WHERE id = :id LIMIT 1', ['id' => $editUserId]);
+    }
 
     AdminLayout::renderHeader('Пользователи');
+    renderAlert($notice, 'success');
+    renderAlert($errorMessage, 'error');
+
     echo '<div class="d-flex align-items-center justify-content-between mb-3">';
     echo '<h1 class="h4 mb-0">Пользователи</h1>';
     echo '</div>';
@@ -354,21 +398,47 @@ if ($action === 'users') {
     if (empty($users)) {
         echo '<div class="alert alert-light border">Пользователей пока нет.</div>';
     } else {
-        echo '<div class="card shadow-sm">';
+        echo '<div class="card shadow-sm mb-4">';
         echo '<div class="table-responsive">';
         echo '<table class="table table-sm table-striped align-middle mb-0">';
-        echo '<thead><tr><th>ID</th><th>Логин</th><th>Роль</th></tr></thead><tbody>';
+        echo '<thead><tr><th>ID</th><th>Логин</th><th>Действия</th></tr></thead><tbody>';
         foreach ($users as $row) {
-            $role = '—';
             echo '<tr>';
             echo '<td>' . (int) $row['id'] . '</td>';
             echo '<td>' . htmlspecialchars((string) $row['login'], ENT_QUOTES, 'UTF-8') . '</td>';
-            echo '<td>' . htmlspecialchars($role, ENT_QUOTES, 'UTF-8') . '</td>';
+            echo '<td class="d-flex gap-2">';
+            echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'user', 'edit_user_id' => (int) $row['id']]), ENT_QUOTES, 'UTF-8') . '">Редактировать</a>';
+            echo '<form method="post" action="/admin.php?action=user_delete" onsubmit="return confirm(\'Удалить пользователя?\')">';
+            echo '<input type="hidden" name="id" value="' . (int) $row['id'] . '">';
+            echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>';
+            echo '</form>';
+            echo '</td>';
             echo '</tr>';
         }
         echo '</tbody></table></div>';
         echo '</div>';
     }
+
+    $userFormAction = $editUser ? 'user_update' : 'user_create';
+    $userFormTitle = $editUser ? 'Редактирование пользователя' : 'Добавить пользователя';
+    $userButtonLabel = $editUser ? 'Сохранить' : 'Добавить';
+    $passwordHint = $editUser ? '<div class="form-text">Оставьте пустым, чтобы не менять пароль.</div>' : '';
+
+    echo '<div class="card shadow-sm">';
+    echo '<div class="card-body">';
+    echo '<h2 class="h5">' . $userFormTitle . '</h2>';
+    echo '<form method="post" action="/admin.php?action=' . $userFormAction . '">';
+    if ($editUser) {
+        echo '<input type="hidden" name="id" value="' . (int) $editUser['id'] . '">';
+    }
+    echo '<div class="mb-3"><label class="form-label">Логин</label><input class="form-control" type="text" name="login" value="' . htmlspecialchars((string) ($editUser['login'] ?? ''), ENT_QUOTES, 'UTF-8') . '" required></div>';
+    echo '<div class="mb-3"><label class="form-label">Пароль</label><input class="form-control" type="password" name="pass"' . ($editUser ? '' : ' required') . '>' . $passwordHint . '</div>';
+    echo '<button class="btn btn-primary" type="submit">' . $userButtonLabel . '</button>';
+    if ($editUser) {
+        echo '<a class="btn btn-link" href="' . htmlspecialchars(buildAdminUrl(['action' => 'user']), ENT_QUOTES, 'UTF-8') . '">Отмена</a>';
+    }
+    echo '</form>';
+    echo '</div></div>';
 
     AdminLayout::renderFooter();
     exit;
@@ -431,6 +501,109 @@ if ($action === 'logs') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if ($action === 'component_create') {
+        $keyword = isset($_POST['keyword']) ? trim((string) $_POST['keyword']) : '';
+        $name = isset($_POST['name']) ? trim((string) $_POST['name']) : '';
+        $fieldsJson = isset($_POST['fields_json']) ? (string) $_POST['fields_json'] : '{}';
+        $viewsJson = isset($_POST['views_json']) ? (string) $_POST['views_json'] : '[]';
+
+        if ($keyword === '' || $name === '') {
+            redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Заполните ключ и название']));
+        }
+
+        try {
+            $fields = parseJsonField($fieldsJson, 'Поля должны быть корректным JSON');
+            $views = parseJsonField($viewsJson, 'Шаблоны должны быть корректным JSON');
+        } catch (Throwable $e) {
+            redirectTo(buildAdminUrl(['action' => 'components', 'error' => $e->getMessage()]));
+        }
+
+        $componentRepo->create($keyword, $name, $fields, $views);
+        redirectTo(buildAdminUrl(['action' => 'components', 'notice' => 'Компонент добавлен']));
+    }
+
+    if ($action === 'component_update') {
+        $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
+        $keyword = isset($_POST['keyword']) ? trim((string) $_POST['keyword']) : '';
+        $name = isset($_POST['name']) ? trim((string) $_POST['name']) : '';
+        $fieldsJson = isset($_POST['fields_json']) ? (string) $_POST['fields_json'] : '{}';
+        $viewsJson = isset($_POST['views_json']) ? (string) $_POST['views_json'] : '[]';
+
+        if ($id === 0 || $keyword === '' || $name === '') {
+            redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Заполните ключ и название']));
+        }
+
+        try {
+            $fields = parseJsonField($fieldsJson, 'Поля должны быть корректным JSON');
+            $views = parseJsonField($viewsJson, 'Шаблоны должны быть корректным JSON');
+        } catch (Throwable $e) {
+            redirectTo(buildAdminUrl(['action' => 'components', 'error' => $e->getMessage()]));
+        }
+
+        $componentRepo->update($id, $keyword, $name, $fields, $views);
+        redirectTo(buildAdminUrl(['action' => 'components', 'notice' => 'Компонент обновлен']));
+    }
+
+    if ($action === 'component_delete') {
+        $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
+        if ($id === 0) {
+            redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Компонент не найден']));
+        }
+
+        $stmt = DB::pdo()->prepare('DELETE FROM components WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+        redirectTo(buildAdminUrl(['action' => 'components', 'notice' => 'Компонент удален']));
+    }
+
+    if ($action === 'user_create') {
+        $login = isset($_POST['login']) ? trim((string) $_POST['login']) : '';
+        $pass = isset($_POST['pass']) ? (string) $_POST['pass'] : '';
+
+        if ($login === '' || $pass === '') {
+            redirectTo(buildAdminUrl(['action' => 'user', 'error' => 'Заполните логин и пароль']));
+        }
+
+        Auth::createUser($login, $pass);
+        redirectTo(buildAdminUrl(['action' => 'user', 'notice' => 'Пользователь добавлен']));
+    }
+
+    if ($action === 'user_update') {
+        $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
+        $login = isset($_POST['login']) ? trim((string) $_POST['login']) : '';
+        $pass = isset($_POST['pass']) ? (string) $_POST['pass'] : '';
+
+        if ($id === 0 || $login === '') {
+            redirectTo(buildAdminUrl(['action' => 'user', 'error' => 'Заполните логин']));
+        }
+
+        $stmt = DB::pdo()->prepare('UPDATE users SET login = :login WHERE id = :id');
+        $stmt->execute([
+            'login' => $login,
+            'id' => $id,
+        ]);
+
+        if ($pass !== '') {
+            $stmt = DB::pdo()->prepare('UPDATE users SET pass_hash = :pass_hash WHERE id = :id');
+            $stmt->execute([
+                'pass_hash' => password_hash($pass, PASSWORD_DEFAULT),
+                'id' => $id,
+            ]);
+        }
+
+        redirectTo(buildAdminUrl(['action' => 'user', 'notice' => 'Пользователь обновлен']));
+    }
+
+    if ($action === 'user_delete') {
+        $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
+        if ($id === 0) {
+            redirectTo(buildAdminUrl(['action' => 'user', 'error' => 'Пользователь не найден']));
+        }
+
+        $stmt = DB::pdo()->prepare('DELETE FROM users WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+        redirectTo(buildAdminUrl(['action' => 'user', 'notice' => 'Пользователь удален']));
+    }
+
     if ($action === 'site_create') {
         $title = isset($_POST['title']) ? trim((string) $_POST['title']) : 'Новый сайт';
         $siteId = $sectionRepo->createSite($title);

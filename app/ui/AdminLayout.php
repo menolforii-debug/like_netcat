@@ -18,7 +18,7 @@ final class AdminLayout
         echo '<ul class="navbar-nav me-auto">';
         echo '<li class="nav-item"><a class="nav-link" href="/admin.php">Панель</a></li>';
         echo '<li class="nav-item"><a class="nav-link" href="/admin.php?action=components">Компоненты</a></li>';
-        echo '<li class="nav-item"><a class="nav-link" href="/admin.php?action=users">Пользователи</a></li>';
+        echo '<li class="nav-item"><a class="nav-link" href="/admin.php?action=user">Пользователи</a></li>';
         echo '<li class="nav-item"><a class="nav-link" href="/admin.php?action=logs">Логи</a></li>';
         echo '<li class="nav-item"><a class="nav-link" href="/">На сайт</a></li>';
         echo '</ul>';
