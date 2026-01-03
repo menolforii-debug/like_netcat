@@ -32,6 +32,29 @@ function renderAlert(?string $message, string $type = 'info'): void
     echo '<div class="alert alert-' . htmlspecialchars($class, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($message, ENT_QUOTES, 'UTF-8') . '</div>';
 }
 
+function csrfToken(): string
+{
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+
+    return (string) $_SESSION['csrf_token'];
+}
+
+function csrfTokenField(): string
+{
+    return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars(csrfToken(), ENT_QUOTES, 'UTF-8') . '">';
+}
+
+function isValidCsrfToken($token): bool
+{
+    if (!is_string($token) || $token === '') {
+        return false;
+    }
+
+    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+}
+
 function parseJsonField(string $value, string $errorMessage): array
 {
     $decoded = json_decode($value, true);
@@ -266,7 +289,7 @@ function englishNameIsValid(string $englishName): bool
 }
 
 if ($action === 'login') {
-    $error = '';
+    $error = isset($_GET['error']) ? (string) $_GET['error'] : '';
     $generatedPassword = null;
     if (DB::hasTable('users') && usersCount() === 0) {
         $generatedPassword = bin2hex(random_bytes(8));
@@ -276,6 +299,9 @@ if ($action === 'login') {
         $generatedPassword = (string) $_SESSION['initial_admin_password'];
     }
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        if (!isValidCsrfToken($_POST['csrf_token'] ?? null)) {
+            redirectTo(buildAdminUrl(['action' => 'login', 'error' => 'Неверный CSRF-токен']));
+        }
         $login = isset($_POST['login']) ? trim((string) $_POST['login']) : '';
         $pass = isset($_POST['pass']) ? (string) $_POST['pass'] : '';
 
@@ -298,6 +324,7 @@ if ($action === 'login') {
     }
     renderAlert($error, 'error');
     echo '<form method="post" action="/admin.php?action=login">';
+    echo csrfTokenField();
     echo '<div class="mb-3"><label class="form-label">Логин</label><input class="form-control" type="text" name="login" required></div>';
     echo '<div class="mb-3"><label class="form-label">Пароль</label><input class="form-control" type="password" name="pass" required></div>';
     echo '<button class="btn btn-primary w-100" type="submit">Войти</button>';
@@ -382,6 +409,9 @@ if ($action === 'logs') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!isValidCsrfToken($_POST['csrf_token'] ?? null)) {
+        redirectTo(buildAdminUrl(['error' => 'Неверный CSRF-токен']));
+    }
     if ($action === 'site_create') {
         $title = isset($_POST['title']) ? trim((string) $_POST['title']) : 'Новый сайт';
         $siteId = $sectionRepo->createSite($title);
@@ -915,6 +945,7 @@ if ($action === 'object_form') {
     echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']), ENT_QUOTES, 'UTF-8') . '">Назад</a>';
     echo '</div>';
     echo '<form method="post" action="/admin.php?action=' . ($object ? 'object_update' : 'object_create') . '">';
+    echo csrfTokenField();
     if ($object) {
         echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
     } else {
@@ -957,9 +988,10 @@ echo '<div class="d-flex justify-content-between align-items-center mb-2">';
 echo '<h2 class="h6 mb-0">Сайты и разделы</h2>';
 echo '</div>';
 echo '<form method="post" action="/admin.php?action=site_create" class="mb-3">';
+echo csrfTokenField();
 echo '<button class="btn btn-sm btn-outline-primary w-100" type="submit">+ Добавить сайт</button>';
 echo '</form>';
-echo SectionTree::render($sections, $selectedId);
+echo SectionTree::render($sections, $selectedId, csrfToken());
 echo '</div>';
 
 echo '<div class="flex-grow-1">';
@@ -984,6 +1016,7 @@ if ($selected === null) {
         echo '</ul>';
         echo '<h1 class="h5">Настройки сайта</h1>';
         echo '<form method="post" action="/admin.php?action=site_update">';
+        echo csrfTokenField();
         echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
         echo '<div class="mb-3"><label class="form-label">Название сайта</label><input class="form-control" type="text" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '"></div>';
         echo '<div class="mb-3"><label class="form-label">Основной домен</label><input class="form-control" type="text" name="site_domain" value="' . htmlspecialchars((string) ($extra['site_domain'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
@@ -1021,6 +1054,7 @@ if ($selected === null) {
 
             echo '<h1 class="h5">Настройки раздела</h1>';
             echo '<form method="post" action="/admin.php?action=section_update">';
+            echo csrfTokenField();
             echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
             echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" type="text" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '" required></div>';
             $isSystemRoot = $selected['parent_id'] === null && in_array($selected['english_name'], ['index', '404'], true);
@@ -1058,6 +1092,7 @@ if ($selected === null) {
             $extra = decodeExtra($selected);
             echo '<h1 class="h5">SEO</h1>';
             echo '<form method="post" action="/admin.php?action=seo_update">';
+            echo csrfTokenField();
             echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
             echo '<div class="mb-3"><label class="form-label">SEO заголовок</label><input class="form-control" type="text" name="seo_title" value="' . htmlspecialchars((string) ($extra['seo_title'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
             echo '<div class="mb-3"><label class="form-label">SEO описание</label><textarea class="form-control" name="seo_description" rows="3">' . htmlspecialchars((string) ($extra['seo_description'] ?? ''), ENT_QUOTES, 'UTF-8') . '</textarea></div>';
@@ -1099,6 +1134,7 @@ if ($selected === null) {
                     echo '<td class="d-flex gap-2">';
                     echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $selectedId, 'tab' => 'infoblocks', 'edit_infoblock_id' => (int) $infoblock['id']]), ENT_QUOTES, 'UTF-8') . '">Редактировать</a>';
                     echo '<form method="post" action="/admin.php?action=infoblock_delete" onsubmit="return confirm(\"Удалить инфоблок?\")">';
+                    echo csrfTokenField();
                     echo '<input type="hidden" name="id" value="' . (int) $infoblock['id'] . '">';
                     echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
                     echo '<input type="hidden" name="name" value="' . htmlspecialchars((string) $infoblock['name'], ENT_QUOTES, 'UTF-8') . '">';
@@ -1127,6 +1163,7 @@ if ($selected === null) {
                 echo '<hr class="my-4">';
                 echo '<h3 class="h6">Редактирование инфоблока</h3>';
                 echo '<form method="post" action="/admin.php?action=infoblock_update">';
+                echo csrfTokenField();
                 echo '<input type="hidden" name="id" value="' . (int) $editInfoblock['id'] . '">';
                 echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
                 echo '<div class="row">';
@@ -1160,6 +1197,7 @@ if ($selected === null) {
             echo '<hr class="my-4">';
             echo '<h3 class="h6">Добавить инфоблок</h3>';
             echo '<form method="post" action="/admin.php?action=infoblock_create">';
+            echo csrfTokenField();
             echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
             echo '<div class="row">';
             echo '<div class="col-md-4 mb-3"><label class="form-label">Компонент</label><select class="form-select" name="component_id">';
@@ -1232,12 +1270,14 @@ if ($selected === null) {
                             echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'object_form', 'section_id' => $selected['id'], 'id' => $object['id']]), ENT_QUOTES, 'UTF-8') . '">Редактировать</a>';
                             if ($status === 'draft') {
                                 echo '<form method="post" action="/admin.php?action=object_publish">';
+                                echo csrfTokenField();
                                 echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
                                 echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
                                 echo '<button class="btn btn-sm btn-success" type="submit">Опубликовать</button>';
                                 echo '</form>';
                             } else {
                                 echo '<form method="post" action="/admin.php?action=object_unpublish">';
+                                echo csrfTokenField();
                                 echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
                                 echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
                                 echo '<button class="btn btn-sm btn-warning" type="submit">Снять с публикации</button>';
@@ -1245,6 +1285,7 @@ if ($selected === null) {
                             }
                             echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars($previewUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank">Предпросмотр</a>';
                             echo '<form method="post" action="/admin.php?action=object_delete" onsubmit="return confirm(\"Удалить объект?\")">';
+                            echo csrfTokenField();
                             echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
                             echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
                             echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>';
