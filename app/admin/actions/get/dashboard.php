@@ -1,6 +1,6 @@
 <?php
 
-$sites = $sectionRepo->listSites();
+$sites = $sectionRepo->listSitesOnly();
 $sections = [];
 foreach ($sites as $site) {
     $sections[] = $site;

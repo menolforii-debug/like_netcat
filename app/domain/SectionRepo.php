@@ -9,7 +9,7 @@ final class SectionRepo
             return null;
         }
 
-        $sites = $this->listSites();
+        $sites = $this->listSitesOnly();
         foreach ($sites as $site) {
             $settings = $this->getSiteSettings($site);
             $domain = $this->normalizeHost((string) ($settings['site_domain'] ?? ''));
@@ -30,10 +30,15 @@ final class SectionRepo
 
     public function listSites(): array
     {
+        return $this->listSitesOnly();
+    }
+
+    public function listSitesOnly(): array
+    {
         return DB::fetchAll(
             'SELECT id, parent_id, site_id, english_name, title, sort, extra_json
             FROM sections
-            WHERE parent_id IS NULL AND english_name IS NULL
+            WHERE parent_id IS NULL AND id = site_id
             ORDER BY id ASC'
         );
     }
