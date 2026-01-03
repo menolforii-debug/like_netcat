@@ -59,10 +59,6 @@ final class Auth
             return null;
         }
 
-        if (!isset($user['role']) || $user['role'] === '') {
-            $user['role'] = 'admin';
-        }
-
         return $user;
     }
 
