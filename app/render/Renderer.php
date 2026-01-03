@@ -22,9 +22,16 @@ final class Renderer
         $section = $this->resolveSectionByPath($sectionRepo, $site, $path);
 
         if ($section === null) {
+            $section404 = $sectionRepo->findRootByEnglishName((int) $site['id'], '404');
+            if ($section404 === null) {
+                http_response_code(404);
+                echo '404';
+                return;
+            }
+
             http_response_code(404);
-            echo 'Section not found';
-            return;
+            $section = $section404;
+            $path = '/404';
         }
 
         $sectionPath = $this->buildSectionPath($sectionRepo, (int) $section['id']);
