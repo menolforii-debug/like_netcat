@@ -214,8 +214,6 @@ final class Renderer
 
     private function resolveSeo(array $section, array $infoblocks, array $infoblockViews, string $itemTitle): array
     {
-        $sectionExtra = $this->decodeExtra($section);
-
         $objectData = [];
         foreach ($infoblockViews as $view) {
             if (($view['infoblock']['view_template'] ?? '') === 'item' && !empty($view['items'])) {
@@ -224,41 +222,20 @@ final class Renderer
             }
         }
 
-        $title = '';
-        if (!empty($sectionExtra['seo_title'])) {
-            $title = (string) $sectionExtra['seo_title'];
+        $fallbackTitle = '';
+        if ($itemTitle !== '') {
+            $fallbackTitle = $itemTitle;
+        } elseif (count($infoblocks) === 1) {
+            $only = $infoblocks[0];
+            $fallbackTitle = (string) ($section['title'] ?? '') . ' — ' . (string) ($only['name'] ?? '');
         }
 
-        if ($title === '') {
-            if ($itemTitle !== '') {
-                $title = $itemTitle;
-            } elseif (count($infoblocks) === 1) {
-                $only = $infoblocks[0];
-                $title = (string) ($section['title'] ?? '') . ' — ' . (string) ($only['name'] ?? '');
-            } else {
-                $title = (string) ($section['title'] ?? '');
-            }
+        $object = null;
+        if (!empty($objectData)) {
+            $object = ['data' => $objectData];
         }
 
-        $description = '';
-        if (!empty($objectData['seo_description'])) {
-            $description = (string) $objectData['seo_description'];
-        } elseif (!empty($sectionExtra['seo_description'])) {
-            $description = (string) $sectionExtra['seo_description'];
-        }
-
-        $keywords = '';
-        if (!empty($objectData['seo_keywords'])) {
-            $keywords = (string) $objectData['seo_keywords'];
-        } elseif (!empty($sectionExtra['seo_keywords'])) {
-            $keywords = (string) $sectionExtra['seo_keywords'];
-        }
-
-        return [
-            'title' => $title,
-            'description' => $description,
-            'keywords' => $keywords,
-        ];
+        return Seo::resolve($section, $object, $fallbackTitle);
     }
 
     private function resolveItemTitle(array $object, array $component): string

@@ -2,7 +2,7 @@
 
 final class Seo
 {
-    public static function resolve(array $section, ?array $object = null): array
+    public static function resolve(array $section, ?array $object = null, string $fallbackTitle = ''): array
     {
         $objectData = [];
         if ($object !== null) {
@@ -29,6 +29,10 @@ final class Seo
         $title = self::pick($objectData, $sectionExtra, 'seo_title');
         $description = self::pick($objectData, $sectionExtra, 'seo_description');
         $keywords = self::pick($objectData, $sectionExtra, 'seo_keywords');
+
+        if ($title === '' && $fallbackTitle !== '') {
+            $title = $fallbackTitle;
+        }
 
         if ($title === '') {
             $title = (string) ($section['title'] ?? '');
