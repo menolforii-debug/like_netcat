@@ -1,5 +1,5 @@
 <?php
-
+////1
 require __DIR__ . '/../app/bootstrap.php';
 
 $action = isset($_GET['action']) ? (string) $_GET['action'] : '';
