@@ -267,6 +267,14 @@ function englishNameIsValid(string $englishName): bool
 
 if ($action === 'login') {
     $error = '';
+    $generatedPassword = null;
+    if (DB::hasTable('users') && usersCount() === 0) {
+        $generatedPassword = bin2hex(random_bytes(8));
+        Auth::createUser('admin', $generatedPassword);
+        $_SESSION['initial_admin_password'] = $generatedPassword;
+    } elseif (isset($_SESSION['initial_admin_password'])) {
+        $generatedPassword = (string) $_SESSION['initial_admin_password'];
+    }
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $login = isset($_POST['login']) ? trim((string) $_POST['login']) : '';
         $pass = isset($_POST['pass']) ? (string) $_POST['pass'] : '';
@@ -284,6 +292,10 @@ if ($action === 'login') {
     echo '<div class="card shadow-sm">';
     echo '<div class="card-body">';
     echo '<h1 class="h4 mb-3 text-center">Вход в админку</h1>';
+    if ($generatedPassword !== null) {
+        renderAlert('Создан пользователь "admin". Сохраните пароль: ' . $generatedPassword, 'warning');
+        unset($_SESSION['initial_admin_password']);
+    }
     renderAlert($error, 'error');
     echo '<form method="post" action="/admin.php?action=login">';
     echo '<div class="mb-3"><label class="form-label">Логин</label><input class="form-control" type="text" name="login" required></div>';

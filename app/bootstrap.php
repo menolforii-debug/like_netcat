@@ -33,9 +33,6 @@ runMigrations(DB::pdo(), $root . '/migrations');
 $core = new Core(DB::pdo(), new EventBus());
 $GLOBALS['core'] = $core;
 
-if (DB::hasTable('users') && usersCount() === 0) {
-    seedAdminUser();
-}
 ensureDefaultSite(isset($_SERVER['HTTP_HOST']) ? (string) $_SERVER['HTTP_HOST'] : '');
 
 function core(): Core
@@ -89,15 +86,6 @@ function usersCount(): int
     $row = DB::fetchOne('SELECT COUNT(*) AS cnt FROM users');
 
     return $row ? (int) $row['cnt'] : 0;
-}
-
-function seedAdminUser(): void
-{
-    $stmt = DB::pdo()->prepare('INSERT INTO users (login, pass_hash) VALUES (:login, :pass_hash)');
-    $stmt->execute([
-        'login' => 'admin',
-        'pass_hash' => password_hash('admin', PASSWORD_DEFAULT),
-    ]);
 }
 
 function ensureDefaultSite(string $host): void
