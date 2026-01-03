@@ -319,11 +319,12 @@ if ($action === 'components') {
     $editComponent = $editComponentId > 0 ? $componentRepo->findById($editComponentId) : null;
 
     AdminLayout::renderHeader('Компоненты');
+    echo '<div class="admin-content">';
     renderAlert($notice, 'success');
     renderAlert($errorMessage, 'error');
 
     echo '<div class="d-flex align-items-center justify-content-between mb-3">';
-    echo '<h1 class="h4 mb-0">Компоненты</h1>';
+    echo '<h1 class="admin-heading">Компоненты</h1>';
     echo '</div>';
 
     if (empty($components)) {
@@ -375,6 +376,7 @@ if ($action === 'components') {
     echo '</form>';
     echo '</div></div>';
 
+    echo '</div>';
     AdminLayout::renderFooter();
     exit;
 }
@@ -388,11 +390,12 @@ if ($action === 'user') {
     }
 
     AdminLayout::renderHeader('Пользователи');
+    echo '<div class="admin-content">';
     renderAlert($notice, 'success');
     renderAlert($errorMessage, 'error');
 
     echo '<div class="d-flex align-items-center justify-content-between mb-3">';
-    echo '<h1 class="h4 mb-0">Пользователи</h1>';
+    echo '<h1 class="admin-heading">Пользователи</h1>';
     echo '</div>';
 
     if (empty($users)) {
@@ -440,6 +443,7 @@ if ($action === 'user') {
     echo '</form>';
     echo '</div></div>';
 
+    echo '</div>';
     AdminLayout::renderFooter();
     exit;
 }
@@ -458,8 +462,9 @@ if ($action === 'logs') {
     $logs = AdminLog::list($filters, $limit);
 
     AdminLayout::renderHeader('Логи');
+    echo '<div class="admin-content">';
     echo '<div class="d-flex align-items-center justify-content-between mb-3">';
-    echo '<h1 class="h4 mb-0">Логи администратора</h1>';
+    echo '<h1 class="admin-heading">Логи администратора</h1>';
     echo '<span class="badge bg-secondary">Сначала новые</span>';
     echo '</div>';
     echo '<div class="card shadow-sm mb-4">';
@@ -496,6 +501,7 @@ if ($action === 'logs') {
         echo '</div>';
     }
 
+    echo '</div>';
     AdminLayout::renderFooter();
     exit;
 }
@@ -1172,9 +1178,7 @@ AdminLayout::renderHeader('Админка');
 renderAlert($notice, 'success');
 renderAlert($errorMessage, 'error');
 
-echo '<div class="d-flex gap-4">';
-
-echo '<div style="width:260px;">';
+echo '<div class="admin-sidebar">';
 echo '<div class="d-flex justify-content-between align-items-center mb-2">';
 echo '<h2 class="h6 mb-0">Сайты и разделы</h2>';
 echo '</div>';
@@ -1184,7 +1188,7 @@ echo '</form>';
 echo SectionTree::render($sections, $selectedId);
 echo '</div>';
 
-echo '<div class="flex-grow-1">';
+echo '<div class="admin-content">';
 if ($selected === null) {
     echo '<div class="card shadow-sm">';
     echo '<div class="card-body">';
@@ -1485,8 +1489,6 @@ if ($selected === null) {
 
     echo '</div></div>';
 }
-
-echo '</div>';
 
 echo '</div>';
 

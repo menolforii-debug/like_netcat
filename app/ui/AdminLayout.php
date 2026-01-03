@@ -8,7 +8,18 @@ final class AdminLayout
     {
         self::$withSidebar = false;
         Layout::renderDocumentStart($title);
-        echo '<nav class="navbar navbar-expand-lg navbar-dark bg-dark">';
+        echo '<style>';
+        echo '.content-wrapper{background:#f5f6f8;}';
+        echo '.admin-navbar{background:#2d8ac9;}';
+        echo '.admin-navbar .navbar-brand,.admin-navbar .nav-link,.admin-navbar .btn{color:#fff;}';
+        echo '.admin-navbar .nav-link:hover{color:#e6f2ff;}';
+        echo '.admin-shell{display:flex;min-height:calc(100vh - 56px);}';
+        echo '.admin-sidebar{width:280px;background:#fff;border-right:1px solid #e5e5e5;}';
+        echo '.admin-sidebar .list-group-item{border:0;border-radius:0;font-size:13px;}';
+        echo '.admin-content{flex:1;background:#fff;padding:20px 24px;}';
+        echo '.admin-heading{font-size:20px;font-weight:500;margin:0 0 16px;}';
+        echo '</style>';
+        echo '<nav class="navbar navbar-expand-lg admin-navbar">';
         echo '<div class="container-fluid">';
         echo '<a class="navbar-brand fw-semibold" href="/admin.php">Панель</a>';
         echo '<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbar" aria-controls="adminNavbar" aria-expanded="false" aria-label="Переключить навигацию">';
@@ -29,7 +40,7 @@ final class AdminLayout
         echo '</div>';
         echo '</nav>';
 
-        echo '<div class="container-fluid py-4">';
+        echo '<div class="admin-shell">';
         echo '<main>';
     }
 
