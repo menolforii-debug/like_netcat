@@ -42,6 +42,9 @@ final class SectionTree
             $isActive = $currentId !== null && (int) $node['id'] === $currentId;
             $title = htmlspecialchars((string) $node['title'], ENT_QUOTES, 'UTF-8');
             $link = '/admin.php?section_id=' . (int) $node['id'];
+            $isSystemRoot = $node['parent_id'] === null
+                && isset($node['english_name'])
+                && in_array($node['english_name'], ['index', '404'], true);
 
             $html .= '<li class="list-group-item">';
 
@@ -53,10 +56,12 @@ final class SectionTree
             $html .= '<button class="btn btn-sm btn-outline-primary" type="submit">+</button>';
             $html .= '</form>';
 
-            $html .= '<form method="post" action="/admin.php?action=section_delete" class="m-0" onsubmit="return confirm(\'Delete this node?\')">';
-            $html .= '<input type="hidden" name="id" value="' . (int) $node['id'] . '">';
-            $html .= '<button class="btn btn-sm btn-outline-danger" type="submit">🗑</button>';
-            $html .= '</form>';
+            if (!$isSystemRoot) {
+                $html .= '<form method="post" action="/admin.php?action=section_delete" class="m-0" onsubmit="return confirm(\'Удалить этот раздел?\')">';
+                $html .= '<input type="hidden" name="id" value="' . (int) $node['id'] . '">';
+                $html .= '<button class="btn btn-sm btn-outline-danger" type="submit">🗑</button>';
+                $html .= '</form>';
+            }
 
             $html .= '</div>';
 
@@ -72,5 +77,4 @@ final class SectionTree
         return $html;
     }
 }
-
 
