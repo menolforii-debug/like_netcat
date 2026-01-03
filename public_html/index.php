@@ -34,6 +34,10 @@ if (isset($_SERVER['REQUEST_URI'])) {
     }
 }
 $path = '/' . ltrim($path, '/');
+if ($path === '/index') {
+    header('Location: /', true, 301);
+    exit;
+}
 
 $renderer = new Renderer();
 $renderer->renderSitePath($site, $path);

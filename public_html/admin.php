@@ -508,6 +508,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $parentId = isset($_POST['parent_id']) ? (int) $_POST['parent_id'] : 0;
         $sort = isset($_POST['sort']) ? (int) $_POST['sort'] : 0;
         $layout = isset($_POST['layout']) ? trim((string) $_POST['layout']) : '';
+        $isSystemRoot = $section['parent_id'] === null && in_array($section['english_name'], ['index', '404'], true);
+        if ($isSystemRoot) {
+            $englishName = (string) $section['english_name'];
+        }
 
         if ($title === '' || $englishName === '') {
             redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Название и english_name обязательны']));
@@ -567,7 +571,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
         }
 
-        redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'notice' => 'Раздел обновлен']));
+        $noticeMessage = $isSystemRoot ? 'Системный раздел обновлен (english_name фиксирован)' : 'Раздел обновлен';
+        redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'notice' => $noticeMessage]));
     }
 
     if ($action === 'seo_update') {
@@ -1006,7 +1011,10 @@ if ($selected === null) {
             echo '<form method="post" action="/admin.php?action=section_update">';
             echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
             echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" type="text" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '" required></div>';
-            echo '<div class="mb-3"><label class="form-label">English name (латиница)</label><input class="form-control" type="text" name="english_name" value="' . htmlspecialchars((string) ($selected['english_name'] ?? ''), ENT_QUOTES, 'UTF-8') . '" required></div>';
+            $isSystemRoot = $selected['parent_id'] === null && in_array($selected['english_name'], ['index', '404'], true);
+            $englishNameAttributes = $isSystemRoot ? ' disabled' : ' required';
+            $englishNameHint = $isSystemRoot ? '<div class="form-text">Системный раздел: English name фиксирован.</div>' : '';
+            echo '<div class="mb-3"><label class="form-label">English name (латиница)</label><input class="form-control" type="text" name="english_name" value="' . htmlspecialchars((string) ($selected['english_name'] ?? ''), ENT_QUOTES, 'UTF-8') . '"' . $englishNameAttributes . '>' . $englishNameHint . '</div>';
             echo '<div class="mb-3"><label class="form-label">Родительский раздел</label><select class="form-select" name="parent_id" required>';
             echo '<option value="">Выберите родителя</option>';
             foreach ($options as $option) {
