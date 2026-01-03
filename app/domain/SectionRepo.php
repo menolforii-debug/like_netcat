@@ -59,6 +59,41 @@ final class SectionRepo
         );
     }
 
+    public function findRootByEnglishName($siteId, string $englishName): ?array
+    {
+        return DB::fetchOne(
+            'SELECT id, parent_id, site_id, english_name, title, sort, extra_json
+            FROM sections
+            WHERE site_id = :site_id AND parent_id IS NULL AND english_name = :english_name
+            LIMIT 1',
+            [
+                'site_id' => $siteId,
+                'english_name' => $englishName,
+            ]
+        );
+    }
+
+    public function existsSiblingEnglishName($siteId, $parentId, string $englishName, $excludeId = null): bool
+    {
+        $params = [
+            'site_id' => $siteId,
+            'parent_id' => $parentId,
+            'english_name' => $englishName,
+        ];
+        $where = 'site_id = :site_id AND parent_id = :parent_id AND english_name = :english_name';
+        if ($excludeId !== null) {
+            $where .= ' AND id != :exclude_id';
+            $params['exclude_id'] = $excludeId;
+        }
+
+        $row = DB::fetchOne(
+            'SELECT 1 FROM sections WHERE ' . $where . ' LIMIT 1',
+            $params
+        );
+
+        return $row !== null;
+    }
+
     public function getSiteSettings(array $site): array
     {
         $extra = $this->decodeExtra($site);
