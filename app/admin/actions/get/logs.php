@@ -52,3 +52,4 @@ if (empty($logs)) {
 }
 
 AdminLayout::renderFooter();
+exit;

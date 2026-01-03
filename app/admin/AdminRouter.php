@@ -5,53 +5,74 @@ final class AdminRouter
     public static function run(): void
     {
         $action = isset($_GET['action']) ? (string) $_GET['action'] : '';
-        $action = $action !== '' ? $action : 'dashboard';
+        if ($action === '') {
+            $action = 'dashboard';
+        }
+
+        $isPost = isset($_SERVER['REQUEST_METHOD']) && strtoupper((string) $_SERVER['REQUEST_METHOD']) === 'POST';
+
+        if ($action !== 'login' && $action !== 'logout') {
+            self::requireLogin();
+        }
 
         if (!preg_match('/^[A-Za-z0-9_]+$/', $action)) {
-            http_response_code(400);
-            AdminLayout::renderHeader('Bad action');
-            renderAlert('Bad action', 'error');
-            AdminLayout::renderFooter();
+            self::renderError(400, 'Bad action');
             return;
         }
 
-        if ($action !== 'login' && $action !== 'logout') {
-            if (!Auth::canEdit()) {
-                redirectTo(buildAdminUrl(['action' => 'login']));
-            }
-        }
-
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action !== 'login') {
+        if ($isPost && $action !== 'login') {
             if (!isValidCsrfToken($_POST['csrf_token'] ?? null)) {
                 redirectTo(buildAdminUrl(['error' => 'Неверный CSRF-токен']));
             }
         }
 
+        $user = Auth::user();
         $notice = isset($_GET['notice']) ? (string) $_GET['notice'] : '';
         $errorMessage = isset($_GET['error']) ? (string) $_GET['error'] : '';
         $selectedId = isset($_GET['section_id']) ? (int) $_GET['section_id'] : null;
         $tab = isset($_GET['tab']) ? (string) $_GET['tab'] : 'section';
-        $user = Auth::user();
 
         $sectionRepo = new SectionRepo();
         $infoblockRepo = new InfoblockRepo();
         $componentRepo = new ComponentRepo();
         $objectRepo = new ObjectRepo();
-        $userRepo = new UserRepo();
+        $userRepo = null;
 
-        $baseDir = __DIR__ . '/actions/' . ($_SERVER['REQUEST_METHOD'] === 'POST' ? 'post' : 'get');
-        $path = $baseDir . '/' . $action . '.php';
+        $baseDir = __DIR__ . '/actions/' . ($isPost ? 'post' : 'get');
         $realBase = realpath($baseDir);
-        $realPath = $path !== '' ? realpath($path) : false;
-
-        if ($realBase === false || $realPath === false || !str_starts_with($realPath, $realBase)) {
-            http_response_code(404);
-            AdminLayout::renderHeader('Action not found');
-            renderAlert('Action not found', 'error');
-            AdminLayout::renderFooter();
+        if ($realBase === false) {
+            self::renderError(500, 'Router misconfigured');
             return;
         }
 
-        require $realPath;
+        $actionFile = $baseDir . '/' . $action . '.php';
+        $realFile = realpath($actionFile);
+        if ($realFile === false) {
+            self::renderError(404, 'Action not found');
+            return;
+        }
+
+        $realBase = rtrim($realBase, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        if (strpos($realFile, $realBase) !== 0) {
+            self::renderError(400, 'Bad action');
+            return;
+        }
+
+        require $realFile;
+    }
+
+    private static function requireLogin(): void
+    {
+        if (!Auth::canEdit()) {
+            redirectTo('/admin.php?action=login');
+        }
+    }
+
+    private static function renderError(int $statusCode, string $message): void
+    {
+        http_response_code($statusCode);
+        AdminLayout::renderHeader('Ошибка');
+        renderAlert($message, 'error');
+        AdminLayout::renderFooter();
     }
 }

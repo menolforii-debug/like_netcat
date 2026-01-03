@@ -24,10 +24,9 @@ if ($component === null) {
 
 $fields = parseComponentFields($component);
 $data = extractFormData($fields);
-try {
-    $data = (new FieldValidator())->validate($component, $data);
-} catch (Throwable $e) {
-    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => $e->getMessage()]));
+$errors = validateRequiredFields($fields, $data);
+if (!empty($errors)) {
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => implode(' ', $errors)]));
 }
 
 $status = $saveAs === 'publish' ? 'published' : 'draft';

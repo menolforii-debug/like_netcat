@@ -8,7 +8,7 @@ if ($id > 0) {
     }
 
     try {
-        if ((int) $section['parent_id'] === (int) $section['site_id'] && in_array($section['english_name'], ['index', '404'], true)) {
+        if ($section['parent_id'] === null && in_array($section['english_name'], ['index', '404'], true)) {
             redirectTo(buildAdminUrl(['section_id' => $id, 'error' => 'Нельзя удалить системный раздел']));
         }
         $sectionRepo->delete($id);

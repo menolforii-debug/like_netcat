@@ -5,13 +5,13 @@ This repository follows a strict Codex architecture.
 ## Core Invariants
 
 - Web root is `public_html`
-- All HTTP requests enter via `public_html/index.php`
+- Frontend HTTP requests enter via `public_html/index.php`
 - Section is the primary routing unit
 - Component defines schema only
 - Infoblock is a component instance inside a section
 - Objects are stored as JSON
 - Rendering is template-driven
-- CMS is a site mode (`?edit=1`)
+- Admin requests enter via `public_html/admin.php`
 - SEO is resolved centrally
 - All mutations emit events
 

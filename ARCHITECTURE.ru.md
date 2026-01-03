@@ -6,12 +6,17 @@
 
 ## Жизненный цикл запроса
 
-HTTP-запрос
-→ index.php
+Frontend-запрос
+→ public_html/index.php
 → определение раздела
 → (опционально) объект
 → SEO
 → рендеринг
+
+Admin-запрос
+→ public_html/admin.php
+→ Admin router
+→ Action handler
 
 ## Рендеринг
 

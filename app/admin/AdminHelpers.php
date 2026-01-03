@@ -24,7 +24,7 @@ function renderAlert(?string $message, string $type = 'info'): void
 function csrfToken(): string
 {
     if (empty($_SESSION['csrf_token'])) {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
     }
 
     return (string) $_SESSION['csrf_token'];
@@ -32,16 +32,22 @@ function csrfToken(): string
 
 function csrfTokenField(): string
 {
-    return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars(csrfToken(), ENT_QUOTES, 'UTF-8') . '">';
+    $token = csrfToken();
+
+    return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">';
 }
 
-function isValidCsrfToken($token): bool
+function isValidCsrfToken(?string $token): bool
 {
-    if (!is_string($token) || $token === '') {
+    if ($token === null || $token === '') {
         return false;
     }
 
-    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+    if (empty($_SESSION['csrf_token'])) {
+        return false;
+    }
+
+    return hash_equals((string) $_SESSION['csrf_token'], (string) $token);
 }
 
 function parseJsonField(string $value, string $errorMessage): array
@@ -157,6 +163,23 @@ function extractFormData(array $fields): array
     return $data;
 }
 
+function validateRequiredFields(array $fields, array $data): array
+{
+    $errors = [];
+    foreach ($fields as $field) {
+        if (empty($field['required'])) {
+            continue;
+        }
+        $name = $field['name'];
+        $value = $data[$name] ?? '';
+        if ($value === '' || $value === null) {
+            $errors[] = 'Поле "' . $name . '" обязательно.';
+        }
+    }
+
+    return $errors;
+}
+
 function renderFieldInput(array $field, array $data): string
 {
     $name = $field['name'];
@@ -193,6 +216,11 @@ function renderFieldInput(array $field, array $data): string
             break;
         default:
             $html .= '<input class="form-control" type="text" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '">';
+            break;
+    }
+
+    if (!empty($field['required'])) {
+        $html .= '<div class="form-text">Обязательное поле</div>';
     }
 
     return '<div class="mb-3">' . $html . '</div>';
@@ -210,11 +238,7 @@ function buildSectionPathFromId(SectionRepo $repo, int $sectionId): string
         }
 
         if (!empty($section['english_name'])) {
-            if ($section['english_name'] === 'index' && (int) $section['parent_id'] === (int) $section['site_id']) {
-                // Пропускаем системную "Главную" в пути.
-            } else {
-                $segments[] = $section['english_name'];
-            }
+            $segments[] = $section['english_name'];
         }
 
         $currentId = $section['parent_id'] !== null ? (int) $section['parent_id'] : null;

@@ -1,3 +1,3 @@
 <?php
 
-redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Раздел компонентов не реализован']));
+redirectTo(buildAdminUrl(['error' => 'Раздел компонентов пока не настроен']));

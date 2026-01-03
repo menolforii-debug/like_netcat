@@ -11,7 +11,7 @@ $englishName = isset($_POST['english_name']) ? trim((string) $_POST['english_nam
 $parentId = isset($_POST['parent_id']) ? (int) $_POST['parent_id'] : 0;
 $sort = isset($_POST['sort']) ? (int) $_POST['sort'] : 0;
 $layout = isset($_POST['layout']) ? trim((string) $_POST['layout']) : '';
-$isSystemRoot = (int) $section['parent_id'] === (int) $section['site_id'] && in_array($section['english_name'], ['index', '404'], true);
+$isSystemRoot = $section['parent_id'] === null && in_array($section['english_name'], ['index', '404'], true);
 if ($isSystemRoot) {
     $englishName = (string) $section['english_name'];
 }

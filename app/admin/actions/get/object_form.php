@@ -62,3 +62,4 @@ echo '</div>';
 echo '</form>';
 echo '</div></div></div>';
 AdminLayout::renderFooter();
+exit;

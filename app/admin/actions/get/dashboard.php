@@ -26,7 +26,7 @@ echo '<form method="post" action="/admin.php?action=site_create" class="mb-3">';
 echo csrfTokenField();
 echo '<button class="btn btn-sm btn-outline-primary w-100" type="submit">+ Добавить сайт</button>';
 echo '</form>';
-echo SectionTree::render($sections, $selectedId, csrfToken());
+echo SectionTree::render($sections, $selectedId);
 echo '</div>';
 
 echo '<div class="flex-grow-1">';
@@ -92,7 +92,7 @@ if ($selected === null) {
             echo csrfTokenField();
             echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
             echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" type="text" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '" required></div>';
-            $isSystemRoot = (int) $selected['parent_id'] === (int) $selected['site_id'] && in_array($selected['english_name'], ['index', '404'], true);
+            $isSystemRoot = $selected['parent_id'] === null && in_array($selected['english_name'], ['index', '404'], true);
             $englishNameAttributes = $isSystemRoot ? ' disabled' : ' required';
             $englishNameHint = $isSystemRoot ? '<div class="form-text">Системный раздел: English name фиксирован.</div>' : '';
             echo '<div class="mb-3"><label class="form-label">English name (латиница)</label><input class="form-control" type="text" name="english_name" value="' . htmlspecialchars((string) ($selected['english_name'] ?? ''), ENT_QUOTES, 'UTF-8') . '"' . $englishNameAttributes . '>' . $englishNameHint . '</div>';
