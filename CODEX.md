@@ -6,6 +6,7 @@ This repository follows a strict Codex architecture.
 
 - Web root is `public_html`
 - Frontend HTTP requests enter via `public_html/index.php`
+- No "site mode" switch; the entrypoint defines frontend vs admin flows
 - Section is the primary routing unit
 - Component defines schema only
 - Infoblock is a component instance inside a section
