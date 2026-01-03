@@ -3,16 +3,11 @@ CREATE TABLE IF NOT EXISTS sections (
     parent_id INTEGER NULL,
     site_id INTEGER NOT NULL,
     english_name TEXT NULL,
-    slug TEXT NULL,
-    path TEXT NULL,
     title TEXT NOT NULL,
     sort INTEGER NOT NULL DEFAULT 0,
     extra_json TEXT NOT NULL DEFAULT '{}',
     FOREIGN KEY(parent_id) REFERENCES sections(id)
 );
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_sections_parent_slug
-    ON sections(parent_id, slug);
 
 CREATE TABLE IF NOT EXISTS components (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -58,7 +53,8 @@ CREATE TABLE IF NOT EXISTS objects (
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     login TEXT NOT NULL UNIQUE,
-    pass_hash TEXT NOT NULL
+    pass_hash TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'admin'
 );
 
 CREATE TABLE IF NOT EXISTS admin_log (
