@@ -49,7 +49,13 @@ final class ObjectRepo
             'updated_at' => $now,
         ]);
 
-        return (int) DB::pdo()->lastInsertId();
+        $id = (int) DB::pdo()->lastInsertId();
+        core()->events()->emit('object.created', [
+            'id' => $id,
+            'data' => $data,
+        ]);
+
+        return $id;
     }
 
     public function update($id, array $data): void
@@ -61,6 +67,11 @@ final class ObjectRepo
             'data_json' => json_encode($data['data'] ?? [], JSON_UNESCAPED_UNICODE),
             'updated_at' => $this->now(),
             'id' => $id,
+        ]);
+
+        core()->events()->emit('object.updated', [
+            'id' => $id,
+            'data' => $data,
         ]);
     }
 
@@ -75,6 +86,8 @@ final class ObjectRepo
             'updated_at' => $this->now(),
             'id' => $id,
         ]);
+
+        core()->events()->emit('object.published', ['id' => $id]);
     }
 
     public function unpublish($id): void
@@ -87,6 +100,8 @@ final class ObjectRepo
             'updated_at' => $this->now(),
             'id' => $id,
         ]);
+
+        core()->events()->emit('object.unpublished', ['id' => $id]);
     }
 
     public function softDelete($id): void
@@ -99,6 +114,8 @@ final class ObjectRepo
             'updated_at' => $this->now(),
             'id' => $id,
         ]);
+
+        core()->events()->emit('object.deleted', ['id' => $id]);
     }
 
     private function now(): string

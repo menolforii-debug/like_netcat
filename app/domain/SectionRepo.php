@@ -160,6 +160,19 @@ final class SectionRepo
             'id' => $id,
         ]);
 
+        core()->events()->emit('section.created', [
+            'id' => $id,
+            'data' => [
+                'parent_id' => null,
+                'site_id' => $id,
+                'english_name' => null,
+                'title' => $title,
+                'sort' => 0,
+                'extra' => $extra,
+                'is_site' => true,
+            ],
+        ]);
+
         return $id;
     }
 
@@ -178,7 +191,21 @@ final class SectionRepo
             'extra_json' => json_encode($extra, JSON_UNESCAPED_UNICODE),
         ]);
 
-        return (int) DB::pdo()->lastInsertId();
+        $id = (int) DB::pdo()->lastInsertId();
+        core()->events()->emit('section.created', [
+            'id' => $id,
+            'data' => [
+                'parent_id' => $parentId,
+                'site_id' => $siteId,
+                'english_name' => $englishName,
+                'title' => $title,
+                'sort' => $sort,
+                'extra' => $extra,
+                'is_site' => false,
+            ],
+        ]);
+
+        return $id;
     }
 
     public function update($id, array $data): void
@@ -197,6 +224,11 @@ final class SectionRepo
             'extra_json' => json_encode($data['extra'] ?? [], JSON_UNESCAPED_UNICODE),
             'id' => $id,
         ]);
+
+        core()->events()->emit('section.updated', [
+            'id' => $id,
+            'data' => $data,
+        ]);
     }
 
     public function delete($id): void
@@ -213,6 +245,8 @@ final class SectionRepo
 
         $stmt = DB::pdo()->prepare('DELETE FROM sections WHERE id = :id');
         $stmt->execute(['id' => $id]);
+
+        core()->events()->emit('section.deleted', ['id' => $id]);
     }
 
     private function decodeExtra(array $row): array

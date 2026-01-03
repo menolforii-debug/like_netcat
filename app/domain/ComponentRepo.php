@@ -38,7 +38,18 @@ final class ComponentRepo
             'views_json' => json_encode($views, JSON_UNESCAPED_UNICODE),
         ]);
 
-        return (int) DB::pdo()->lastInsertId();
+        $id = (int) DB::pdo()->lastInsertId();
+        core()->events()->emit('component.created', [
+            'id' => $id,
+            'data' => [
+                'keyword' => $keyword,
+                'name' => $name,
+                'fields' => $fields,
+                'views' => $views,
+            ],
+        ]);
+
+        return $id;
     }
 
     public function update($id, string $keyword, string $name, array $fields, array $views = []): void
@@ -54,6 +65,16 @@ final class ComponentRepo
             'fields_json' => json_encode($fields, JSON_UNESCAPED_UNICODE),
             'views_json' => json_encode($views, JSON_UNESCAPED_UNICODE),
             'id' => $id,
+        ]);
+
+        core()->events()->emit('component.updated', [
+            'id' => $id,
+            'data' => [
+                'keyword' => $keyword,
+                'name' => $name,
+                'fields' => $fields,
+                'views' => $views,
+            ],
         ]);
     }
 

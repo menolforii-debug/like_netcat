@@ -47,7 +47,13 @@ final class InfoblockRepo
             'is_enabled' => $data['is_enabled'] ?? 1,
         ]);
 
-        return (int) DB::pdo()->lastInsertId();
+        $id = (int) DB::pdo()->lastInsertId();
+        core()->events()->emit('infoblock.created', [
+            'id' => $id,
+            'data' => $data,
+        ]);
+
+        return $id;
     }
 
     public function update($id, array $data): void
@@ -66,11 +72,18 @@ final class InfoblockRepo
             'is_enabled' => $data['is_enabled'] ?? 1,
             'id' => $id,
         ]);
+
+        core()->events()->emit('infoblock.updated', [
+            'id' => $id,
+            'data' => $data,
+        ]);
     }
 
     public function delete($id): void
     {
         $stmt = DB::pdo()->prepare('DELETE FROM infoblocks WHERE id = :id');
         $stmt->execute(['id' => $id]);
+
+        core()->events()->emit('infoblock.deleted', ['id' => $id]);
     }
 }
