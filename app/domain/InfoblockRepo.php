@@ -18,6 +18,17 @@ final class InfoblockRepo
         );
     }
 
+    public function findById(int $id): ?array
+    {
+        return DB::fetchOne(
+            'SELECT id, site_id, section_id, component_id, name, view_template, settings_json, extra_json, sort, is_enabled
+            FROM infoblocks
+            WHERE id = :id
+            LIMIT 1',
+            ['id' => $id]
+        );
+    }
+
     public function create(array $data): int
     {
         $stmt = DB::pdo()->prepare(

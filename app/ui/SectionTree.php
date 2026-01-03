@@ -36,6 +36,7 @@ final class SectionTree
             return '<div class="text-muted">Разделов нет.</div>';
         }
 
+        $canManage = Auth::isAdmin();
         $html = '<ul class="list-group list-group-flush">';
 
         foreach ($nodes as $node) {
@@ -51,13 +52,15 @@ final class SectionTree
             $html .= '<div class="d-flex align-items-center gap-2">';
             $html .= '<a class="text-decoration-none flex-grow-1' . ($isActive ? ' fw-semibold' : '') . '" href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">' . $title . '</a>';
 
-            $html .= '<form method="post" action="/admin.php?action=section_create" class="m-0">';
-            $html .= csrfTokenField();
-            $html .= '<input type="hidden" name="parent_id" value="' . (int) $node['id'] . '">';
-            $html .= '<button class="btn btn-sm btn-outline-primary" type="submit">+</button>';
-            $html .= '</form>';
+            if ($canManage) {
+                $html .= '<form method="post" action="/admin.php?action=section_create" class="m-0">';
+                $html .= csrfTokenField();
+                $html .= '<input type="hidden" name="parent_id" value="' . (int) $node['id'] . '">';
+                $html .= '<button class="btn btn-sm btn-outline-primary" type="submit">+</button>';
+                $html .= '</form>';
+            }
 
-            if (!$isSystemRoot) {
+            if ($canManage && !$isSystemRoot) {
                 $html .= '<form method="post" action="/admin.php?action=section_delete" class="m-0" onsubmit="return confirm(\'Удалить этот раздел?\')">';
                 $html .= csrfTokenField();
                 $html .= '<input type="hidden" name="id" value="' . (int) $node['id'] . '">';

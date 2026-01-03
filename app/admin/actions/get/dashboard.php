@@ -12,6 +12,9 @@ if ($selectedId !== null) {
     $selected = $sectionRepo->findById($selectedId);
 }
 
+$currentUser = $user ?? Auth::user();
+$isAdmin = Auth::isAdmin();
+
 AdminLayout::renderHeader('Админка');
 renderAlert($notice, 'success');
 renderAlert($errorMessage, 'error');
@@ -22,10 +25,12 @@ echo '<div style="width:260px;">';
 echo '<div class="d-flex justify-content-between align-items-center mb-2">';
 echo '<h2 class="h6 mb-0">Сайты и разделы</h2>';
 echo '</div>';
-echo '<form method="post" action="/admin.php?action=site_create" class="mb-3">';
-echo csrfTokenField();
-echo '<button class="btn btn-sm btn-outline-primary w-100" type="submit">+ Добавить сайт</button>';
-echo '</form>';
+if ($isAdmin) {
+    echo '<form method="post" action="/admin.php?action=site_create" class="mb-3">';
+    echo csrfTokenField();
+    echo '<button class="btn btn-sm btn-outline-primary w-100" type="submit">+ Добавить сайт</button>';
+    echo '</form>';
+}
 echo SectionTree::render($sections, $selectedId);
 echo '</div>';
 
@@ -50,20 +55,24 @@ if ($selected === null) {
         echo '<li class="nav-item"><a class="nav-link active" href="#">Настройки</a></li>';
         echo '</ul>';
         echo '<h1 class="h5">Настройки сайта</h1>';
-        echo '<form method="post" action="/admin.php?action=site_update">';
-        echo csrfTokenField();
-        echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
-        echo '<div class="mb-3"><label class="form-label">Название сайта</label><input class="form-control" type="text" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '"></div>';
-        echo '<div class="mb-3"><label class="form-label">Основной домен</label><input class="form-control" type="text" name="site_domain" value="' . htmlspecialchars((string) ($extra['site_domain'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
-        echo '<div class="mb-3"><label class="form-label">Зеркала домена (по одному в строке)</label><textarea class="form-control" name="site_mirrors" rows="3">' . htmlspecialchars($mirrorsText, ENT_QUOTES, 'UTF-8') . '</textarea></div>';
-        $checked = $enabled ? ' checked' : '';
-        echo '<div class="mb-3 form-check">';
-        echo '<input class="form-check-input" type="checkbox" name="site_enabled" value="1"' . $checked . '>';
-        echo '<label class="form-check-label">Сайт включен</label>';
-        echo '</div>';
-        echo '<div class="mb-3"><label class="form-label">HTML для отключенного сайта</label><textarea class="form-control" name="site_offline_html" rows="4">' . htmlspecialchars($offlineHtml, ENT_QUOTES, 'UTF-8') . '</textarea></div>';
-        echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
-        echo '</form>';
+        if ($isAdmin) {
+            echo '<form method="post" action="/admin.php?action=site_update">';
+            echo csrfTokenField();
+            echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
+            echo '<div class="mb-3"><label class="form-label">Название сайта</label><input class="form-control" type="text" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '"></div>';
+            echo '<div class="mb-3"><label class="form-label">Основной домен</label><input class="form-control" type="text" name="site_domain" value="' . htmlspecialchars((string) ($extra['site_domain'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
+            echo '<div class="mb-3"><label class="form-label">Зеркала домена (по одному в строке)</label><textarea class="form-control" name="site_mirrors" rows="3">' . htmlspecialchars($mirrorsText, ENT_QUOTES, 'UTF-8') . '</textarea></div>';
+            $checked = $enabled ? ' checked' : '';
+            echo '<div class="mb-3 form-check">';
+            echo '<input class="form-check-input" type="checkbox" name="site_enabled" value="1"' . $checked . '>';
+            echo '<label class="form-check-label">Сайт включен</label>';
+            echo '</div>';
+            echo '<div class="mb-3"><label class="form-label">HTML для отключенного сайта</label><textarea class="form-control" name="site_offline_html" rows="4">' . htmlspecialchars($offlineHtml, ENT_QUOTES, 'UTF-8') . '</textarea></div>';
+            echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
+            echo '</form>';
+        } else {
+            echo '<div class="alert alert-light border">Редактирование доступно только для администратора.</div>';
+        }
     } else {
         $tabs = [
             'section' => 'Раздел',
@@ -88,52 +97,60 @@ if ($selected === null) {
             }
 
             echo '<h1 class="h5">Настройки раздела</h1>';
-            echo '<form method="post" action="/admin.php?action=section_update">';
-            echo csrfTokenField();
-            echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
-            echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" type="text" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '" required></div>';
-            $isSystemRoot = $selected['parent_id'] === null && in_array($selected['english_name'], ['index', '404'], true);
-            $englishNameAttributes = $isSystemRoot ? ' disabled' : ' required';
-            $englishNameHint = $isSystemRoot ? '<div class="form-text">Системный раздел: English name фиксирован.</div>' : '';
-            echo '<div class="mb-3"><label class="form-label">English name (латиница)</label><input class="form-control" type="text" name="english_name" value="' . htmlspecialchars((string) ($selected['english_name'] ?? ''), ENT_QUOTES, 'UTF-8') . '"' . $englishNameAttributes . '>' . $englishNameHint . '</div>';
-            echo '<div class="mb-3"><label class="form-label">Родительский раздел</label><select class="form-select" name="parent_id" required>';
-            echo '<option value="">Выберите родителя</option>';
-            foreach ($options as $option) {
-                if ((int) $option['id'] === (int) $selected['id']) {
-                    continue;
+            if ($isAdmin) {
+                echo '<form method="post" action="/admin.php?action=section_update">';
+                echo csrfTokenField();
+                echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
+                echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" type="text" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '" required></div>';
+                $isSystemRoot = $selected['parent_id'] === null && in_array($selected['english_name'], ['index', '404'], true);
+                $englishNameAttributes = $isSystemRoot ? ' disabled' : ' required';
+                $englishNameHint = $isSystemRoot ? '<div class="form-text">Системный раздел: English name фиксирован.</div>' : '';
+                echo '<div class="mb-3"><label class="form-label">English name (латиница)</label><input class="form-control" type="text" name="english_name" value="' . htmlspecialchars((string) ($selected['english_name'] ?? ''), ENT_QUOTES, 'UTF-8') . '"' . $englishNameAttributes . '>' . $englishNameHint . '</div>';
+                echo '<div class="mb-3"><label class="form-label">Родительский раздел</label><select class="form-select" name="parent_id" required>';
+                echo '<option value="">Выберите родителя</option>';
+                foreach ($options as $option) {
+                    if ((int) $option['id'] === (int) $selected['id']) {
+                        continue;
+                    }
+                    if ((int) $option['site_id'] !== $siteId) {
+                        continue;
+                    }
+                    $selectedAttr = (int) $selected['parent_id'] === (int) $option['id'] ? ' selected' : '';
+                    echo '<option value="' . (int) $option['id'] . '"' . $selectedAttr . '>' . htmlspecialchars((string) $option['title'], ENT_QUOTES, 'UTF-8') . '</option>';
                 }
-                if ((int) $option['site_id'] !== $siteId) {
-                    continue;
+                echo '</select></div>';
+                $extra = decodeExtra($selected);
+                $currentLayout = isset($extra['layout']) ? (string) $extra['layout'] : 'default';
+                if (!in_array($currentLayout, ['default', 'home'], true)) {
+                    $currentLayout = 'default';
                 }
-                $selectedAttr = (int) $selected['parent_id'] === (int) $option['id'] ? ' selected' : '';
-                echo '<option value="' . (int) $option['id'] . '"' . $selectedAttr . '>' . htmlspecialchars((string) $option['title'], ENT_QUOTES, 'UTF-8') . '</option>';
+                echo '<div class="mb-3"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="' . htmlspecialchars((string) ($selected['sort'] ?? 0), ENT_QUOTES, 'UTF-8') . '"></div>';
+                echo '<div class="mb-3"><label class="form-label">Шаблон</label><select class="form-select" name="layout">';
+                foreach (['default' => 'По умолчанию', 'home' => 'Главная'] as $value => $label) {
+                    $selectedAttr = $currentLayout === $value ? ' selected' : '';
+                    echo '<option value="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '"' . $selectedAttr . '>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</option>';
+                }
+                echo '</select></div>';
+                echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
+                echo '</form>';
+            } else {
+                echo '<div class="alert alert-light border">Редактирование доступно только для администратора.</div>';
             }
-            echo '</select></div>';
-            $extra = decodeExtra($selected);
-            $currentLayout = isset($extra['layout']) ? (string) $extra['layout'] : 'default';
-            if (!in_array($currentLayout, ['default', 'home'], true)) {
-                $currentLayout = 'default';
-            }
-            echo '<div class="mb-3"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="' . htmlspecialchars((string) ($selected['sort'] ?? 0), ENT_QUOTES, 'UTF-8') . '"></div>';
-            echo '<div class="mb-3"><label class="form-label">Шаблон</label><select class="form-select" name="layout">';
-            foreach (['default' => 'По умолчанию', 'home' => 'Главная'] as $value => $label) {
-                $selectedAttr = $currentLayout === $value ? ' selected' : '';
-                echo '<option value="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '"' . $selectedAttr . '>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</option>';
-            }
-            echo '</select></div>';
-            echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
-            echo '</form>';
         } elseif ($tab === 'seo') {
             $extra = decodeExtra($selected);
             echo '<h1 class="h5">SEO</h1>';
-            echo '<form method="post" action="/admin.php?action=seo_update">';
-            echo csrfTokenField();
-            echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
-            echo '<div class="mb-3"><label class="form-label">SEO заголовок</label><input class="form-control" type="text" name="seo_title" value="' . htmlspecialchars((string) ($extra['seo_title'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
-            echo '<div class="mb-3"><label class="form-label">SEO описание</label><textarea class="form-control" name="seo_description" rows="3">' . htmlspecialchars((string) ($extra['seo_description'] ?? ''), ENT_QUOTES, 'UTF-8') . '</textarea></div>';
-            echo '<div class="mb-3"><label class="form-label">SEO ключевые слова</label><input class="form-control" type="text" name="seo_keywords" value="' . htmlspecialchars((string) ($extra['seo_keywords'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
-            echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
-            echo '</form>';
+            if ($isAdmin) {
+                echo '<form method="post" action="/admin.php?action=seo_update">';
+                echo csrfTokenField();
+                echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
+                echo '<div class="mb-3"><label class="form-label">SEO заголовок</label><input class="form-control" type="text" name="seo_title" value="' . htmlspecialchars((string) ($extra['seo_title'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
+                echo '<div class="mb-3"><label class="form-label">SEO описание</label><textarea class="form-control" name="seo_description" rows="3">' . htmlspecialchars((string) ($extra['seo_description'] ?? ''), ENT_QUOTES, 'UTF-8') . '</textarea></div>';
+                echo '<div class="mb-3"><label class="form-label">SEO ключевые слова</label><input class="form-control" type="text" name="seo_keywords" value="' . htmlspecialchars((string) ($extra['seo_keywords'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
+                echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
+                echo '</form>';
+            } else {
+                echo '<div class="alert alert-light border">Редактирование доступно только для администратора.</div>';
+            }
         } elseif ($tab === 'infoblocks') {
             $infoblocks = $infoblockRepo->listForSection((int) $selected['id']);
             $components = $componentRepo->listAll();
@@ -167,14 +184,18 @@ if ($selected === null) {
                     echo '<td>' . htmlspecialchars((string) $infoblock['view_template'], ENT_QUOTES, 'UTF-8') . '</td>';
                     echo '<td>' . (!empty($infoblock['is_enabled']) ? 'Да' : 'Нет') . '</td>';
                     echo '<td class="d-flex gap-2">';
-                    echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $selectedId, 'tab' => 'infoblocks', 'edit_infoblock_id' => (int) $infoblock['id']]), ENT_QUOTES, 'UTF-8') . '">Редактировать</a>';
-                    echo '<form method="post" action="/admin.php?action=infoblock_delete" onsubmit="return confirm(\"Удалить инфоблок?\")">';
-                    echo csrfTokenField();
-                    echo '<input type="hidden" name="id" value="' . (int) $infoblock['id'] . '">';
-                    echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
-                    echo '<input type="hidden" name="name" value="' . htmlspecialchars((string) $infoblock['name'], ENT_QUOTES, 'UTF-8') . '">';
-                    echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>';
-                    echo '</form>';
+                    if ($isAdmin) {
+                        echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $selectedId, 'tab' => 'infoblocks', 'edit_infoblock_id' => (int) $infoblock['id']]), ENT_QUOTES, 'UTF-8') . '">Редактировать</a>';
+                        echo '<form method="post" action="/admin.php?action=infoblock_delete" onsubmit="return confirm(\"Удалить инфоблок?\")">';
+                        echo csrfTokenField();
+                        echo '<input type="hidden" name="id" value="' . (int) $infoblock['id'] . '">';
+                        echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
+                        echo '<input type="hidden" name="name" value="' . htmlspecialchars((string) $infoblock['name'], ENT_QUOTES, 'UTF-8') . '">';
+                        echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>';
+                        echo '</form>';
+                    } else {
+                        echo '<span class="text-muted">Недоступно</span>';
+                    }
                     echo '</td>';
                     echo '</tr>';
                 }
@@ -190,7 +211,7 @@ if ($selected === null) {
                 }
             }
 
-            if ($editInfoblock !== null) {
+            if ($editInfoblock !== null && $isAdmin) {
                 $settings = decodeSettings($editInfoblock);
                 $extra = decodeExtra($editInfoblock);
                 $component = $componentMap[(int) $editInfoblock['component_id']] ?? null;
@@ -229,29 +250,33 @@ if ($selected === null) {
                 echo '</form>';
             }
 
-            echo '<hr class="my-4">';
-            echo '<h3 class="h6">Добавить инфоблок</h3>';
-            echo '<form method="post" action="/admin.php?action=infoblock_create">';
-            echo csrfTokenField();
-            echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
-            echo '<div class="row">';
-            echo '<div class="col-md-4 mb-3"><label class="form-label">Компонент</label><select class="form-select" name="component_id">';
-            foreach ($components as $component) {
-                echo '<option value="' . (int) $component['id'] . '">' . htmlspecialchars((string) $component['name'], ENT_QUOTES, 'UTF-8') . '</option>';
+            if ($isAdmin) {
+                echo '<hr class="my-4">';
+                echo '<h3 class="h6">Добавить инфоблок</h3>';
+                echo '<form method="post" action="/admin.php?action=infoblock_create">';
+                echo csrfTokenField();
+                echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
+                echo '<div class="row">';
+                echo '<div class="col-md-4 mb-3"><label class="form-label">Компонент</label><select class="form-select" name="component_id">';
+                foreach ($components as $component) {
+                    echo '<option value="' . (int) $component['id'] . '">' . htmlspecialchars((string) $component['name'], ENT_QUOTES, 'UTF-8') . '</option>';
+                }
+                echo '</select></div>';
+                echo '<div class="col-md-4 mb-3"><label class="form-label">Название</label><input class="form-control" type="text" name="name" required></div>';
+                echo '<div class="col-md-4 mb-3"><label class="form-label">Шаблон</label><input class="form-control" type="text" name="view_template" value="list"></div>';
+                echo '</div>';
+                echo '<div class="row">';
+                echo '<div class="col-md-3 mb-3"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="' . (int) $defaultSort . '"></div>';
+                echo '<div class="col-md-3 mb-3">';
+                echo '<label class="form-label">Включен</label>';
+                echo '<div class="form-check mt-2"><input class="form-check-input" type="checkbox" name="is_enabled" value="1" checked></div>';
+                echo '</div>';
+                echo '</div>';
+                echo '<button class="btn btn-success" type="submit">Добавить</button>';
+                echo '</form>';
+            } else {
+                echo '<div class="alert alert-light border mt-3">Добавление и редактирование инфоблоков доступно только для администратора.</div>';
             }
-            echo '</select></div>';
-            echo '<div class="col-md-4 mb-3"><label class="form-label">Название</label><input class="form-control" type="text" name="name" required></div>';
-            echo '<div class="col-md-4 mb-3"><label class="form-label">Шаблон</label><input class="form-control" type="text" name="view_template" value="list"></div>';
-            echo '</div>';
-            echo '<div class="row">';
-            echo '<div class="col-md-3 mb-3"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="' . (int) $defaultSort . '"></div>';
-            echo '<div class="col-md-3 mb-3">';
-            echo '<label class="form-label">Включен</label>';
-            echo '<div class="form-check mt-2"><input class="form-check-input" type="checkbox" name="is_enabled" value="1" checked></div>';
-            echo '</div>';
-            echo '</div>';
-            echo '<button class="btn btn-success" type="submit">Добавить</button>';
-            echo '</form>';
         } elseif ($tab === 'content') {
             $infoblocks = $infoblockRepo->listForSection((int) $selected['id']);
             $components = $componentRepo->listAll();
@@ -270,11 +295,18 @@ if ($selected === null) {
                     $component = $componentMap[(int) $infoblock['component_id']] ?? null;
                     $componentName = $component ? (string) $component['name'] : 'Неизвестно';
                     $objects = $objectRepo->listForInfoblock((int) $infoblock['id']);
+                    $canCreate = Permission::canAction($currentUser, $infoblock, 'create');
+                    $canEdit = Permission::canAction($currentUser, $infoblock, 'edit');
+                    $canDelete = Permission::canAction($currentUser, $infoblock, 'delete');
+                    $canPublish = Permission::canAction($currentUser, $infoblock, 'publish');
+                    $canUnpublish = Permission::canAction($currentUser, $infoblock, 'unpublish');
 
                     echo '<div class="border rounded p-3 mb-4">';
                     echo '<div class="d-flex justify-content-between align-items-center mb-3">';
                     echo '<h3 class="h6 mb-0">' . htmlspecialchars((string) $infoblock['name'], ENT_QUOTES, 'UTF-8') . ' <span class="text-muted">(' . htmlspecialchars($componentName, ENT_QUOTES, 'UTF-8') . ')</span></h3>';
-                    echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'object_form', 'section_id' => $selected['id'], 'infoblock_id' => $infoblock['id']]), ENT_QUOTES, 'UTF-8') . '">Добавить объект</a>';
+                    if ($canCreate) {
+                        echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'object_form', 'section_id' => $selected['id'], 'infoblock_id' => $infoblock['id']]), ENT_QUOTES, 'UTF-8') . '">Добавить объект</a>';
+                    }
                     echo '</div>';
 
                     if (empty($objects)) {
@@ -302,29 +334,39 @@ if ($selected === null) {
                             echo '<td>' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</td>';
                             echo '<td>' . htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8') . '</td>';
                             echo '<td class="d-flex flex-wrap gap-2">';
-                            echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'object_form', 'section_id' => $selected['id'], 'id' => $object['id']]), ENT_QUOTES, 'UTF-8') . '">Редактировать</a>';
+                            if ($canEdit) {
+                                echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'object_form', 'section_id' => $selected['id'], 'id' => $object['id']]), ENT_QUOTES, 'UTF-8') . '">Редактировать</a>';
+                            }
                             if ($status === 'draft') {
-                                echo '<form method="post" action="/admin.php?action=object_publish">';
-                                echo csrfTokenField();
-                                echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
-                                echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
-                                echo '<button class="btn btn-sm btn-success" type="submit">Опубликовать</button>';
-                                echo '</form>';
+                                if ($canPublish) {
+                                    echo '<form method="post" action="/admin.php?action=object_publish">';
+                                    echo csrfTokenField();
+                                    echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
+                                    echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
+                                    echo '<button class="btn btn-sm btn-success" type="submit">Опубликовать</button>';
+                                    echo '</form>';
+                                }
                             } else {
-                                echo '<form method="post" action="/admin.php?action=object_unpublish">';
+                                if ($canUnpublish) {
+                                    echo '<form method="post" action="/admin.php?action=object_unpublish">';
+                                    echo csrfTokenField();
+                                    echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
+                                    echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
+                                    echo '<button class="btn btn-sm btn-warning" type="submit">Снять с публикации</button>';
+                                    echo '</form>';
+                                }
+                            }
+                            if (Permission::canView($currentUser, $infoblock)) {
+                                echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars($previewUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank">Предпросмотр</a>';
+                            }
+                            if ($canDelete) {
+                                echo '<form method="post" action="/admin.php?action=object_delete" onsubmit="return confirm(\"Удалить объект?\")">';
                                 echo csrfTokenField();
                                 echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
                                 echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
-                                echo '<button class="btn btn-sm btn-warning" type="submit">Снять с публикации</button>';
+                                echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>';
                                 echo '</form>';
                             }
-                            echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars($previewUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank">Предпросмотр</a>';
-                            echo '<form method="post" action="/admin.php?action=object_delete" onsubmit="return confirm(\"Удалить объект?\")">';
-                            echo csrfTokenField();
-                            echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
-                            echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
-                            echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>';
-                            echo '</form>';
                             echo '</td>';
                             echo '</tr>';
                         }

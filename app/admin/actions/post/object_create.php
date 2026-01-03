@@ -17,6 +17,14 @@ if ($infoblock === null) {
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Инфоблок не найден']));
 }
 
+if (!Permission::canAction($user, $infoblock, 'create')) {
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Недостаточно прав']));
+}
+
+if ($saveAs === 'publish' && !Permission::canAction($user, $infoblock, 'publish')) {
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Недостаточно прав для публикации']));
+}
+
 $component = $componentRepo->findById((int) $infoblock['component_id']);
 if ($component === null) {
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Компонент не найден']));
