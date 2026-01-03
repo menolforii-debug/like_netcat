@@ -19,6 +19,12 @@ final class SectionTree
         $root = [];
         foreach ($items as $id => $section) {
             $parentId = $section['parent_id'] !== null ? (int) $section['parent_id'] : null;
+            if ($parentId === null && (int) $section['site_id'] !== (int) $section['id']) {
+                $siteId = (int) $section['site_id'];
+                if ($siteId > 0 && isset($items[$siteId])) {
+                    $parentId = $siteId;
+                }
+            }
 
             if ($parentId !== null && isset($items[$parentId])) {
                 $items[$parentId]['children'][] = &$items[$id];
