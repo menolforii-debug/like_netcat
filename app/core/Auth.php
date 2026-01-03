@@ -2,6 +2,9 @@
 
 final class Auth
 {
+    public const ROLE_ADMIN = 'admin';
+    public const ROLE_EDITOR = 'editor';
+
     public static function start(): void
     {
         if (session_status() === PHP_SESSION_NONE) {
@@ -59,6 +62,8 @@ final class Auth
             return null;
         }
 
+        $user['role'] = self::normalizeRole($user['role'] ?? null);
+
         return $user;
     }
 
@@ -69,7 +74,20 @@ final class Auth
 
     public static function isAdmin(): bool
     {
-        return self::user() !== null;
+        $user = self::user();
+        if ($user === null) {
+            return false;
+        }
+
+        return (string) $user['role'] === self::ROLE_ADMIN;
+    }
+
+    public static function roles(): array
+    {
+        return [
+            self::ROLE_ADMIN => 'Полный доступ',
+            self::ROLE_EDITOR => 'Контент в инфоблоках и объекты',
+        ];
     }
 
     public static function createUser(string $login, string $password): int
@@ -89,5 +107,15 @@ final class Auth
         $stmt->execute();
 
         return (bool) $stmt->fetchColumn();
+    }
+
+    private static function normalizeRole(?string $role): string
+    {
+        $normalized = $role !== null ? trim($role) : '';
+        if ($normalized === '' || !array_key_exists($normalized, self::roles())) {
+            return self::ROLE_ADMIN;
+        }
+
+        return $normalized;
     }
 }

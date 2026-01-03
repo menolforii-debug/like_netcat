@@ -8,6 +8,7 @@ require $root . '/app/core/EventBus.php';
 require $root . '/app/core/Core.php';
 require $root . '/app/core/Auth.php';
 require $root . '/app/core/AdminLog.php';
+require $root . '/app/core/Permission.php';
 require $root . '/app/core/Seo.php';
 require $root . '/app/core/FieldValidator.php';
 require $root . '/app/domain/SectionRepo.php';

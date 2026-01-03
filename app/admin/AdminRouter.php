@@ -27,6 +27,7 @@ final class AdminRouter
         }
 
         $user = Auth::user();
+        self::requirePermission($action, $isPost, $user);
         $notice = isset($_GET['notice']) ? (string) $_GET['notice'] : '';
         $errorMessage = isset($_GET['error']) ? (string) $_GET['error'] : '';
         $selectedId = isset($_GET['section_id']) ? (int) $_GET['section_id'] : null;
@@ -74,5 +75,29 @@ final class AdminRouter
         AdminLayout::renderHeader('Ошибка');
         renderAlert($message, 'error');
         AdminLayout::renderFooter();
+    }
+
+    private static function requirePermission(string $action, bool $isPost, ?array $user): void
+    {
+        if (!$isPost) {
+            return;
+        }
+
+        if (Auth::isAdmin()) {
+            return;
+        }
+
+        $editorActions = [
+            'object_create',
+            'object_update',
+            'object_delete',
+            'object_publish',
+            'object_unpublish',
+        ];
+
+        if (!in_array($action, $editorActions, true)) {
+            self::renderError(403, 'Недостаточно прав');
+            exit;
+        }
     }
 }

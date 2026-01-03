@@ -22,6 +22,11 @@ if ($infoblock === null) {
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Инфоблок не найден']));
 }
 
+$permissionAction = $object ? 'edit' : 'create';
+if (!Permission::canAction($user, $infoblock, $permissionAction)) {
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Недостаточно прав']));
+}
+
 $component = $componentRepo->findById((int) $infoblock['component_id']);
 if ($component === null) {
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Компонент не найден']));
