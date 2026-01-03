@@ -6,12 +6,17 @@ Only `public_html` is web-accessible.
 
 ## Request Lifecycle
 
-HTTP request
+Frontend HTTP request
 → public_html/index.php
 → Section resolution
 → Optional object resolution (slug)
 → SEO resolution
 → Rendering (page or container)
+
+Admin HTTP request
+→ public_html/admin.php
+→ Admin router
+→ Action handler
 
 ## Rendering
 
