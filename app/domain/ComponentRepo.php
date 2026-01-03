@@ -56,4 +56,10 @@ final class ComponentRepo
             'id' => $id,
         ]);
     }
+
+    public function delete($id): void
+    {
+        $stmt = DB::pdo()->prepare('DELETE FROM components WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+    }
 }
