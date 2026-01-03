@@ -9,8 +9,13 @@ declare(strict_types=1);
  * Usage:
  *   php bin/cms migrate
  *   php bin/cms sections:list
- *   php bin/cms sections:add --parent-id=1 --english-name=news --title="Новости"
- *   php bin/cms users:add --login=admin --pass=admin
+ *   php bin/cms sections:add --parent-id=1 --english-name=news --title="Новости" [--sort=0]
+ *   php bin/cms sections:add --title="Новый сайт"
+ *   php bin/cms users:list
+ *   php bin/cms users:add --login=admin --pass=admin [--role=admin]
+ *   php bin/cms users:passwd --id=1 --pass=newpass
+ *   php bin/cms users:role --id=1 --role=editor
+ *   php bin/cms components:list
  */
 
 $root = realpath(__DIR__ . '/..');
@@ -42,7 +47,12 @@ function help(): void {
     echo "  migrate\n";
     echo "  sections:list\n";
     echo "  sections:add --parent-id=1 --english-name=news --title=\"Новости\" [--sort=0]\n";
-    echo "  users:add --login=admin --pass=admin\n";
+    echo "  sections:add --title=\"Новый сайт\" (creates site)\n";
+    echo "  users:list\n";
+    echo "  users:add --login=admin --pass=admin [--role=admin]\n";
+    echo "  users:passwd --id=1 --pass=newpass\n";
+    echo "  users:role --id=1 --role=editor\n";
+    echo "  components:list\n";
     echo "\n";
 }
 
@@ -59,8 +69,8 @@ switch ($cmd) {
         exit(0);
 
     case 'sections:list': {
-        $rows = $core->db->fetchAll(
-            "SELECT id, parent_id, site_id, english_name, title, sort FROM sections ORDER BY parent_id ASC, sort ASC, id ASC"
+        $rows = DB::fetchAll(
+            'SELECT id, parent_id, site_id, english_name, title, sort FROM sections ORDER BY parent_id ASC, sort ASC, id ASC'
         );
         foreach ($rows as $r) {
             $pid = $r['parent_id'] === null ? 'NULL' : (string)$r['parent_id'];
@@ -85,6 +95,14 @@ switch ($cmd) {
         $repo = new SectionRepo();
         if ($parentId === null) {
             $id = $repo->createSite($title);
+            $rootIndex = $repo->findRootByEnglishName($id, 'index');
+            if ($rootIndex === null) {
+                $repo->createSection($id, $id, 'index', 'Главная', 0, []);
+            }
+            $rootNotFound = $repo->findRootByEnglishName($id, '404');
+            if ($rootNotFound === null) {
+                $repo->createSection($id, $id, '404', '404', 0, []);
+            }
             echo "Created site section id={$id}\n";
             exit(0);
         }
@@ -100,23 +118,67 @@ switch ($cmd) {
         exit(0);
     }
 
+    case 'users:list': {
+        $repo = new UserRepo();
+        $rows = $repo->listAll();
+        foreach ($rows as $row) {
+            $role = isset($row['role']) ? (string) $row['role'] : 'admin';
+            echo "#{$row['id']} login=\"{$row['login']}\" role=\"{$role}\"\n";
+        }
+        exit(0);
+    }
+
     case 'users:add': {
         $kv = parse_kv_args($args);
         $login = $kv['login'] ?? '';
         $pass  = $kv['pass'] ?? '';
+        $role = $kv['role'] ?? Auth::ROLE_ADMIN;
 
         if ($login === '' || $pass === '') {
             fwrite(STDERR, "Usage: users:add --login=... --pass=...\n");
             exit(1);
         }
 
-        $hash = password_hash($pass, PASSWORD_DEFAULT);
-        $core->db->exec(
-            "INSERT INTO users(login, pass_hash) VALUES(?, ?)",
-            [$login, $hash]
-        );
+        $id = Auth::createUser($login, $pass, $role);
 
-        echo "Created user '{$login}'\n";
+        echo "Created user '{$login}' id={$id}\n";
+        exit(0);
+    }
+
+    case 'users:passwd': {
+        $kv = parse_kv_args($args);
+        $id = isset($kv['id']) ? (int) $kv['id'] : 0;
+        $pass = $kv['pass'] ?? '';
+        if ($id <= 0 || $pass === '') {
+            fwrite(STDERR, "Usage: users:passwd --id=... --pass=...\n");
+            exit(1);
+        }
+
+        Auth::updateUserPassword($id, $pass);
+        echo "Updated password for user id={$id}\n";
+        exit(0);
+    }
+
+    case 'users:role': {
+        $kv = parse_kv_args($args);
+        $id = isset($kv['id']) ? (int) $kv['id'] : 0;
+        $role = $kv['role'] ?? '';
+        if ($id <= 0 || $role === '') {
+            fwrite(STDERR, "Usage: users:role --id=... --role=...\n");
+            exit(1);
+        }
+
+        Auth::updateUserRole($id, $role);
+        echo "Updated role for user id={$id}\n";
+        exit(0);
+    }
+
+    case 'components:list': {
+        $repo = new ComponentRepo();
+        $rows = $repo->listAll();
+        foreach ($rows as $row) {
+            echo "#{$row['id']} keyword=\"{$row['keyword']}\" name=\"{$row['name']}\"\n";
+        }
         exit(0);
     }
 
