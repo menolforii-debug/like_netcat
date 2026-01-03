@@ -44,7 +44,15 @@ function core(): Core
 
 function runMigrations(PDO $pdo, $migrationsDir): void
 {
-    $pdo->exec('CREATE TABLE IF NOT EXISTS migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL)');
+    static $hasRun = false;
+    if ($hasRun) {
+        return;
+    }
+    $hasRun = true;
+
+    if (DB::pdo() !== $pdo) {
+        throw new RuntimeException('runMigrations must be called after DB::connect().');
+    }
 
     $files = glob(rtrim($migrationsDir, '/') . '/*.sql');
     if ($files === false) {
@@ -53,25 +61,57 @@ function runMigrations(PDO $pdo, $migrationsDir): void
 
     sort($files);
 
+    if ($files === []) {
+        return;
+    }
+
+    $pdo->exec('CREATE TABLE IF NOT EXISTS migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL)');
+
+    $applied = $pdo->query('SELECT name FROM migrations');
+    $appliedNames = $applied ? $applied->fetchAll(PDO::FETCH_COLUMN, 0) : [];
+    $appliedLookup = array_fill_keys($appliedNames, true);
+
+    $pendingFiles = [];
     foreach ($files as $file) {
         $name = basename($file);
-        if (migrationApplied($pdo, $name)) {
-            continue;
+        if (!isset($appliedLookup[$name])) {
+            $pendingFiles[] = $file;
+        }
+    }
+
+    if ($pendingFiles === []) {
+        return;
+    }
+
+    $manageTransaction = !$pdo->inTransaction();
+    try {
+        if ($manageTransaction) {
+            $pdo->beginTransaction();
         }
 
-        $sql = file_get_contents($file);
-        if ($sql === false) {
-            continue;
+        foreach ($pendingFiles as $file) {
+            $name = basename($file);
+            $sql = file_get_contents($file);
+            if ($sql === false) {
+                continue;
+            }
+
+            $pdo->exec($sql);
+            $stmt = $pdo->prepare('INSERT INTO migrations (name, applied_at) VALUES (:name, :applied_at)');
+            $stmt->execute([
+                'name' => $name,
+                'applied_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('c'),
+            ]);
         }
 
-        $pdo->beginTransaction();
-        $pdo->exec($sql);
-        $stmt = $pdo->prepare('INSERT INTO migrations (name, applied_at) VALUES (:name, :applied_at)');
-        $stmt->execute([
-            'name' => $name,
-            'applied_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('c'),
-        ]);
-        $pdo->commit();
+        if ($manageTransaction) {
+            $pdo->commit();
+        }
+    } catch (Throwable $e) {
+        if ($manageTransaction && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
     }
 }
 
