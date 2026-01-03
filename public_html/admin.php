@@ -168,23 +168,6 @@ function extractFormData(array $fields): array
     return $data;
 }
 
-function validateRequiredFields(array $fields, array $data): array
-{
-    $errors = [];
-    foreach ($fields as $field) {
-        if (empty($field['required'])) {
-            continue;
-        }
-        $name = $field['name'];
-        $value = $data[$name] ?? '';
-        if ($value === '' || $value === null) {
-            $errors[] = 'Поле "' . $name . '" обязательно.';
-        }
-    }
-
-    return $errors;
-}
-
 function renderFieldInput(array $field, array $data): string
 {
     $name = $field['name'];
