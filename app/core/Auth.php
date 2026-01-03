@@ -69,18 +69,60 @@ final class Auth
 
     public static function isAdmin(): bool
     {
-        return self::user() !== null;
+        $user = self::user();
+        if ($user === null) {
+            return false;
+        }
+
+        if (DB::hasColumn('users', 'role') && isset($user['role'])) {
+            return (string) $user['role'] === 'admin';
+        }
+
+        return true;
     }
 
-    public static function createUser(string $login, string $password): int
+    public static function createUser(string $login, string $password, ?string $role = null): int
     {
-        $stmt = DB::pdo()->prepare('INSERT INTO users (login, pass_hash) VALUES (:login, :pass_hash)');
-        $stmt->execute([
-            'login' => $login,
-            'pass_hash' => password_hash($password, PASSWORD_DEFAULT),
-        ]);
+        $passHash = password_hash($password, PASSWORD_DEFAULT);
+
+        if (DB::hasColumn('users', 'role')) {
+            $stmt = DB::pdo()->prepare('INSERT INTO users (login, pass_hash, role) VALUES (:login, :pass_hash, :role)');
+            $stmt->execute([
+                'login' => $login,
+                'pass_hash' => $passHash,
+                'role' => $role !== null && $role !== '' ? $role : 'admin',
+            ]);
+        } else {
+            $stmt = DB::pdo()->prepare('INSERT INTO users (login, pass_hash) VALUES (:login, :pass_hash)');
+            $stmt->execute([
+                'login' => $login,
+                'pass_hash' => $passHash,
+            ]);
+        }
 
         return (int) DB::pdo()->lastInsertId();
+    }
+
+    public static function updateUserPassword(int $id, string $password): void
+    {
+        $stmt = DB::pdo()->prepare('UPDATE users SET pass_hash = :pass_hash WHERE id = :id');
+        $stmt->execute([
+            'pass_hash' => password_hash($password, PASSWORD_DEFAULT),
+            'id' => $id,
+        ]);
+    }
+
+    public static function updateUserRole(int $id, string $role): void
+    {
+        if (!DB::hasColumn('users', 'role')) {
+            return;
+        }
+
+        $stmt = DB::pdo()->prepare('UPDATE users SET role = :role WHERE id = :id');
+        $stmt->execute([
+            'role' => $role,
+            'id' => $id,
+        ]);
     }
 
     private static function usersTableExists(): bool

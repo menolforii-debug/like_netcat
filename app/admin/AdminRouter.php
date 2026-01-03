@@ -36,7 +36,7 @@ final class AdminRouter
         $infoblockRepo = new InfoblockRepo();
         $componentRepo = new ComponentRepo();
         $objectRepo = new ObjectRepo();
-        $userRepo = null;
+        $userRepo = new UserRepo();
 
         $baseDir = __DIR__ . '/actions/' . ($isPost ? 'post' : 'get');
         $realBase = realpath($baseDir);
