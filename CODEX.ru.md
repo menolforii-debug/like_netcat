@@ -16,6 +16,22 @@
 - SEO вычисляется централизованно
 - Все изменения данных сопровождаются событиями
 
+## События
+
+- `section.created`
+- `section.updated`
+- `section.deleted`
+- `infoblock.created`
+- `infoblock.updated`
+- `infoblock.deleted`
+- `object.created`
+- `object.updated`
+- `object.published`
+- `object.unpublished`
+- `object.deleted`
+- `component.created`
+- `component.updated`
+
 ## Запрещено
 
 - ORM / ActiveRecord

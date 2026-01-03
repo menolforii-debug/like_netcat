@@ -33,6 +33,7 @@ runMigrations(DB::pdo(), $root . '/migrations');
 
 $core = new Core(DB::pdo(), new EventBus());
 $GLOBALS['core'] = $core;
+require $root . '/app/events.php';
 
 ensureDefaultSite(isset($_SERVER['HTTP_HOST']) ? (string) $_SERVER['HTTP_HOST'] : '');
 

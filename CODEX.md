@@ -16,6 +16,22 @@ This repository follows a strict Codex architecture.
 - SEO is resolved centrally
 - All mutations emit events
 
+## Events
+
+- `section.created`
+- `section.updated`
+- `section.deleted`
+- `infoblock.created`
+- `infoblock.updated`
+- `infoblock.deleted`
+- `object.created`
+- `object.updated`
+- `object.published`
+- `object.unpublished`
+- `object.deleted`
+- `component.created`
+- `component.updated`
+
 ## Forbidden
 
 - ORM / ActiveRecord
