@@ -429,6 +429,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             try {
+                if ($section['parent_id'] === null && in_array($section['english_name'], ['index', '404'], true)) {
+                    redirectTo(buildAdminUrl(['section_id' => $id, 'error' => 'Нельзя удалить системный раздел']));
+                }
                 $sectionRepo->delete($id);
                 $entityType = $section['parent_id'] === null ? 'site' : 'section';
                 $actionName = $section['parent_id'] === null ? 'site_delete' : 'section_delete';
