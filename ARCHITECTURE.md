@@ -18,6 +18,12 @@ Admin HTTP request
 → Admin router
 → Action handler
 
+## Admin Panel
+
+The admin UI is a separate entrypoint (`public_html/admin.php`) with its own
+router and action handlers. Future changes should keep admin functionality
+modeled as admin actions rather than frontend routes.
+
 ## Rendering
 
 Templates:
