@@ -2,10 +2,10 @@
 
 final class SectionTree
 {
-    public static function render(array $sections, ?int $currentId = null): string
+    public static function render(array $sections, ?int $currentId = null, ?int $expandedRootId = null): string
     {
         $tree = self::buildTree($sections);
-        return self::renderTree($tree, $currentId);
+        return self::renderTree($tree, $currentId, $expandedRootId);
     }
 
     private static function buildTree(array $sections): array
@@ -36,7 +36,7 @@ final class SectionTree
         return $root;
     }
 
-    private static function renderTree(array $nodes, ?int $currentId): string
+    private static function renderTree(array $nodes, ?int $currentId, ?int $expandedRootId): string
     {
         if (empty($nodes)) {
             return '<div class="text-muted">Разделов нет.</div>';
@@ -48,7 +48,7 @@ final class SectionTree
         $index = 0;
         foreach ($nodes as $node) {
             $index++;
-            $html .= self::renderNode($node, $currentId, $canManage, 'sectionTreeAccordion', (string) $index);
+            $html .= self::renderNode($node, $currentId, $expandedRootId, $canManage, 'sectionTreeAccordion', (string) $index);
         }
 
         $html .= '</div>';
@@ -56,7 +56,7 @@ final class SectionTree
         return $html;
     }
 
-    private static function renderNode(array $node, ?int $currentId, bool $canManage, string $parentId, string $suffix): string
+    private static function renderNode(array $node, ?int $currentId, ?int $expandedRootId, bool $canManage, string $parentId, string $suffix): string
     {
         $isActive = $currentId !== null && (int) $node['id'] === $currentId;
         $title = htmlspecialchars((string) $node['title'], ENT_QUOTES, 'UTF-8');
@@ -69,8 +69,10 @@ final class SectionTree
         $hasChildren = !empty($node['children']);
         $collapseId = 'sectionTreeCollapse' . $suffix . '_' . (int) $node['id'];
         $headingId = 'sectionTreeHeading' . $suffix . '_' . (int) $node['id'];
-        $expanded = $isActive ? 'true' : 'false';
-        $show = $isActive ? ' show' : '';
+        $hasSelected = $currentId !== null && self::hasSelected((int) $currentId, $node);
+        $forceExpanded = $expandedRootId !== null && (int) $node['id'] === $expandedRootId;
+        $expanded = ($isActive || $hasSelected || $forceExpanded) ? 'true' : 'false';
+        $show = ($isActive || $hasSelected || $forceExpanded) ? ' show' : '';
 
         $html = '<div class="accordion-item border-0">';
         $html .= '<div class="accordion-header" id="' . $headingId . '">';
@@ -107,7 +109,7 @@ final class SectionTree
             $index = 0;
             foreach ($node['children'] as $child) {
                 $index++;
-                $html .= self::renderNode($child, $currentId, $canManage, $collapseId . '-inner', $suffix . '_' . (string) $index);
+                $html .= self::renderNode($child, $currentId, $expandedRootId, $canManage, $collapseId . '-inner', $suffix . '_' . (string) $index);
             }
             $html .= '</div>';
             $html .= '</div>';
@@ -115,5 +117,24 @@ final class SectionTree
         }
 
         return $html;
+    }
+
+    private static function hasSelected(int $selectedId, array $node): bool
+    {
+        if ((int) ($node['id'] ?? 0) === $selectedId) {
+            return true;
+        }
+
+        if (empty($node['children'])) {
+            return false;
+        }
+
+        foreach ($node['children'] as $child) {
+            if (self::hasSelected($selectedId, $child)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -44,7 +44,7 @@ final class AdminLayout
             'dashboard' => ['label' => 'Сайты и разделы', 'href' => '/admin.php'],
             'logs' => ['label' => 'Логи', 'href' => '/admin.php?action=logs'],
             'users_list' => ['label' => 'Пользователи', 'href' => '/admin.php?action=users_list'],
-            'components_list' => ['label' => 'Компоненты', 'href' => '/admin.php?action=components_list'],
+            'components' => ['label' => 'Компоненты', 'href' => '/admin.php?action=components'],
             'sql' => ['label' => 'SQL', 'href' => '/admin.php?action=sql'],
         ];
         foreach ($menu as $key => $item) {

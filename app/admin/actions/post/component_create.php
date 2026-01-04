@@ -6,31 +6,92 @@ if (!Auth::isAdmin()) {
 
 $keyword = isset($_POST['keyword']) ? trim((string) $_POST['keyword']) : '';
 $name = isset($_POST['name']) ? trim((string) $_POST['name']) : '';
-$fieldsJson = isset($_POST['fields_json']) ? trim((string) $_POST['fields_json']) : '';
-$viewsJson = isset($_POST['views_json']) ? trim((string) $_POST['views_json']) : '';
+$fieldsInput = isset($_POST['fields']) && is_array($_POST['fields']) ? $_POST['fields'] : [];
+$viewsInput = isset($_POST['views']) && is_array($_POST['views']) ? $_POST['views'] : [];
 
 if ($keyword === '' || $name === '') {
-    redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Заполните ключ и название']));
+    redirectTo(buildAdminUrl(['action' => 'component_new', 'error' => 'Заполните ключ и название']));
 }
 
-if ($fieldsJson === '') {
-    $fieldsJson = '[]';
+$fields = [];
+$fieldNames = [];
+foreach ($fieldsInput as $row) {
+    if (!is_array($row)) {
+        continue;
+    }
+    if (!empty($row['delete'])) {
+        continue;
+    }
+    $fieldName = isset($row['name']) ? trim((string) $row['name']) : '';
+    if ($fieldName === '') {
+        continue;
+    }
+    if (!preg_match('/^[A-Za-z0-9_-]+$/', $fieldName)) {
+        redirectTo(buildAdminUrl(['action' => 'component_new', 'error' => 'Имя поля должно быть URL-безопасным']));
+    }
+    if (isset($fieldNames[$fieldName])) {
+        redirectTo(buildAdminUrl(['action' => 'component_new', 'error' => 'Имя поля должно быть уникальным']));
+    }
+    $fieldNames[$fieldName] = true;
+    $label = isset($row['label']) ? trim((string) $row['label']) : $fieldName;
+    $type = isset($row['type']) ? trim((string) $row['type']) : 'text';
+    $allowedTypes = ['text', 'textarea', 'number', 'date', 'checkbox', 'select'];
+    if (!in_array($type, $allowedTypes, true)) {
+        $type = 'text';
+    }
+    $required = !empty($row['required']);
+    $options = [];
+    if ($type === 'select' && isset($row['options']) && is_array($row['options'])) {
+        foreach ($row['options'] as $option) {
+            if (!is_array($option)) {
+                continue;
+            }
+            if (!empty($option['delete'])) {
+                continue;
+            }
+            $optKey = isset($option['key']) ? trim((string) $option['key']) : '';
+            $optLabel = isset($option['label']) ? trim((string) $option['label']) : '';
+            if ($optKey === '' || $optLabel === '') {
+                continue;
+            }
+            $options[$optKey] = $optLabel;
+        }
+    }
+    $fields[] = [
+        'name' => $fieldName,
+        'label' => $label,
+        'type' => $type,
+        'required' => $required,
+        'options' => $options,
+    ];
 }
 
-if ($viewsJson === '') {
-    $viewsJson = '[]';
-}
-
-try {
-    $fields = parseJsonField($fieldsJson, 'Некорректный JSON полей');
-    $views = parseJsonField($viewsJson, 'Некорректный JSON видов отображения');
-} catch (InvalidArgumentException $e) {
-    redirectTo(buildAdminUrl(['action' => 'components', 'error' => $e->getMessage()]));
+$views = [];
+$viewNames = [];
+foreach ($viewsInput as $row) {
+    if (!is_array($row)) {
+        continue;
+    }
+    if (!empty($row['delete'])) {
+        continue;
+    }
+    $view = isset($row['value']) ? trim((string) $row['value']) : '';
+    if ($view === '') {
+        continue;
+    }
+    if (!preg_match('/^[A-Za-z0-9_-]+$/', $view)) {
+        redirectTo(buildAdminUrl(['action' => 'component_new', 'error' => 'Ключ вида должен быть URL-безопасным']));
+    }
+    if (isset($viewNames[$view])) {
+        continue;
+    }
+    $viewNames[$view] = true;
+    $views[] = $view;
 }
 
 $existing = $componentRepo->findByKeyword($keyword);
 if ($existing !== null) {
-    redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Компонент с таким ключом уже существует']));
+    redirectTo(buildAdminUrl(['action' => 'component_new', 'error' => 'Компонент с таким ключом уже существует']));
 }
 
 $componentId = $componentRepo->create($keyword, $name, $fields, $views);
@@ -42,4 +103,4 @@ if ($user) {
     ]);
 }
 
-redirectTo(buildAdminUrl(['action' => 'components', 'notice' => 'Компонент создан']));
+redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => 'general', 'notice' => 'Компонент создан']));

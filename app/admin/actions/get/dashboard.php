@@ -7,6 +7,14 @@ foreach ($sites as $site) {
     $sections = array_merge($sections, collectSections($sectionRepo, (int) $site['id']));
 }
 
+$host = (string) ($_SERVER['HTTP_HOST'] ?? '');
+$currentSite = $sectionRepo->findSiteByHost($host);
+$currentSiteId = $currentSite ? (int) $currentSite['id'] : null;
+
+if ($selectedId === null && $currentSiteId !== null) {
+    $selectedId = $currentSiteId;
+}
+
 $selected = null;
 if ($selectedId !== null) {
     $selected = $sectionRepo->findById($selectedId);
@@ -28,7 +36,7 @@ if ($isAdmin) {
     echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'site_new']), ENT_QUOTES, 'UTF-8') . '">Добавить</a>';
 }
 echo '</div>';
-echo SectionTree::render($sections, $selectedId);
+echo SectionTree::render($sections, $selectedId, $currentSiteId);
 echo '</div>';
 echo '</div>';
 AdminLayout::closeSidebar();
