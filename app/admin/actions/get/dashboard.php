@@ -36,12 +36,7 @@ echo '</div>';
 echo '</div>';
 
 echo '<div class="col-12 col-lg-9">';
-if ($selected === null) {
-    echo '<div class="card shadow-sm">';
-    echo '<div class="card-body">';
-    echo '<h1 class="h5">Выберите сайт или раздел в дереве.</h1>';
-    echo '</div></div>';
-} else {
+if ($selected !== null) {
     $isSite = $selected['parent_id'] === null;
     echo '<div class="card shadow-sm">';
     echo '<div class="card-body">';

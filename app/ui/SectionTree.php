@@ -61,6 +61,8 @@ final class SectionTree
         $isActive = $currentId !== null && (int) $node['id'] === $currentId;
         $title = htmlspecialchars((string) $node['title'], ENT_QUOTES, 'UTF-8');
         $link = '/admin.php?section_id=' . (int) $node['id'];
+        $repo = new SectionRepo();
+        $sitePath = buildSectionPathFromId($repo, (int) $node['id']);
         $isSystemRoot = $node['parent_id'] === null
             && isset($node['english_name'])
             && in_array($node['english_name'], ['index', '404'], true);
@@ -74,21 +76,24 @@ final class SectionTree
         $html .= '<div class="accordion-header" id="' . $headingId . '">';
         $html .= '<div class="d-flex align-items-center gap-2">';
         if ($hasChildren) {
-            $html .= '<button class="accordion-button collapsed py-2 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#' . $collapseId . '" aria-expanded="' . $expanded . '" aria-controls="' . $collapseId . '"></button>';
+            $html .= '<button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#' . $collapseId . '" aria-expanded="' . $expanded . '" aria-controls="' . $collapseId . '" title="Развернуть"><i class="bi bi-chevron-down"></i></button>';
         } else {
-            $html .= '<span class="accordion-button collapsed py-2 px-2 invisible"></span>';
+            $html .= '<span class="btn btn-sm btn-outline-secondary invisible"></span>';
         }
+        $html .= '<span class="text-muted small me-2">#' . (int) $node['id'] . '</span>';
         $html .= '<a class="text-decoration-none flex-grow-1' . ($isActive ? ' fw-semibold' : '') . '" href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">' . $title . '</a>';
 
         if ($canManage) {
-            $html .= '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'section_new', 'parent_id' => (int) $node['id']]), ENT_QUOTES, 'UTF-8') . '">+</a>';
+            $html .= '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'section_new', 'parent_id' => (int) $node['id']]), ENT_QUOTES, 'UTF-8') . '" title="Добавить раздел"><i class="bi bi-plus"></i></a>';
         }
+
+        $html .= '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars($sitePath, ENT_QUOTES, 'UTF-8') . '" target="_blank" title="Открыть на сайте"><i class="bi bi-box-arrow-up-right"></i></a>';
 
         if ($canManage && !$isSystemRoot) {
             $html .= '<form method="post" action="/admin.php?action=section_delete" class="m-0" onsubmit="return confirm(\'Удалить этот раздел?\')">';
             $html .= csrfTokenField();
             $html .= '<input type="hidden" name="id" value="' . (int) $node['id'] . '">';
-            $html .= '<button class="btn btn-sm btn-outline-danger" type="submit">🗑</button>';
+            $html .= '<button class="btn btn-sm btn-outline-danger" type="submit" title="Удалить"><i class="bi bi-trash"></i></button>';
             $html .= '</form>';
         }
 
