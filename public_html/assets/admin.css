@@ -8,3 +8,8 @@
   font-size: 0.75rem;
   line-height: 1.2;
 }
+
+.CodeMirror {
+  min-height: 300px;
+  width: 100%;
+}

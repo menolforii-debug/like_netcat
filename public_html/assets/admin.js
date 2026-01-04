@@ -1,14 +1,37 @@
 document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('textarea.code-editor').forEach((textarea) => {
-    textarea.addEventListener('keydown', (event) => {
-      if (event.key === 'Tab') {
-        event.preventDefault();
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const value = textarea.value;
-        textarea.value = value.substring(0, start) + '    ' + value.substring(end);
-        textarea.selectionStart = textarea.selectionEnd = start + 4;
-      }
+  const editors = [];
+  const targets = [
+    'textarea[name="list_tpl"]',
+    'textarea[name="single_tpl"]',
+  ];
+
+  targets.forEach((selector) => {
+    const textarea = document.querySelector(selector);
+    if (!textarea || typeof CodeMirror === 'undefined') {
+      return;
+    }
+
+    const editor = CodeMirror.fromTextArea(textarea, {
+      mode: 'application/x-httpd-php',
+      theme: 'material-darker',
+      lineNumbers: true,
+      lineWrapping: true,
+      indentUnit: 4,
+      tabSize: 4,
+      indentWithTabs: false,
+    });
+
+    editor.setSize('100%', 300);
+    editors.push(editor);
+  });
+
+  if (editors.length === 0) {
+    return;
+  }
+
+  document.querySelectorAll('form').forEach((form) => {
+    form.addEventListener('submit', () => {
+      editors.forEach((editor) => editor.save());
     });
   });
 });
