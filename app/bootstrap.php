@@ -13,6 +13,7 @@ require $root . '/app/core/Seo.php';
 require $root . '/app/core/FieldValidator.php';
 require $root . '/app/domain/SectionRepo.php';
 require $root . '/app/domain/ComponentRepo.php';
+require $root . '/app/domain/ComponentViewRepo.php';
 require $root . '/app/domain/InfoblockRepo.php';
 require $root . '/app/domain/ObjectRepo.php';
 require $root . '/app/domain/UserRepo.php';
@@ -84,17 +85,17 @@ function runMigrations(PDO $pdo, $migrationsDir): void
         return;
     }
 
-    $manageTransaction = !$pdo->inTransaction();
     try {
-        if ($manageTransaction) {
-            $pdo->beginTransaction();
-        }
-
         foreach ($pendingFiles as $file) {
             $name = basename($file);
             $sql = file_get_contents($file);
             if ($sql === false) {
                 continue;
+            }
+
+            $manageTransaction = !$pdo->inTransaction() && !migrationManagesTransaction($sql);
+            if ($manageTransaction) {
+                $pdo->beginTransaction();
             }
 
             $pdo->exec($sql);
@@ -103,13 +104,13 @@ function runMigrations(PDO $pdo, $migrationsDir): void
                 'name' => $name,
                 'applied_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('c'),
             ]);
-        }
 
-        if ($manageTransaction) {
-            $pdo->commit();
+            if ($manageTransaction) {
+                $pdo->commit();
+            }
         }
     } catch (Throwable $e) {
-        if ($manageTransaction && $pdo->inTransaction()) {
+        if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
         throw $e;
@@ -187,4 +188,9 @@ function normalizeHost(string $host): string
     }
 
     return $host;
+}
+
+function migrationManagesTransaction(string $sql): bool
+{
+    return preg_match('/\bBEGIN\b|\bCOMMIT\b|\bROLLBACK\b|\bPRAGMA\s+foreign_keys\b/i', $sql) === 1;
 }
