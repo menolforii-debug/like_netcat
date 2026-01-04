@@ -1,0 +1,55 @@
+.code-editor-wrap {
+  display: flex;
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+  background: #f8f9fa;
+  overflow: hidden;
+}
+
+.code-editor-gutter {
+  flex: 0 0 3rem;
+  background: #f1f3f5;
+  border-right: 1px solid #dee2e6;
+  color: #6c757d;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  padding: 0.75rem 0.5rem;
+  text-align: right;
+  user-select: none;
+  overflow: hidden;
+}
+
+.code-editor-area {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.code-editor-highlight,
+.code-editor-area textarea.code-editor {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  padding: 0.75rem;
+  margin: 0;
+  white-space: pre;
+}
+
+.code-editor-highlight {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  pointer-events: none;
+}
+
+.code-editor-area textarea.code-editor {
+  position: relative;
+  background: transparent;
+  border: 0;
+  resize: vertical;
+  width: 100%;
+  min-height: 12rem;
+  color: transparent;
+  caret-color: #212529;
+  overflow: auto;
+}
