@@ -26,33 +26,33 @@ final class AdminLayout
             return;
         }
 
+        echo "<body class=\"bg-light\">\n";
+        echo "<div class=\"d-flex flex-column min-vh-100\">\n";
+        echo "<header class=\"navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm\">\n";
+        echo "<div class=\"container-fluid\">\n";
+        echo "<a class=\"navbar-brand fw-semibold\" href=\"/admin.php\">Админка</a>\n";
+        echo "<button class=\"navbar-toggler\" type=\"button\" data-bs-toggle=\"collapse\" data-bs-target=\"#adminTopNav\" aria-controls=\"adminTopNav\" aria-expanded=\"false\" aria-label=\"Toggle navigation\">\n";
+        echo "<span class=\"navbar-toggler-icon\"></span>\n";
+        echo "</button>\n";
+        echo "<div class=\"collapse navbar-collapse\" id=\"adminTopNav\">\n";
+        echo "<ul class=\"navbar-nav me-auto mb-2 mb-lg-0\">\n";
         $action = isset($_GET['action']) ? (string) $_GET['action'] : '';
         $action = $action !== '' ? $action : 'dashboard';
         $menu = [
-            'dashboard' => ['label' => 'Админка', 'href' => '/admin.php'],
+            'dashboard' => ['label' => 'Сайты и разделы', 'href' => '/admin.php'],
             'logs' => ['label' => 'Логи', 'href' => '/admin.php?action=logs'],
-            'users' => ['label' => 'Пользователи', 'href' => '/admin.php?action=users'],
-            'components' => ['label' => 'Компоненты', 'href' => '/admin.php?action=components'],
+            'users_list' => ['label' => 'Пользователи', 'href' => '/admin.php?action=users_list'],
+            'components_list' => ['label' => 'Компоненты', 'href' => '/admin.php?action=components_list'],
+            'sql' => ['label' => 'SQL', 'href' => '/admin.php?action=sql'],
         ];
-
-        echo "<body class=\"bg-light\">\n";
-        echo "<div class=\"d-flex min-vh-100\">\n";
-        echo "<aside class=\"bg-dark text-white p-3\" style=\"width: 260px;\">\n";
-        echo "<div class=\"h5 mb-4\">CMS Admin</div>\n";
-        echo "<nav class=\"nav flex-column gap-1\">\n";
         foreach ($menu as $key => $item) {
             $active = $action === $key ? ' active' : '';
-            echo '<a class="nav-link text-white' . $active . '" href="' . htmlspecialchars($item['href'], ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8') . "</a>\n";
+            echo '<li class="nav-item"><a class="nav-link' . $active . '" href="' . htmlspecialchars($item['href'], ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8') . "</a></li>\n";
         }
-        echo "</nav>\n";
-        echo "</aside>\n";
-        echo "<div class=\"flex-grow-1 d-flex flex-column\">\n";
-        echo "<header class=\"navbar navbar-light bg-white border-bottom shadow-sm\">\n";
-        echo "<div class=\"container-fluid\">\n";
-        echo "<span class=\"navbar-brand mb-0 h6\">Админка</span>\n";
+        echo "</ul>\n";
         echo "<div class=\"d-flex gap-2\">\n";
-        echo "<a class=\"btn btn-outline-secondary btn-sm\" href=\"/\">На сайт</a>\n";
         echo "<a class=\"btn btn-outline-dark btn-sm\" href=\"/admin.php?action=logout\">Выйти</a>\n";
+        echo "</div>\n";
         echo "</div>\n";
         echo "</div>\n";
         echo "</header>\n";
@@ -68,7 +68,6 @@ final class AdminLayout
         } else {
             echo "</div>\n";
             echo "</main>\n";
-            echo "</div>\n";
             echo "</div>\n";
         }
 
