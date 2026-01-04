@@ -218,6 +218,12 @@ if ($tab === 'general') {
     }
     echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
     echo '</form>';
+
+    echo '<form class="mt-3" method="post" action="/admin.php?action=component_delete" onsubmit="return confirm(\'Удалить компонент?\')">';
+    echo csrfTokenField();
+    echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
+    echo '<button class="btn btn-outline-danger" type="submit">Удалить компонент</button>';
+    echo '</form>';
 }
 
 if ($tab === 'fields') {

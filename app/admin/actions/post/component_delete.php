@@ -14,15 +14,48 @@ if ($component === null) {
     redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Компонент не найден']));
 }
 
-$usage = DB::fetchOne('SELECT COUNT(*) AS cnt FROM infoblocks WHERE component_id = :id', ['id' => $componentId]);
-if ($usage && (int) $usage['cnt'] > 0) {
-    redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Компонент используется в инфоблоках']));
+$infoblock = DB::fetchOne(
+    'SELECT 1 FROM infoblocks WHERE component_id = :component_id LIMIT 1',
+    ['component_id' => $componentId]
+);
+if ($infoblock !== null) {
+    redirectTo(buildAdminUrl([
+        'action' => 'components',
+        'component_id' => $componentId,
+        'error' => 'Нельзя удалить компонент: он используется в инфоблоках.',
+    ]));
 }
 
-$componentRepo->delete($componentId);
+$viewNames = [];
 if (DB::hasTable('component_views')) {
-    $stmt = DB::pdo()->prepare('DELETE FROM component_views WHERE component_id = :id');
-    $stmt->execute(['id' => $componentId]);
+    $viewRepo = new ComponentViewRepo();
+    $viewNames = $viewRepo->listNamesForComponent($componentId);
+}
+
+if (empty($viewNames)) {
+    $viewsJson = $component['views_json'] ?? '[]';
+    $decoded = json_decode((string) $viewsJson, true);
+    if (is_array($decoded)) {
+        $viewNames = $decoded;
+    }
+}
+
+$componentRepo->deleteWithViews($componentId);
+
+$componentKey = (string) ($component['keyword'] ?? '');
+if ($componentKey !== '' && !empty($viewNames)) {
+    $root = dirname(__DIR__, 3);
+    $templatesDir = $root . '/templates/' . $componentKey;
+    foreach ($viewNames as $viewName) {
+        $viewName = trim((string) $viewName);
+        if ($viewName === '') {
+            continue;
+        }
+        $templatePath = $templatesDir . '/' . $viewName . '.php';
+        if (is_file($templatePath)) {
+            @unlink($templatePath);
+        }
+    }
 }
 
 if ($user) {

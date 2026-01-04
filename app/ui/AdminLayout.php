@@ -19,6 +19,7 @@ final class AdminLayout
         echo "    <link href=\"/assets/sow/css/vendor_bundle.min.css\" rel=\"stylesheet\">\n";
         echo "    <link href=\"/assets/sow/css/core.min.css\" rel=\"stylesheet\">\n";
         echo "    <link href=\"/assets/admin.css\" rel=\"stylesheet\">\n";
+        echo "    <link href=\"https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css\" rel=\"stylesheet\">\n";
         echo "</head>\n";
 
         if (!$showSidebar) {
@@ -116,6 +117,9 @@ final class AdminLayout
         echo "<script src=\"/assets/sow/js/vendor_bundle.min.js\"></script>\n";
         echo "<script src=\"/assets/sow/js/core.min.js\"></script>\n";
         echo "<script src=\"/assets/admin.js\"></script>\n";
+        echo "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js\"></script>\n";
+        echo "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/php/php.min.js\"></script>\n";
+        echo "<script src=\"/assets/admin_code_editor.js\"></script>\n";
         echo "</body>\n";
         echo "</html>\n";
     }
