@@ -83,6 +83,14 @@ final class AdminRouter
             return;
         }
 
+        if ($action === 'login' || $action === 'logout') {
+            return;
+        }
+
+        if ($user === null) {
+            return;
+        }
+
         if (Auth::isAdmin()) {
             return;
         }
