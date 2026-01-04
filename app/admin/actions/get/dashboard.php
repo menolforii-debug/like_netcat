@@ -36,10 +36,10 @@ echo '</div>';
 echo '</div>';
 
 echo '<div class="col-12 col-lg-9">';
+echo '<div class="card shadow-sm">';
+echo '<div class="card-body">';
 if ($selected !== null) {
     $isSite = $selected['parent_id'] === null;
-    echo '<div class="card shadow-sm">';
-    echo '<div class="card-body">';
 
     if ($isSite) {
         $extra = decodeExtra($selected);
@@ -356,9 +356,11 @@ if ($selected !== null) {
         }
     }
 
-    echo '</div></div>';
+} else {
+    echo '<div class="text-muted">Выберите сайт или раздел в дереве.</div>';
 }
 
+echo '</div>';
 echo '</div>';
 
 echo '</div>';
