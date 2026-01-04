@@ -17,40 +17,11 @@ AdminLayout::renderHeader('Пользователи');
 renderAlert($notice, 'success');
 renderAlert($errorMessage, 'error');
 
-echo '<div class="row g-4">';
-
-echo '<div class="col-lg-4">';
-echo '<div class="card shadow-sm">';
-echo '<div class="card-body">';
-echo '<h1 class="h5 mb-3">Добавить пользователя</h1>';
-echo '<form method="post" action="/admin.php?action=user_create">';
-echo csrfTokenField();
-echo '<div class="mb-3">';
-echo '<label class="form-label">Логин</label>';
-echo '<input class="form-control" name="login" required>';
-echo '</div>';
-echo '<div class="mb-3">';
-echo '<label class="form-label">Пароль</label>';
-echo '<input class="form-control" type="password" name="password" required>';
-echo '</div>';
-if ($hasRole) {
-    echo '<div class="mb-3">';
-    echo '<label class="form-label">Роль</label>';
-    echo '<select class="form-select" name="role">';
-    foreach ($roles as $value => $label) {
-        $selected = $value === 'editor' ? ' selected' : '';
-        echo '<option value="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '"' . $selected . '>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</option>';
-    }
-    echo '</select>';
-    echo '</div>';
-}
-echo '<button class="btn btn-primary" type="submit">Создать</button>';
-echo '</form>';
-echo '</div>';
-echo '</div>';
+echo '<div class="d-flex justify-content-between align-items-center mb-3">';
+echo '<h1 class="h4 mb-0">Пользователи</h1>';
+echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'users_create']), ENT_QUOTES, 'UTF-8') . '">Добавить</a>';
 echo '</div>';
 
-echo '<div class="col-lg-8">';
 echo '<div class="card shadow-sm">';
 echo '<div class="card-body">';
 echo '<h2 class="h6 mb-3">Список пользователей</h2>';
@@ -125,9 +96,6 @@ if (empty($users)) {
 }
 
 echo '</div>';
-echo '</div>';
-echo '</div>';
-
 echo '</div>';
 
 AdminLayout::renderFooter();

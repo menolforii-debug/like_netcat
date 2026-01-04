@@ -43,47 +43,71 @@ final class SectionTree
         }
 
         $canManage = Auth::isAdmin();
-        $html = '<ul class="list-group list-group-flush">';
+        $html = '<div class="accordion" id="sectionTreeAccordion">';
 
+        $index = 0;
         foreach ($nodes as $node) {
-            $isActive = $currentId !== null && (int) $node['id'] === $currentId;
-            $title = htmlspecialchars((string) $node['title'], ENT_QUOTES, 'UTF-8');
-            $link = '/admin.php?section_id=' . (int) $node['id'];
-            $isSystemRoot = $node['parent_id'] === null
-                && isset($node['english_name'])
-                && in_array($node['english_name'], ['index', '404'], true);
-
-            $html .= '<li class="list-group-item">';
-
-            $html .= '<div class="d-flex align-items-center gap-2">';
-            $html .= '<a class="text-decoration-none flex-grow-1' . ($isActive ? ' fw-semibold' : '') . '" href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">' . $title . '</a>';
-
-            if ($canManage) {
-                $html .= '<form method="post" action="/admin.php?action=section_create" class="m-0">';
-                $html .= csrfTokenField();
-                $html .= '<input type="hidden" name="parent_id" value="' . (int) $node['id'] . '">';
-                $html .= '<button class="btn btn-sm btn-outline-primary" type="submit">+</button>';
-                $html .= '</form>';
-            }
-
-            if ($canManage && !$isSystemRoot) {
-                $html .= '<form method="post" action="/admin.php?action=section_delete" class="m-0" onsubmit="return confirm(\'Удалить этот раздел?\')">';
-                $html .= csrfTokenField();
-                $html .= '<input type="hidden" name="id" value="' . (int) $node['id'] . '">';
-                $html .= '<button class="btn btn-sm btn-outline-danger" type="submit">🗑</button>';
-                $html .= '</form>';
-            }
-
-            $html .= '</div>';
-
-            if (!empty($node['children'])) {
-                $html .= '<div class="ms-3 mt-2">' . self::renderTree($node['children'], $currentId) . '</div>';
-            }
-
-            $html .= '</li>';
+            $index++;
+            $html .= self::renderNode($node, $currentId, $canManage, 'sectionTreeAccordion', (string) $index);
         }
 
-        $html .= '</ul>';
+        $html .= '</div>';
+
+        return $html;
+    }
+
+    private static function renderNode(array $node, ?int $currentId, bool $canManage, string $parentId, string $suffix): string
+    {
+        $isActive = $currentId !== null && (int) $node['id'] === $currentId;
+        $title = htmlspecialchars((string) $node['title'], ENT_QUOTES, 'UTF-8');
+        $link = '/admin.php?section_id=' . (int) $node['id'];
+        $isSystemRoot = $node['parent_id'] === null
+            && isset($node['english_name'])
+            && in_array($node['english_name'], ['index', '404'], true);
+        $hasChildren = !empty($node['children']);
+        $collapseId = 'sectionTreeCollapse' . $suffix . '_' . (int) $node['id'];
+        $headingId = 'sectionTreeHeading' . $suffix . '_' . (int) $node['id'];
+        $expanded = $isActive ? 'true' : 'false';
+        $show = $isActive ? ' show' : '';
+
+        $html = '<div class="accordion-item border-0">';
+        $html .= '<div class="accordion-header" id="' . $headingId . '">';
+        $html .= '<div class="d-flex align-items-center gap-2">';
+        if ($hasChildren) {
+            $html .= '<button class="accordion-button collapsed py-2 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#' . $collapseId . '" aria-expanded="' . $expanded . '" aria-controls="' . $collapseId . '"></button>';
+        } else {
+            $html .= '<span class="accordion-button collapsed py-2 px-2 invisible"></span>';
+        }
+        $html .= '<a class="text-decoration-none flex-grow-1' . ($isActive ? ' fw-semibold' : '') . '" href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">' . $title . '</a>';
+
+        if ($canManage) {
+            $html .= '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'section_new', 'parent_id' => (int) $node['id']]), ENT_QUOTES, 'UTF-8') . '">+</a>';
+        }
+
+        if ($canManage && !$isSystemRoot) {
+            $html .= '<form method="post" action="/admin.php?action=section_delete" class="m-0" onsubmit="return confirm(\'Удалить этот раздел?\')">';
+            $html .= csrfTokenField();
+            $html .= '<input type="hidden" name="id" value="' . (int) $node['id'] . '">';
+            $html .= '<button class="btn btn-sm btn-outline-danger" type="submit">🗑</button>';
+            $html .= '</form>';
+        }
+
+        $html .= '</div>';
+        $html .= '</div>';
+
+        if ($hasChildren) {
+            $html .= '<div id="' . $collapseId . '" class="accordion-collapse collapse' . $show . '" aria-labelledby="' . $headingId . '" data-bs-parent="#' . $parentId . '">';
+            $html .= '<div class="accordion-body py-2 ps-4">';
+            $html .= '<div class="accordion" id="' . $collapseId . '-inner">';
+            $index = 0;
+            foreach ($node['children'] as $child) {
+                $index++;
+                $html .= self::renderNode($child, $currentId, $canManage, $collapseId . '-inner', $suffix . '_' . (string) $index);
+            }
+            $html .= '</div>';
+            $html .= '</div>';
+            $html .= '</div>';
+        }
 
         return $html;
     }

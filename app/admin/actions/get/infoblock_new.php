@@ -1,0 +1,60 @@
+<?php
+
+if (!Auth::isAdmin()) {
+    redirectTo(buildAdminUrl(['error' => 'Недостаточно прав']));
+}
+
+$sectionId = isset($_GET['section_id']) ? (int) $_GET['section_id'] : 0;
+$section = $sectionId > 0 ? $sectionRepo->findById($sectionId) : null;
+if ($section === null) {
+    redirectTo(buildAdminUrl(['error' => 'Раздел не найден']));
+}
+
+$components = $componentRepo->listAll();
+$infoblocks = $infoblockRepo->listForSection($sectionId);
+$maxSort = 0;
+foreach ($infoblocks as $infoblock) {
+    if ((int) $infoblock['sort'] > $maxSort) {
+        $maxSort = (int) $infoblock['sort'];
+    }
+}
+$defaultSort = $maxSort + 10;
+
+AdminLayout::renderHeader('Новый инфоблок');
+renderAlert($notice, 'success');
+renderAlert($errorMessage, 'error');
+
+echo '<div class="d-flex justify-content-between align-items-center mb-3">';
+echo '<h1 class="h4 mb-0">Новый инфоблок</h1>';
+echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks']), ENT_QUOTES, 'UTF-8') . '">Назад</a>';
+echo '</div>';
+
+echo '<div class="card shadow-sm">';
+echo '<div class="card-body">';
+echo '<form method="post" action="/admin.php?action=infoblock_create">';
+echo csrfTokenField();
+echo '<input type="hidden" name="section_id" value="' . (int) $sectionId . '">';
+echo '<div class="row g-3">';
+echo '<div class="col-md-4"><label class="form-label">Компонент</label><select class="form-select" name="component_id">';
+foreach ($components as $component) {
+    echo '<option value="' . (int) $component['id'] . '">' . htmlspecialchars((string) $component['name'], ENT_QUOTES, 'UTF-8') . '</option>';
+}
+echo '</select></div>';
+echo '<div class="col-md-4"><label class="form-label">Название</label><input class="form-control" type="text" name="name" required></div>';
+echo '<div class="col-md-4"><label class="form-label">Шаблон</label><input class="form-control" type="text" name="view_template" value="list"></div>';
+echo '<div class="col-md-3"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="' . (int) $defaultSort . '"></div>';
+echo '<div class="col-md-3"><label class="form-label">Включен</label>';
+echo '<div class="form-check mt-2"><input class="form-check-input" type="checkbox" name="is_enabled" value="1" checked></div>';
+echo '</div>';
+echo '<div class="col-12"><label class="form-label">Настройки (JSON)</label><textarea class="form-control font-monospace" name="settings_json" rows="4">{}</textarea></div>';
+echo '<div class="col-md-6"><label class="form-label">HTML до</label><textarea class="form-control" name="before_html" rows="2"></textarea></div>';
+echo '<div class="col-md-6"><label class="form-label">HTML после</label><textarea class="form-control" name="after_html" rows="2"></textarea></div>';
+echo '<div class="col-md-6"><label class="form-label">Картинка до</label><input class="form-control" type="text" name="before_image"></div>';
+echo '<div class="col-md-6"><label class="form-label">Картинка после</label><input class="form-control" type="text" name="after_image"></div>';
+echo '</div>';
+echo '<div class="mt-3"><button class="btn btn-primary" type="submit">Сохранить</button></div>';
+echo '</form>';
+echo '</div>';
+echo '</div>';
+
+AdminLayout::renderFooter();
