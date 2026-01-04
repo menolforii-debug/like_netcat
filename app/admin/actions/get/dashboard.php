@@ -19,31 +19,27 @@ AdminLayout::renderHeader('Админка');
 renderAlert($notice, 'success');
 renderAlert($errorMessage, 'error');
 
-echo '<div class="d-flex gap-4">';
+echo '<div class="row g-4">';
 
-echo '<div style="width:260px;">';
-echo '<div class="d-flex justify-content-between align-items-center mb-2">';
+echo '<div class="col-12 col-lg-3">';
+echo '<div class="card shadow-sm">';
+echo '<div class="card-body">';
+echo '<div class="d-flex justify-content-between align-items-center mb-3">';
 echo '<h2 class="h6 mb-0">Сайты и разделы</h2>';
-echo '</div>';
 if ($isAdmin) {
-    echo '<form method="post" action="/admin.php?action=site_create" class="mb-3">';
-    echo csrfTokenField();
-    echo '<button class="btn btn-sm btn-outline-primary w-100" type="submit">+ Добавить сайт</button>';
-    echo '</form>';
+    echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'site_new']), ENT_QUOTES, 'UTF-8') . '">Добавить</a>';
 }
+echo '</div>';
 echo SectionTree::render($sections, $selectedId);
 echo '</div>';
+echo '</div>';
+echo '</div>';
 
-echo '<div class="flex-grow-1">';
-if ($selected === null) {
-    echo '<div class="card shadow-sm">';
-    echo '<div class="card-body">';
-    echo '<h1 class="h5">Выберите сайт или раздел в дереве.</h1>';
-    echo '</div></div>';
-} else {
+echo '<div class="col-12 col-lg-9">';
+echo '<div class="card shadow-sm">';
+echo '<div class="card-body">';
+if ($selected !== null) {
     $isSite = $selected['parent_id'] === null;
-    echo '<div class="card shadow-sm">';
-    echo '<div class="card-body">';
 
     if ($isSite) {
         $extra = decodeExtra($selected);
@@ -167,7 +163,12 @@ if ($selected === null) {
             }
             $defaultSort = $maxSort + 10;
 
-            echo '<h2 class="h6">Инфоблоки</h2>';
+            echo '<div class="d-flex justify-content-between align-items-center mb-3">';
+            echo '<h2 class="h6 mb-0">Инфоблоки</h2>';
+            if ($isAdmin) {
+                echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'infoblock_new', 'section_id' => $selectedId]), ENT_QUOTES, 'UTF-8') . '">Добавить</a>';
+            }
+            echo '</div>';
             if (empty($infoblocks)) {
                 echo '<div class="alert alert-light border">Инфоблоков пока нет.</div>';
             } else {
@@ -250,31 +251,7 @@ if ($selected === null) {
                 echo '</form>';
             }
 
-            if ($isAdmin) {
-                echo '<hr class="my-4">';
-                echo '<h3 class="h6">Добавить инфоблок</h3>';
-                echo '<form method="post" action="/admin.php?action=infoblock_create">';
-                echo csrfTokenField();
-                echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
-                echo '<div class="row">';
-                echo '<div class="col-md-4 mb-3"><label class="form-label">Компонент</label><select class="form-select" name="component_id">';
-                foreach ($components as $component) {
-                    echo '<option value="' . (int) $component['id'] . '">' . htmlspecialchars((string) $component['name'], ENT_QUOTES, 'UTF-8') . '</option>';
-                }
-                echo '</select></div>';
-                echo '<div class="col-md-4 mb-3"><label class="form-label">Название</label><input class="form-control" type="text" name="name" required></div>';
-                echo '<div class="col-md-4 mb-3"><label class="form-label">Шаблон</label><input class="form-control" type="text" name="view_template" value="list"></div>';
-                echo '</div>';
-                echo '<div class="row">';
-                echo '<div class="col-md-3 mb-3"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="' . (int) $defaultSort . '"></div>';
-                echo '<div class="col-md-3 mb-3">';
-                echo '<label class="form-label">Включен</label>';
-                echo '<div class="form-check mt-2"><input class="form-check-input" type="checkbox" name="is_enabled" value="1" checked></div>';
-                echo '</div>';
-                echo '</div>';
-                echo '<button class="btn btn-success" type="submit">Добавить</button>';
-                echo '</form>';
-            } else {
+            if (!$isAdmin) {
                 echo '<div class="alert alert-light border mt-3">Добавление и редактирование инфоблоков доступно только для администратора.</div>';
             }
         } elseif ($tab === 'content') {
@@ -379,9 +356,11 @@ if ($selected === null) {
         }
     }
 
-    echo '</div></div>';
+} else {
+    echo '<div class="text-muted">Выберите сайт или раздел в дереве.</div>';
 }
 
+echo '</div>';
 echo '</div>';
 
 echo '</div>';
