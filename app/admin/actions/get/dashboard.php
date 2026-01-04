@@ -19,9 +19,7 @@ AdminLayout::renderHeader('Админка');
 renderAlert($notice, 'success');
 renderAlert($errorMessage, 'error');
 
-echo '<div class="row g-4">';
-
-echo '<div class="col-12 col-lg-3">';
+AdminLayout::openSidebar();
 echo '<div class="card shadow-sm">';
 echo '<div class="card-body">';
 echo '<div class="d-flex justify-content-between align-items-center mb-3">';
@@ -33,11 +31,12 @@ echo '</div>';
 echo SectionTree::render($sections, $selectedId);
 echo '</div>';
 echo '</div>';
-echo '</div>';
+AdminLayout::closeSidebar();
 
-echo '<div class="col-12 col-lg-9">';
+AdminLayout::openContent();
 echo '<div class="card shadow-sm">';
 echo '<div class="card-body">';
+echo '<h1 class="h4 mb-3">Сайты и разделы</h1>';
 if ($selected !== null) {
     $isSite = $selected['parent_id'] === null;
 
@@ -362,7 +361,6 @@ if ($selected !== null) {
 
 echo '</div>';
 echo '</div>';
-
-echo '</div>';
+AdminLayout::closeContent();
 
 AdminLayout::renderFooter();

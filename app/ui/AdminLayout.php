@@ -3,10 +3,12 @@
 final class AdminLayout
 {
     private static bool $withSidebar = true;
+    private static bool $layoutRowOpen = false;
 
     public static function renderHeader(string $title, bool $showSidebar = true): void
     {
         self::$withSidebar = $showSidebar;
+        self::$layoutRowOpen = false;
         $titleEscaped = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
         echo "<!doctype html>\n";
         echo "<html lang=\"ru\">\n";
@@ -58,6 +60,46 @@ final class AdminLayout
         echo "</header>\n";
         echo "<main class=\"flex-grow-1\">\n";
         echo "<div class=\"container-fluid py-4\">\n";
+    }
+
+    public static function openSidebar(): void
+    {
+        if (!self::$withSidebar || self::$layoutRowOpen) {
+            return;
+        }
+
+        self::$layoutRowOpen = true;
+        echo "<div class=\"row g-4\">\n";
+        echo "<aside class=\"col-12 col-lg-3\">\n";
+    }
+
+    public static function closeSidebar(): void
+    {
+        if (!self::$withSidebar || !self::$layoutRowOpen) {
+            return;
+        }
+
+        echo "</aside>\n";
+    }
+
+    public static function openContent(): void
+    {
+        if (!self::$withSidebar || !self::$layoutRowOpen) {
+            return;
+        }
+
+        echo "<main class=\"col-12 col-lg-9\">\n";
+    }
+
+    public static function closeContent(): void
+    {
+        if (!self::$withSidebar || !self::$layoutRowOpen) {
+            return;
+        }
+
+        echo "</main>\n";
+        echo "</div>\n";
+        self::$layoutRowOpen = false;
     }
 
     public static function renderFooter(): void
