@@ -20,6 +20,10 @@ if ($usage && (int) $usage['cnt'] > 0) {
 }
 
 $componentRepo->delete($componentId);
+if (DB::hasTable('component_views')) {
+    $stmt = DB::pdo()->prepare('DELETE FROM component_views WHERE component_id = :id');
+    $stmt->execute(['id' => $componentId]);
+}
 
 if ($user) {
     AdminLog::log($user['id'], 'component_delete', 'component', $componentId, [

@@ -1,0 +1,44 @@
+<?php
+
+if (!Auth::isAdmin()) {
+    redirectTo(buildAdminUrl(['error' => 'Недостаточно прав']));
+}
+
+$viewId = isset($_POST['view_id']) ? (int) $_POST['view_id'] : 0;
+$componentId = isset($_POST['component_id']) ? (int) $_POST['component_id'] : 0;
+$viewName = isset($_POST['view_name']) ? trim((string) $_POST['view_name']) : '';
+$listTpl = isset($_POST['list_tpl']) ? (string) $_POST['list_tpl'] : '';
+$singleTpl = isset($_POST['single_tpl']) ? (string) $_POST['single_tpl'] : '';
+
+if ($viewId <= 0 || $componentId <= 0) {
+    redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Вид не найден']));
+}
+
+$component = $componentRepo->findById($componentId);
+if ($component === null) {
+    redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Компонент не найден']));
+}
+
+$viewRepo = new ComponentViewRepo();
+$viewRow = $viewRepo->findById($viewId);
+if ($viewRow === null || (int) $viewRow['component_id'] !== $componentId) {
+    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'error' => 'Вид не найден']));
+}
+
+if ($viewName === '') {
+    $viewName = (string) $viewRow['name'];
+}
+
+if (!preg_match('/^[A-Za-z0-9_-]+$/', $viewName)) {
+    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'view' => $viewName, 'error' => 'Ключ вида должен быть URL-безопасным']));
+}
+
+$error = null;
+if (!writeComponentViewTemplate((string) $component['keyword'], $viewName, $listTpl, $singleTpl, $error)) {
+    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'view' => $viewName, 'error' => $error ?? 'Не удалось сохранить шаблон']));
+}
+
+$viewRepo->update($viewId, $viewName, $listTpl, $singleTpl);
+syncComponentViewsJson($componentId);
+
+redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'view' => $viewName, 'notice' => 'Вид обновлен']));
