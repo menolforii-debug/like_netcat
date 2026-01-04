@@ -7,10 +7,13 @@ if (!Auth::isAdmin()) {
 $keyword = isset($_POST['keyword']) ? trim((string) $_POST['keyword']) : '';
 $name = isset($_POST['name']) ? trim((string) $_POST['name']) : '';
 $fieldsInput = isset($_POST['fields']) && is_array($_POST['fields']) ? $_POST['fields'] : [];
-$viewsInput = isset($_POST['views']) && is_array($_POST['views']) ? $_POST['views'] : [];
 
 if ($keyword === '' || $name === '') {
     redirectTo(buildAdminUrl(['action' => 'component_new', 'error' => 'Заполните ключ и название']));
+}
+
+if (!preg_match('/^[A-Za-z0-9_-]+$/', $keyword)) {
+    redirectTo(buildAdminUrl(['action' => 'component_new', 'error' => 'Ключ компонента должен быть URL-безопасным']));
 }
 
 $fields = [];
@@ -67,27 +70,6 @@ foreach ($fieldsInput as $row) {
 }
 
 $views = [];
-$viewNames = [];
-foreach ($viewsInput as $row) {
-    if (!is_array($row)) {
-        continue;
-    }
-    if (!empty($row['delete'])) {
-        continue;
-    }
-    $view = isset($row['value']) ? trim((string) $row['value']) : '';
-    if ($view === '') {
-        continue;
-    }
-    if (!preg_match('/^[A-Za-z0-9_-]+$/', $view)) {
-        redirectTo(buildAdminUrl(['action' => 'component_new', 'error' => 'Ключ вида должен быть URL-безопасным']));
-    }
-    if (isset($viewNames[$view])) {
-        continue;
-    }
-    $viewNames[$view] = true;
-    $views[] = $view;
-}
 
 $existing = $componentRepo->findByKeyword($keyword);
 if ($existing !== null) {
@@ -95,6 +77,18 @@ if ($existing !== null) {
 }
 
 $componentId = $componentRepo->create($keyword, $name, $fields, $views);
+
+$viewRepo = new ComponentViewRepo();
+$defaultListTpl = "<?php foreach (\$objects as \$obj): ?>\n<div><?= htmlspecialchars(\$obj['data']['title'] ?? 'Без заголовка', ENT_QUOTES, 'UTF-8') ?></div>\n<?php endforeach; ?>";
+$defaultSingleTpl = "<?php if (!empty(\$object['data']['title'])): ?>\n<h1><?= htmlspecialchars(\$object['data']['title'], ENT_QUOTES, 'UTF-8') ?></h1>\n<?php endif; ?>";
+$viewId = $viewRepo->create($componentId, 'list', $defaultListTpl, $defaultSingleTpl);
+$error = null;
+if (!writeComponentViewTemplate($keyword, 'list', $defaultListTpl, $defaultSingleTpl, $error)) {
+    $viewRepo->delete($viewId);
+    $componentRepo->delete($componentId);
+    redirectTo(buildAdminUrl(['action' => 'component_new', 'error' => $error ?? 'Не удалось создать шаблон']));
+}
+syncComponentViewsJson($componentId);
 
 if ($user) {
     AdminLog::log($user['id'], 'component_create', 'component', $componentId, [

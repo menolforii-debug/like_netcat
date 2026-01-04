@@ -282,3 +282,78 @@ function englishNameIsValid(string $englishName): bool
 {
     return (bool) preg_match('/^[A-Za-z0-9_-]+$/', $englishName);
 }
+
+function renderComponentViewTemplate(string $listTpl, string $singleTpl): string
+{
+    $content = "<?php\n";
+    $content .= "/** GENERATED FILE. Do not edit manually. */\n";
+    $content .= "if (!isset(\$isSingle)) { \$isSingle = false; }\n";
+    $content .= "if (\$isSingle && isset(\$object) && is_array(\$object)) {\n";
+    $content .= "?>\n";
+    $content .= $singleTpl . "\n";
+    $content .= "<?php\n";
+    $content .= "} else {\n";
+    $content .= "?>\n";
+    $content .= $listTpl . "\n";
+    $content .= "<?php\n";
+    $content .= "}\n";
+
+    return $content;
+}
+
+function writeComponentViewTemplate(string $componentKey, string $viewName, string $listTpl, string $singleTpl, ?string &$error = null): bool
+{
+    $root = dirname(__DIR__, 2);
+    $templatesDir = $root . '/templates/' . $componentKey;
+    if (!is_dir($templatesDir)) {
+        mkdir($templatesDir, 0777, true);
+    }
+
+    $finalPath = $templatesDir . '/' . $viewName . '.php';
+    $tmpPath = $finalPath . '.tmp';
+    $content = renderComponentViewTemplate($listTpl, $singleTpl);
+
+    if (file_put_contents($tmpPath, $content) === false) {
+        $error = 'Не удалось сохранить шаблон.';
+        return false;
+    }
+
+    $lintOutput = @shell_exec('php -l ' . escapeshellarg($tmpPath));
+    if ($lintOutput !== null && stripos($lintOutput, 'No syntax errors detected') === false) {
+        @unlink($tmpPath);
+        $error = 'Синтаксическая ошибка в шаблоне: ' . trim((string) $lintOutput);
+        return false;
+    }
+
+    if (is_file($finalPath)) {
+        $backupDir = $root . '/var/backups/templates/' . $componentKey;
+        if (!is_dir($backupDir)) {
+            mkdir($backupDir, 0777, true);
+        }
+        $backupPath = $backupDir . '/' . $viewName . '.php.' . date('YmdHis') . '.bak';
+        @copy($finalPath, $backupPath);
+    }
+
+    if (!rename($tmpPath, $finalPath)) {
+        @unlink($tmpPath);
+        $error = 'Не удалось обновить шаблон.';
+        return false;
+    }
+
+    return true;
+}
+
+function syncComponentViewsJson(int $componentId): void
+{
+    if (!DB::hasTable('component_views')) {
+        return;
+    }
+
+    $viewRepo = new ComponentViewRepo();
+    $views = $viewRepo->listNamesForComponent($componentId);
+    $stmt = DB::pdo()->prepare('UPDATE components SET views_json = :views_json WHERE id = :id');
+    $stmt->execute([
+        'views_json' => json_encode($views, JSON_UNESCAPED_UNICODE),
+        'id' => $componentId,
+    ]);
+}

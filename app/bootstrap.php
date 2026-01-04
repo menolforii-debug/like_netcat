@@ -13,6 +13,7 @@ require $root . '/app/core/Seo.php';
 require $root . '/app/core/FieldValidator.php';
 require $root . '/app/domain/SectionRepo.php';
 require $root . '/app/domain/ComponentRepo.php';
+require $root . '/app/domain/ComponentViewRepo.php';
 require $root . '/app/domain/InfoblockRepo.php';
 require $root . '/app/domain/ObjectRepo.php';
 require $root . '/app/domain/UserRepo.php';

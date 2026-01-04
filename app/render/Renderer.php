@@ -81,14 +81,15 @@ final class Renderer
                 return ($object['status'] ?? '') === 'published' && empty($object['is_deleted']);
             }));
 
-            if ($requestedObject && (int) $requestedObject['infoblock_id'] === (int) $infoblock['id']) {
+            $isSingle = $requestedObject && (int) $requestedObject['infoblock_id'] === (int) $infoblock['id'];
+            if ($isSingle) {
                 $objects = [$requestedObject];
                 $itemTitle = $this->resolveItemTitle($requestedObject, $component);
             }
 
             $items = $this->decodeItems($objects);
 
-            $infoblocksHtml .= $this->renderInfoblockWithWrappers($section, $site, $infoblock, $component, $items, false);
+            $infoblocksHtml .= $this->renderInfoblockWithWrappers($section, $site, $infoblock, $component, $items, $isSingle, false);
             $infoblockViews[] = [
                 'infoblock' => $infoblock,
                 'component' => $component,
@@ -129,7 +130,7 @@ final class Renderer
         require $templatePath;
     }
 
-    private function renderInfoblockWithWrappers(array $section, array $site, array $infoblock, array $component, array $items, $editMode): string
+    private function renderInfoblockWithWrappers(array $section, array $site, array $infoblock, array $component, array $items, bool $isSingle, $editMode): string
     {
         $extra = $this->decodeExtra($infoblock);
         $beforeImage = isset($extra['before_image']) ? trim((string) $extra['before_image']) : '';
@@ -145,7 +146,7 @@ final class Renderer
             $html .= $beforeHtml;
         }
 
-        $html .= $this->renderInfoblock($section, $site, $infoblock, $component, $items, $editMode);
+        $html .= $this->renderInfoblock($section, $site, $infoblock, $component, $items, $isSingle, $editMode);
 
         if ($afterHtml !== '') {
             $html .= $afterHtml;
@@ -157,9 +158,12 @@ final class Renderer
         return $html;
     }
 
-    private function renderInfoblock(array $section, array $site, array $infoblock, array $component, array $items, $editMode): string
+    private function renderInfoblock(array $section, array $site, array $infoblock, array $component, array $items, bool $isSingle, $editMode): string
     {
         $core = [];
+        $objects = $items;
+        $object = $isSingle && !empty($objects) ? $objects[0] : null;
+        $isSingle = $isSingle;
 
         $templatePath = __DIR__ . '/../../templates/' . $component['keyword'] . '/' . $infoblock['view_template'] . '.php';
         if (!is_file($templatePath)) {
