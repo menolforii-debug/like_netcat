@@ -12,6 +12,13 @@ if (!in_array($tab, ['general', 'fields'], true)) {
     $tab = 'general';
 }
 
+function renderTextareaValue($value): string
+{
+    $s = (string) $value;
+    $s = preg_replace('~</textarea~i', '&lt;/textarea', $s);
+    return $s ?? '';
+}
+
 $selectedComponent = null;
 foreach ($components as $component) {
     if ((int) $component['id'] === $componentId) {
@@ -20,16 +27,25 @@ foreach ($components as $component) {
     }
 }
 
-$views = [];
-if ($selectedComponent && DB::hasTable('component_views')) {
-    $viewRepo = new ComponentViewRepo();
-    $views = $viewRepo->listForComponent((int) $selectedComponent['id']);
+/**
+ * Views: теперь собираем ДЛЯ ВСЕХ компонентов (чтобы можно было раскрывать любой)
+ */
+$viewsByComponent = [];
+$viewRepo = new ComponentViewRepo();
+if (DB::hasTable('component_views')) {
+    foreach ($components as $component) {
+        $cid = (int) $component['id'];
+        $viewsByComponent[$cid] = $viewRepo->listForComponent($cid);
+    }
 } else {
-    $viewRepo = new ComponentViewRepo();
+    foreach ($components as $component) {
+        $viewsByComponent[(int) $component['id']] = [];
+    }
 }
-$viewNames = [];
-foreach ($views as $viewRow) {
-    $viewNames[] = (string) $viewRow['name'];
+
+$views = [];
+if ($selectedComponent !== null) {
+    $views = $viewsByComponent[(int) $selectedComponent['id']] ?? [];
 }
 
 $fields = [];
@@ -73,68 +89,139 @@ AdminLayout::renderHeader('Компоненты');
 renderAlert($notice, 'success');
 renderAlert($errorMessage, 'error');
 
+/**
+ * LEFT SIDEBAR
+ */
 AdminLayout::openSidebar();
-echo '<div class="card shadow-sm">';
-echo '<div class="card-body">';
-echo '<div class="d-flex justify-content-between align-items-center mb-3">';
-echo '<h2 class="h6 mb-0">Компоненты</h2>';
-echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'component_new']), ENT_QUOTES, 'UTF-8') . '">Добавить</a>';
+
+echo '<div class="card shadow-sm border-0">';
+echo '<div class="card-body p-3">';
+
+echo '<div class="d-flex align-items-center justify-content-between mb-2">';
+echo '<div class="fw-semibold">Компоненты</div>';
+echo '<a class="btn btn-icon-square btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'component_new']), ENT_QUOTES, 'UTF-8') . '" title="Добавить компонент" aria-label="Добавить компонент">+</a>';
 echo '</div>';
 
 if (empty($components)) {
     echo '<div class="text-muted">Компоненты пока не созданы.</div>';
-} else {
-    echo '<div class="list-group list-group-flush">';
-    foreach ($components as $component) {
-        $isActive = (int) $component['id'] === $componentId;
-        $activeClass = $isActive ? ' active' : '';
-        $link = buildAdminUrl(['action' => 'components', 'component_id' => (int) $component['id'], 'tab' => $tab]);
-        echo '<a class="list-group-item list-group-item-action' . $activeClass . '" href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">';
-        echo '<div class="d-flex justify-content-between">';
-        echo '<span>' . htmlspecialchars((string) $component['name'], ENT_QUOTES, 'UTF-8') . '</span>';
-        echo '<span class="text-muted small">#' . (int) $component['id'] . '</span>';
-        echo '</div>';
-        echo '</a>';
+    echo '</div></div>';
+    AdminLayout::closeSidebar();
 
-        if ($isActive) {
-            echo '<div class="mt-2 ms-3">';
-            echo '<div class="d-flex justify-content-between align-items-center mb-2">';
-            echo '<div class="text-muted small">Виды</div>';
-            echo '<a class="btn btn-xs btn-outline-secondary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'components', 'component_id' => (int) $component['id'], 'view' => '_new']), ENT_QUOTES, 'UTF-8') . '"><i class="bi bi-plus"></i></a>';
-            echo '</div>';
-            if (empty($views)) {
-                echo '<div class="text-muted small">Видов нет.</div>';
-            } else {
-                echo '<div class="list-group list-group-flush">';
-                foreach ($views as $viewRow) {
-                    $isViewActive = $viewName !== '' && $viewName === (string) $viewRow['name'];
-                    $viewLink = buildAdminUrl(['action' => 'components', 'component_id' => (int) $component['id'], 'view' => (string) $viewRow['name']]);
-                    $viewActiveClass = $isViewActive ? ' active' : '';
-                    echo '<a class="list-group-item list-group-item-action py-1' . $viewActiveClass . '" href="' . htmlspecialchars($viewLink, ENT_QUOTES, 'UTF-8') . '">';
-                    echo htmlspecialchars((string) $viewRow['name'], ENT_QUOTES, 'UTF-8');
-                    echo '</a>';
-                }
-                echo '</div>';
-            }
-            echo '</div>';
-        }
-    }
-    echo '</div>';
+    AdminLayout::openContent();
+    echo '<div class="card shadow-sm"><div class="card-body">';
+    echo '<div class="text-muted">Создайте первый компонент.</div>';
+    echo '</div></div>';
+    AdminLayout::closeContent();
+    AdminLayout::renderFooter();
+    return;
 }
 
+echo '<nav class="nav-deep nav-deep-sm nav-deep-light component-tree">';
+echo '<ul class="nav flex-column component-tree-root">';
+
+foreach ($components as $component) {
+    $id = (int) $component['id'];
+    $name = (string) $component['name'];
+    $isActive = $id === $componentId;
+
+    $componentViews = $viewsByComponent[$id] ?? [];
+    $hasChildren = !empty($componentViews); // chevron показываем если есть виды
+
+    $liClass = 'nav-item component-tree-item';
+    if ($isActive) {
+        // активный — подсвечен и раскрыт
+        $liClass .= ' is-active is-open';
+    }
+
+    $link = buildAdminUrl(['action' => 'components', 'component_id' => $id, 'tab' => $tab]);
+
+    // "5. Новости"
+    $label = $id . '. ' . $name;
+
+    echo '<li class="' . $liClass . '" data-component-id="' . $id . '">';
+
+    echo '<div class="component-tree-row">';
+
+    echo '<a class="nav-link component-tree-link text-decoration-none text-truncate' . ($isActive ? ' fw-bold' : '') . '" href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">';
+    echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
+    echo '</a>';
+
+    echo '<div class="component-tree-right">';
+
+    if ($hasChildren) {
+        echo '<button type="button" class="btn btn-icon-square btn-outline-secondary component-tree-toggle js-component-toggle" data-component-id="' . $id . '" aria-label="Свернуть/развернуть">';
+        echo '<span class="component-tree-chevron" aria-hidden="true"></span>';
+        echo '</button>';
+    } else {
+        // выравниваем сетку
+        echo '<span class="btn-icon-square section-tree-toggle-spacer" aria-hidden="true"></span>';
+    }
+
+    echo '</div>'; // right
+    echo '</div>'; // row
+
+    /**
+     * Виды: теперь рендерим БЛОК ДЛЯ КАЖДОГО компонента (скрыт CSS'ом, пока не is-open)
+     */
+    echo '<div class="component-tree-views">';
+
+    echo '<div class="d-flex align-items-center justify-content-between mb-1">';
+    echo '<div class="text-muted small text-uppercase" style="letter-spacing:.04em;">Виды</div>';
+    // кнопку добавления вида показываем всегда (раз hover не нужен)
+    echo '<a class="btn btn-icon-square btn-outline-secondary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'components', 'component_id' => $id, 'view' => '_new']), ENT_QUOTES, 'UTF-8') . '" title="Добавить вид" aria-label="Добавить вид">+</a>';
+    echo '</div>';
+
+    if (empty($componentViews)) {
+        echo '<div class="text-muted small">Видов нет.</div>';
+    } else {
+        echo '<ul class="nav flex-column component-tree-viewlist">';
+        foreach ($componentViews as $viewRow) {
+            $vn = (string) $viewRow['name'];
+            $isViewActive = $isActive && $viewName !== '' && $viewName === $vn;
+
+            $viewLink = buildAdminUrl(['action' => 'components', 'component_id' => $id, 'view' => $vn]);
+
+            $vClass = 'nav-item component-tree-viewitem';
+            if ($isViewActive) {
+                $vClass .= ' is-active';
+            }
+
+            echo '<li class="' . $vClass . '">';
+            echo '<div class="component-tree-viewrow">';
+            echo '<a class="nav-link component-tree-viewlink text-decoration-none text-truncate' . ($isViewActive ? ' fw-bold' : '') . '" href="' . htmlspecialchars($viewLink, ENT_QUOTES, 'UTF-8') . '">';
+            echo htmlspecialchars($vn, ENT_QUOTES, 'UTF-8');
+            echo '</a>';
+            echo '<span class="component-tree-viewarrow" aria-hidden="true">→</span>';
+            echo '</div>';
+            echo '</li>';
+        }
+        echo '</ul>';
+    }
+
+    echo '</div>'; // views
+
+    echo '</li>';
+}
+
+echo '</ul>';
+echo '</nav>';
+
 echo '</div>';
 echo '</div>';
+
 AdminLayout::closeSidebar();
 
+/**
+ * RIGHT CONTENT
+ */
 AdminLayout::openContent();
+
 echo '<div class="card shadow-sm">';
 echo '<div class="card-body">';
-echo '<h1 class="h4 mb-3">Компоненты</h1>';
 
 if ($selectedComponent === null) {
-    echo '<div class="text-muted">Выберите компонент слева.</div>';
-    echo '</div>';
-    echo '</div>';
+    echo '<div class="text-muted"> </div>';
+    echo '</div></div>';
     AdminLayout::closeContent();
     AdminLayout::renderFooter();
     return;
@@ -168,8 +255,8 @@ if ($viewName !== '') {
         echo '<input type="hidden" name="view_id" value="' . (int) $viewRow['id'] . '">';
         echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
         echo '<div class="mb-3"><label class="form-label">Название вида</label><input class="form-control" name="view_name" value="' . htmlspecialchars((string) $viewRow['name'], ENT_QUOTES, 'UTF-8') . '" readonly></div>';
-        echo '<div class="mb-3"><label class="form-label">Шаблон списка</label><textarea class="form-control font-monospace code-editor" name="list_tpl" rows="10">' . htmlspecialchars((string) $viewRow['list_tpl'], ENT_QUOTES, 'UTF-8') . '</textarea></div>';
-        echo '<div class="mb-3"><label class="form-label">Шаблон объекта</label><textarea class="form-control font-monospace code-editor" name="single_tpl" rows="10">' . htmlspecialchars((string) $viewRow['single_tpl'], ENT_QUOTES, 'UTF-8') . '</textarea></div>';
+        echo '<div class="mb-3"><label class="form-label">Шаблон списка</label><textarea class="form-control font-monospace code-editor" name="list_tpl" rows="10">' . renderTextareaValue($viewRow['list_tpl'] ?? '') . '</textarea></div>';
+        echo '<div class="mb-3"><label class="form-label">Шаблон объекта</label><textarea class="form-control font-monospace code-editor" name="single_tpl" rows="10">' . renderTextareaValue($viewRow['single_tpl'] ?? '') . '</textarea></div>';
         echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
         echo '</form>';
         echo '<form class="mt-2" method="post" action="/admin.php?action=component_view_delete" onsubmit="return confirm(\'Удалить вид?\')">';
@@ -180,8 +267,7 @@ if ($viewName !== '') {
         echo '</form>';
     }
 
-    echo '</div>';
-    echo '</div>';
+    echo '</div></div>';
     AdminLayout::closeContent();
     AdminLayout::renderFooter();
     return;
@@ -202,6 +288,7 @@ if ($tab === 'general') {
     echo '<input type="hidden" name="keyword" value="' . htmlspecialchars((string) $selectedComponent['keyword'], ENT_QUOTES, 'UTF-8') . '">';
     echo '<div class="mb-3"><label class="form-label">Ключ</label><input class="form-control" value="' . htmlspecialchars((string) $selectedComponent['keyword'], ENT_QUOTES, 'UTF-8') . '" disabled></div>';
     echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" name="name" value="' . htmlspecialchars((string) $selectedComponent['name'], ENT_QUOTES, 'UTF-8') . '" required></div>';
+
     foreach ($fields as $index => $field) {
         echo '<input type="hidden" name="fields[' . $index . '][name]" value="' . htmlspecialchars((string) $field['name'], ENT_QUOTES, 'UTF-8') . '">';
         echo '<input type="hidden" name="fields[' . $index . '][label]" value="' . htmlspecialchars((string) $field['label'], ENT_QUOTES, 'UTF-8') . '">';
@@ -216,6 +303,7 @@ if ($tab === 'general') {
             }
         }
     }
+
     echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
     echo '</form>';
 
@@ -232,9 +320,11 @@ if ($tab === 'fields') {
     echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
     echo '<input type="hidden" name="keyword" value="' . htmlspecialchars((string) $selectedComponent['keyword'], ENT_QUOTES, 'UTF-8') . '">';
     echo '<input type="hidden" name="name" value="' . htmlspecialchars((string) $selectedComponent['name'], ENT_QUOTES, 'UTF-8') . '">';
+
     echo '<div class="table-responsive">';
     echo '<table class="table table-sm align-middle">';
     echo '<thead><tr><th>Имя</th><th>Подпись</th><th>Тип</th><th>Обязательное</th><th>Опции</th><th>Удалить</th></tr></thead><tbody>';
+
     foreach ($fields as $index => $field) {
         echo '<tr>';
         echo '<td><input class="form-control form-control-sm" name="fields[' . $index . '][name]" value="' . htmlspecialchars((string) $field['name'], ENT_QUOTES, 'UTF-8') . '"></td>';
@@ -273,6 +363,7 @@ if ($tab === 'fields') {
         echo '<td><input class="form-check-input" type="checkbox" name="fields[' . $index . '][delete]" value="1"></td>';
         echo '</tr>';
     }
+
     $newIndex = count($fields);
     echo '<tr>';
     echo '<td><input class="form-control form-control-sm" name="fields[' . $newIndex . '][name]" placeholder="Новое поле"></td>';
@@ -286,13 +377,13 @@ if ($tab === 'fields') {
     echo '<td><span class="text-muted small">—</span></td>';
     echo '<td></td>';
     echo '</tr>';
+
     echo '</tbody></table></div>';
     echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
     echo '</form>';
 }
 
-echo '</div>';
-echo '</div>';
+echo '</div></div>';
 AdminLayout::closeContent();
 
 AdminLayout::renderFooter();

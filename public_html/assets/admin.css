@@ -8,3 +8,191 @@
   font-size: 0.75rem;
   line-height: 1.2;
 }
+
+/* ---- Common: квадратные кнопки ---- */
+.btn-icon-square {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  border-radius: 8px;
+}
+
+/* ===========================
+   SectionTree styles
+   =========================== */
+.section-tree-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.section-tree-link {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: inherit;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.section-tree-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.section-tree-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(4px);
+  transition: opacity .12s ease, transform .12s ease, visibility .12s ease;
+}
+
+.section-tree-row:hover .section-tree-actions {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.section-tree-toggle {
+  border-color: rgba(0,0,0,.18);
+}
+
+.section-tree-toggle-spacer {
+  width: 34px;
+  height: 34px;
+  display: inline-block;
+}
+
+.section-tree-children {
+  display: none;
+  padding-left: 18px;
+}
+
+.section-tree-item.is-open > .section-tree-children {
+  display: block;
+}
+
+.section-tree-chevron {
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  opacity: .65;
+}
+
+.section-tree-item.is-open > .section-tree-row .section-tree-chevron {
+  transform: rotate(45deg);
+  opacity: .8;
+}
+
+/* ===========================
+   ComponentTree styles
+   =========================== */
+
+/* Активный компонент: подсветка ВСЕГО li, включая блок видов */
+.component-tree-item {
+  border-radius: 12px;
+  padding: 4px 6px;
+}
+
+.component-tree-item.is-active {
+  background: rgba(0, 0, 0, 0.045);
+}
+
+/* строка компонента */
+.component-tree-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.component-tree-link {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+/* правая зона: (кнопки можно будет добавить позже) + chevron */
+.component-tree-right {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* toggle (квадратная кнопка) */
+.component-tree-toggle {
+  border-color: rgba(0,0,0,.18);
+}
+
+/* chevron как в сайтах: CSS */
+.component-tree-chevron {
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg); /* ">" */
+  opacity: .65;
+}
+
+.component-tree-item.is-open > .component-tree-row .component-tree-chevron {
+  transform: rotate(45deg); /* "v" */
+  opacity: .8;
+}
+
+/* Виды: показываем только когда is-open */
+.component-tree-views {
+  display: none;
+  padding: 6px 0 6px 18px;
+}
+
+.component-tree-item.is-open > .component-tree-views {
+  display: block;
+}
+
+.component-tree-viewrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 6px;
+  border-radius: 8px;
+}
+
+.component-tree-viewlink {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: inherit;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.component-tree-viewitem.is-active > .component-tree-viewrow {
+  background: rgba(0, 0, 0, 0.035);
+}
+
+/* стрелка справа от вида — без набора иконок */
+.component-tree-viewarrow {
+  width: 16px;
+  text-align: right;
+  color: rgba(0,0,0,.45);
+  font-weight: 600;
+}

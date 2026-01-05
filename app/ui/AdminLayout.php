@@ -117,9 +117,23 @@ final class AdminLayout
         echo "<script src=\"/assets/sow/js/vendor_bundle.min.js\"></script>\n";
         echo "<script src=\"/assets/sow/js/core.min.js\"></script>\n";
         echo "<script src=\"/assets/admin.js\"></script>\n";
+
+        // CodeMirror core
         echo "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js\"></script>\n";
+
+        // ВАЖНО: зависимости для PHP mode (иначе падает с l.indent is not a function)
+        echo "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js\"></script>\n";
+        echo "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js\"></script>\n";
+        echo "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js\"></script>\n";
+        echo "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js\"></script>\n";
+        echo "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js\"></script>\n";
+
+        // PHP mode (должен идти ПОСЛЕ зависимостей)
         echo "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/php/php.min.js\"></script>\n";
+
+        // Наш инициализатор
         echo "<script src=\"/assets/admin_code_editor.js\"></script>\n";
+
         echo "</body>\n";
         echo "</html>\n";
     }

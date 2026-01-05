@@ -11,14 +11,78 @@ function buildAdminUrl(array $params = []): string
     return '/admin.php' . (empty($params) ? '' : '?' . http_build_query($params));
 }
 
+/**
+ * Render flash/notice/error as SOW Toast instead of inline bootstrap alert.
+ * Uses $.SOW.core.toast.show(type, title, body, position, delay, fill)
+ *
+ * Includes JS-level dedupe to prevent duplicated toasts when renderAlert()
+ * is called multiple times with the same message/type.
+ */
 function renderAlert(?string $message, string $type = 'info'): void
 {
     if ($message === null || $message === '') {
         return;
     }
 
-    $class = $type === 'error' ? 'danger' : $type;
-    echo '<div class="alert alert-' . htmlspecialchars($class, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($message, ENT_QUOTES, 'UTF-8') . '</div>';
+    $t = strtolower(trim($type));
+    $toastType = match ($t) {
+        'error', 'danger' => 'danger',
+        'success' => 'success',
+        'warning', 'warn' => 'warning',
+        default => 'info',
+    };
+
+    // JS-safe strings
+    $msgJs = json_encode((string) $message, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $typeJs = json_encode((string) $toastType, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $posJs = json_encode('top-center', JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+    echo "<script>
+(function() {
+  var msg = {$msgJs};
+  var toastType = {$typeJs};
+  var pos = {$posJs};
+  var delay = 3500;
+  var fill = true;
+
+  // ---- DEDUPE (per page load) ----
+  // key: type + message
+  try {
+    window.__CMS_TOASTS_SHOWN__ = window.__CMS_TOASTS_SHOWN__ || {};
+    var key = String(toastType) + '|' + String(msg);
+    if (window.__CMS_TOASTS_SHOWN__[key]) {
+      return;
+    }
+    window.__CMS_TOASTS_SHOWN__[key] = 1;
+  } catch (e) {
+    // if something goes wrong, do not block the toast
+  }
+
+  function showOnce() {
+    try {
+      if (!window.jQuery) return false;
+      var \$ = window.jQuery;
+      if (!\$.SOW || !\$.SOW.core || !\$.SOW.core.toast || typeof \$.SOW.core.toast.show !== 'function') return false;
+      \$.SOW.core.toast.show(toastType, '', msg, pos, delay, fill);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function tryLater(attempt) {
+    if (showOnce()) return;
+    if (attempt >= 6) return;
+    setTimeout(function() { tryLater(attempt + 1); }, 180);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { tryLater(0); });
+  } else {
+    tryLater(0);
+  }
+})();
+</script>";
 }
 
 function csrfToken(): string
