@@ -8,21 +8,33 @@ $viewId = isset($_POST['view_id']) ? (int) $_POST['view_id'] : 0;
 $componentId = isset($_POST['component_id']) ? (int) $_POST['component_id'] : 0;
 
 if ($viewId <= 0 || $componentId <= 0) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Вид не найден']);
+    }
     redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Вид не найден']));
 }
 
 $component = $componentRepo->findById($componentId);
 if ($component === null) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
+    }
     redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Компонент не найден']));
 }
 
 $viewRepo = new ComponentViewRepo();
 $viewRow = $viewRepo->findById($viewId);
 if ($viewRow === null || (int) $viewRow['component_id'] !== $componentId) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Вид не найден']);
+    }
     redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'error' => 'Вид не найден']));
 }
 
 if ($viewRepo->countForComponent($componentId) <= 1) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Нельзя удалить последний вид']);
+    }
     redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'view' => (string) $viewRow['name'], 'error' => 'Нельзя удалить последний вид']));
 }
 
@@ -33,6 +45,15 @@ syncComponentViewsJson($componentId);
 $templatePath = dirname(__DIR__, 3) . '/templates/' . (string) $component['keyword'] . '/' . $viewName . '.php';
 if (is_file($templatePath)) {
     @unlink($templatePath);
+}
+
+if (isAjaxRequest()) {
+    jsonResponse([
+        'ok' => true,
+        'notice' => 'Вид удален',
+        'refresh' => ['#componentsSidebar', '#componentsContent'],
+        'focus' => ['component_id' => $componentId],
+    ]);
 }
 
 redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'notice' => 'Вид удален']));
