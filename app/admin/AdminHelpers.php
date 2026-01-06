@@ -337,7 +337,7 @@ function parseMirrorLines(string $value): array
 
     $mirrors = [];
     foreach ($lines as $line) {
-        $line = trim($line);
+        $line = normalizeHost(trim($line));
         if ($line !== '') {
             $mirrors[] = $line;
         }
@@ -349,6 +349,77 @@ function parseMirrorLines(string $value): array
 function englishNameIsValid(string $englishName): bool
 {
     return (bool) preg_match('/^[A-Za-z0-9_-]+$/', $englishName);
+}
+
+function componentKeyIsValid(string $componentKey): bool
+{
+    if (!preg_match('/^[A-Za-z0-9_-]+$/', $componentKey)) {
+        return false;
+    }
+
+    if (str_contains($componentKey, '..') || str_contains($componentKey, '/') || str_contains($componentKey, '\\')) {
+        return false;
+    }
+
+    return true;
+}
+
+function rmTree(string $path, array $allowedRoots): void
+{
+    if (!is_dir($path) && !is_file($path)) {
+        return;
+    }
+
+    $realPath = realpath($path);
+    if ($realPath === false) {
+        return;
+    }
+
+    $allowed = false;
+    foreach ($allowedRoots as $root) {
+        $realRoot = realpath($root);
+        if ($realRoot === false) {
+            continue;
+        }
+        $realRoot = rtrim($realRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        if (str_starts_with($realPath . DIRECTORY_SEPARATOR, $realRoot)) {
+            $allowed = true;
+            break;
+        }
+    }
+
+    if (!$allowed) {
+        throw new RuntimeException('Запрещено удалять путь вне разрешенных директорий: ' . $realPath);
+    }
+
+    if (is_file($realPath)) {
+        if (!unlink($realPath)) {
+            throw new RuntimeException('Не удалось удалить файл: ' . $realPath);
+        }
+        return;
+    }
+
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($realPath, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::CHILD_FIRST
+    );
+
+    foreach ($iterator as $item) {
+        $itemPath = $item->getPathname();
+        if ($item->isDir()) {
+            if (!rmdir($itemPath)) {
+                throw new RuntimeException('Не удалось удалить директорию: ' . $itemPath);
+            }
+        } else {
+            if (!unlink($itemPath)) {
+                throw new RuntimeException('Не удалось удалить файл: ' . $itemPath);
+            }
+        }
+    }
+
+    if (!rmdir($realPath)) {
+        throw new RuntimeException('Не удалось удалить директорию: ' . $realPath);
+    }
 }
 
 function renderComponentViewTemplate(string $listTpl, string $singleTpl): string

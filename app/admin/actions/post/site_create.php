@@ -10,9 +10,23 @@ if ($title === '') {
     redirectTo(buildAdminUrl(['action' => 'site_new', 'error' => 'Название сайта обязательно']));
 }
 
+$normalizedDomain = normalizeHost($siteDomain);
+$normalizedMirrors = parseMirrorLines($siteMirrorsRaw);
+$candidates = array_values(array_unique(array_filter(array_merge([$normalizedDomain], $normalizedMirrors))));
+
+foreach ($candidates as $candidate) {
+    $found = $sectionRepo->findSiteByHost($candidate);
+    if ($found !== null) {
+        redirectTo(buildAdminUrl([
+            'action' => 'site_new',
+            'error' => 'Домен ' . $candidate . ' уже используется сайтом id=' . (int) $found['id'] . ' / title=' . (string) $found['title'],
+        ]));
+    }
+}
+
 $extra = [
-    'site_domain' => $siteDomain,
-    'site_mirrors' => parseMirrorLines($siteMirrorsRaw),
+    'site_domain' => $normalizedDomain,
+    'site_mirrors' => $normalizedMirrors,
     'site_enabled' => $siteEnabled,
     'site_offline_html' => $offlineHtml,
 ];

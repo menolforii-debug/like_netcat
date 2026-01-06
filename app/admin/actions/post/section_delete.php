@@ -11,7 +11,7 @@ if ($id > 0) {
         if ($section['parent_id'] === null && in_array($section['english_name'], ['index', '404'], true)) {
             redirectTo(buildAdminUrl(['section_id' => $id, 'error' => 'Нельзя удалить системный раздел']));
         }
-        $sectionRepo->delete($id);
+        $sectionRepo->deleteRecursive($id);
         $entityType = $section['parent_id'] === null ? 'site' : 'section';
         $actionName = $section['parent_id'] === null ? 'site_delete' : 'section_delete';
         if ($user) {

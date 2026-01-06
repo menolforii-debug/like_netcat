@@ -233,6 +233,11 @@ final class SectionRepo
 
     public function delete($id): void
     {
+        $this->deleteStrict($id);
+    }
+
+    public function deleteStrict($id): void
+    {
         $child = DB::fetchOne('SELECT 1 FROM sections WHERE parent_id = :id LIMIT 1', ['id' => $id]);
         if ($child) {
             throw new RuntimeException('Нельзя удалить раздел с дочерними разделами.');
@@ -245,6 +250,32 @@ final class SectionRepo
 
         $stmt = DB::pdo()->prepare('DELETE FROM sections WHERE id = :id');
         $stmt->execute(['id' => $id]);
+
+        core()->events()->emit('section.deleted', ['id' => $id]);
+    }
+
+    public function deleteRecursive(int $id): void
+    {
+        $pdo = DB::pdo();
+        $manageTransaction = !$pdo->inTransaction();
+
+        if ($manageTransaction) {
+            $pdo->beginTransaction();
+        }
+
+        try {
+            $stmt = $pdo->prepare('DELETE FROM sections WHERE id = :id');
+            $stmt->execute(['id' => $id]);
+
+            if ($manageTransaction) {
+                $pdo->commit();
+            }
+        } catch (Throwable $e) {
+            if ($manageTransaction && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
 
         core()->events()->emit('section.deleted', ['id' => $id]);
     }
@@ -273,6 +304,8 @@ final class SectionRepo
         if (str_contains($host, ':')) {
             $host = explode(':', $host, 2)[0];
         }
+
+        $host = rtrim($host, '.');
 
         return $host;
     }
