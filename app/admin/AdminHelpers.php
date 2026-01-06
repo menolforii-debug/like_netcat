@@ -302,7 +302,11 @@ function buildSectionPathFromId(SectionRepo $repo, int $sectionId): string
         }
 
         if (!empty($section['english_name'])) {
-            $segments[] = $section['english_name'];
+            if ($section['english_name'] === 'index' && (int) $section['parent_id'] === (int) $section['site_id']) {
+                // Пропускаем системную "Главную" в пути.
+            } else {
+                $segments[] = $section['english_name'];
+            }
         }
 
         $currentId = $section['parent_id'] !== null ? (int) $section['parent_id'] : null;
