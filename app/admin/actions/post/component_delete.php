@@ -78,7 +78,7 @@ if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
         'notice' => 'Компонент удален',
-        'refresh' => ['#componentsSidebar', '#componentsContent'],
+        'refresh' => ['#components_block'],
     ]);
 }
 redirectTo(buildAdminUrl(['action' => 'components', 'notice' => 'Компонент удален']));

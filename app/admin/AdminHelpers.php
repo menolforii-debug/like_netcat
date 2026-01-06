@@ -483,7 +483,8 @@ function writeComponentViewTemplate(string $componentKey, string $viewName, stri
     $root = dirname(__DIR__, 2);
     $templatesDir = $root . '/templates/' . $componentKey;
     if (!is_dir($templatesDir)) {
-        mkdir($templatesDir, 0777, true);
+        mkdir($templatesDir, 0770, true);
+        @chmod($templatesDir, 0770);
     }
 
     $finalPath = $templatesDir . '/' . $viewName . '.php';
@@ -494,6 +495,7 @@ function writeComponentViewTemplate(string $componentKey, string $viewName, stri
         $error = 'Не удалось сохранить шаблон.';
         return false;
     }
+    @chmod($tmpPath, 0660);
 
     $lintOutput = @shell_exec('php -l ' . escapeshellarg($tmpPath));
     if ($lintOutput !== null && stripos($lintOutput, 'No syntax errors detected') === false) {
@@ -505,10 +507,13 @@ function writeComponentViewTemplate(string $componentKey, string $viewName, stri
     if (is_file($finalPath)) {
         $backupDir = $root . '/var/backups/templates/' . $componentKey;
         if (!is_dir($backupDir)) {
-            mkdir($backupDir, 0777, true);
+            mkdir($backupDir, 0770, true);
+            @chmod($backupDir, 0770);
         }
         $backupPath = $backupDir . '/' . $viewName . '.php.' . date('YmdHis') . '.bak';
-        @copy($finalPath, $backupPath);
+        if (@copy($finalPath, $backupPath)) {
+            @chmod($backupPath, 0660);
+        }
     }
 
     if (!rename($tmpPath, $finalPath)) {
@@ -516,6 +521,7 @@ function writeComponentViewTemplate(string $componentKey, string $viewName, stri
         $error = 'Не удалось обновить шаблон.';
         return false;
     }
+    @chmod($finalPath, 0660);
 
     return true;
 }
