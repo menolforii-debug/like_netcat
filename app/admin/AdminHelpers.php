@@ -302,7 +302,11 @@ function buildSectionPathFromId(SectionRepo $repo, int $sectionId): string
         }
 
         if (!empty($section['english_name'])) {
-            $segments[] = $section['english_name'];
+            if ($section['english_name'] === 'index' && (int) $section['parent_id'] === (int) $section['site_id']) {
+                // Пропускаем системную "Главную" в пути.
+            } else {
+                $segments[] = $section['english_name'];
+            }
         }
 
         $currentId = $section['parent_id'] !== null ? (int) $section['parent_id'] : null;
@@ -333,7 +337,7 @@ function parseMirrorLines(string $value): array
 
     $mirrors = [];
     foreach ($lines as $line) {
-        $line = trim($line);
+        $line = normalizeHost(trim($line));
         if ($line !== '') {
             $mirrors[] = $line;
         }
@@ -345,6 +349,115 @@ function parseMirrorLines(string $value): array
 function englishNameIsValid(string $englishName): bool
 {
     return (bool) preg_match('/^[A-Za-z0-9_-]+$/', $englishName);
+}
+
+function componentKeyIsValid(string $componentKey): bool
+{
+    if (!preg_match('/^[A-Za-z0-9_-]+$/', $componentKey)) {
+        return false;
+    }
+
+    if (str_contains($componentKey, '..') || str_contains($componentKey, '/') || str_contains($componentKey, '\\')) {
+        return false;
+    }
+
+    return true;
+}
+
+function rmTree(string $path, string $allowedRoot): void
+{
+    if (!is_dir($path) && !is_file($path)) {
+        return;
+    }
+
+    $realPath = realpath($path);
+    if ($realPath === false) {
+        return;
+    }
+
+    $realRoot = realpath($allowedRoot);
+    if ($realRoot === false) {
+        throw new RuntimeException('Разрешенная директория не найдена: ' . $allowedRoot);
+    }
+    $realRoot = rtrim($realRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+    if (!str_starts_with($realPath . DIRECTORY_SEPARATOR, $realRoot)) {
+        throw new RuntimeException('Запрещено удалять путь вне разрешенных директорий: ' . $realPath);
+    }
+
+    if (is_file($realPath)) {
+        if (!unlink($realPath)) {
+            throw new RuntimeException('Не удалось удалить файл: ' . $realPath);
+        }
+        return;
+    }
+
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($realPath, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::CHILD_FIRST
+    );
+
+    foreach ($iterator as $item) {
+        $itemPath = $item->getPathname();
+        if ($item->isDir()) {
+            if (!rmdir($itemPath)) {
+                throw new RuntimeException('Не удалось удалить директорию: ' . $itemPath);
+            }
+        } else {
+            if (!unlink($itemPath)) {
+                throw new RuntimeException('Не удалось удалить файл: ' . $itemPath);
+            }
+        }
+    }
+
+    if (!rmdir($realPath)) {
+        throw new RuntimeException('Не удалось удалить директорию: ' . $realPath);
+    }
+}
+
+function isAjaxRequest(): bool
+{
+    return isset($_SERVER['HTTP_X_REQUESTED_WITH'])
+        && strtolower((string) $_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+}
+
+function jsonResponse(array $payload, int $status = 200): void
+{
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+function normalizeComponentFieldsInput(array $fieldsInput): array
+{
+    $normalized = [];
+
+    foreach ($fieldsInput as $row) {
+        if (is_string($row)) {
+            $normalized[] = ['name' => $row];
+            continue;
+        }
+
+        if (!is_array($row)) {
+            continue;
+        }
+
+        if (isset($row['options']) && is_array($row['options'])) {
+            $options = [];
+            foreach ($row['options'] as $key => $value) {
+                if (is_array($value)) {
+                    $options[] = $value;
+                } else {
+                    $options[] = ['key' => $key, 'label' => $value];
+                }
+            }
+            $row['options'] = $options;
+        }
+
+        $normalized[] = $row;
+    }
+
+    return $normalized;
 }
 
 function renderComponentViewTemplate(string $listTpl, string $singleTpl): string
@@ -370,7 +483,8 @@ function writeComponentViewTemplate(string $componentKey, string $viewName, stri
     $root = dirname(__DIR__, 2);
     $templatesDir = $root . '/templates/' . $componentKey;
     if (!is_dir($templatesDir)) {
-        mkdir($templatesDir, 0777, true);
+        mkdir($templatesDir, 0770, true);
+        @chmod($templatesDir, 0770);
     }
 
     $finalPath = $templatesDir . '/' . $viewName . '.php';
@@ -381,6 +495,7 @@ function writeComponentViewTemplate(string $componentKey, string $viewName, stri
         $error = 'Не удалось сохранить шаблон.';
         return false;
     }
+    @chmod($tmpPath, 0660);
 
     $lintOutput = @shell_exec('php -l ' . escapeshellarg($tmpPath));
     if ($lintOutput !== null && stripos($lintOutput, 'No syntax errors detected') === false) {
@@ -392,10 +507,13 @@ function writeComponentViewTemplate(string $componentKey, string $viewName, stri
     if (is_file($finalPath)) {
         $backupDir = $root . '/var/backups/templates/' . $componentKey;
         if (!is_dir($backupDir)) {
-            mkdir($backupDir, 0777, true);
+            mkdir($backupDir, 0770, true);
+            @chmod($backupDir, 0770);
         }
         $backupPath = $backupDir . '/' . $viewName . '.php.' . date('YmdHis') . '.bak';
-        @copy($finalPath, $backupPath);
+        if (@copy($finalPath, $backupPath)) {
+            @chmod($backupPath, 0660);
+        }
     }
 
     if (!rename($tmpPath, $finalPath)) {
@@ -403,6 +521,7 @@ function writeComponentViewTemplate(string $componentKey, string $viewName, stri
         $error = 'Не удалось обновить шаблон.';
         return false;
     }
+    @chmod($finalPath, 0660);
 
     return true;
 }
