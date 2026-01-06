@@ -370,14 +370,21 @@ function rmTree(string $path, string $allowedRoot): void
         return;
     }
 
+    $message = 'Запрошено удаление пути: ' . $path . ' (root: ' . $allowedRoot . ')';
+    error_log($message);
+
     $realPath = realpath($path);
     if ($realPath === false) {
+        $message = 'Не удалось определить реальный путь для удаления: ' . $path;
+        error_log($message);
         return;
     }
 
     $realRoot = realpath($allowedRoot);
     if ($realRoot === false) {
-        throw new RuntimeException('Разрешенная директория не найдена: ' . $allowedRoot);
+        $message = 'Разрешенная директория не найдена: ' . $allowedRoot;
+        error_log($message);
+        throw new RuntimeException($message);
     }
     $realRoot = rtrim($realRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
     if (!str_starts_with($realPath . DIRECTORY_SEPARATOR, $realRoot)) {
