@@ -52,11 +52,13 @@ try {
 
     $componentRepo->deleteWithViews($componentId);
 
-    $root = dirname(__DIR__, 3);
+    $root = dirname(__DIR__, 4);
     if ($componentKey !== '') {
-        rmTree($root . '/templates/' . $componentKey, $root . '/templates');
-        if (is_dir($root . '/templates/' . $componentKey)) {
-            error_log('Не удалось удалить каталог шаблонов компонента: ' . $root . '/templates/' . $componentKey);
+        $templatesRoot = $root . '/templates';
+        $componentTemplates = $templatesRoot . '/' . $componentKey;
+        rmTree($componentTemplates, $templatesRoot);
+        if (is_dir($componentTemplates)) {
+            error_log('Не удалось удалить каталог шаблонов компонента: ' . $componentTemplates);
         }
     }
 
