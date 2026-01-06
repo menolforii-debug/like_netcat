@@ -222,7 +222,8 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                     echo '<div class="d-flex justify-content-between align-items-center mb-3">';
                     echo '<h3 class="h6 mb-0">' . htmlspecialchars((string) $infoblock['name'], ENT_QUOTES, 'UTF-8') . ' <span class="text-muted">(' . htmlspecialchars($componentName, ENT_QUOTES, 'UTF-8') . ')</span></h3>';
                     if ($canCreate) {
-                        echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'object_form', 'section_id' => $selected['id'], 'infoblock_id' => $infoblock['id']]), ENT_QUOTES, 'UTF-8') . '">Добавить объект</a>';
+                        $createUrl = buildAdminUrl(['action' => 'object_form', 'section_id' => $selected['id'], 'infoblock_id' => $infoblock['id']]);
+                        echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars($createUrl, ENT_QUOTES, 'UTF-8') . '">Добавить объект</button>';
                     }
                     echo '</div>';
 

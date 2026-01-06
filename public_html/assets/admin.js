@@ -41,9 +41,6 @@ function refreshAdminBlocks(selectors) {
 function handleAjaxResponse(payload) {
   if (!payload || typeof payload !== 'object') return;
   if (payload.ok) {
-    if (payload.notice) {
-      showAdminToast('success', payload.notice);
-    }
     if (payload.refresh) {
       refreshAdminBlocks(payload.refresh);
     }
@@ -140,10 +137,12 @@ function submitAjaxForm(form) {
     .then((res) => res.json())
     .then((payload) => {
       handleAjaxResponse(payload);
-      const modalEl = document.getElementById('adminModal');
-      if (modalEl && modalEl.classList.contains('show')) {
-        const modalInstance = window.bootstrap ? window.bootstrap.Modal.getOrCreateInstance(modalEl) : null;
-        if (modalInstance) modalInstance.hide();
+      if (payload && payload.ok) {
+        const modalEl = document.getElementById('adminModal');
+        if (modalEl && modalEl.classList.contains('show')) {
+          const modalInstance = window.bootstrap ? window.bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+          if (modalInstance) modalInstance.hide();
+        }
       }
     })
     .catch(() => {
