@@ -17,9 +17,23 @@ $siteMirrorsRaw = isset($_POST['site_mirrors']) ? (string) $_POST['site_mirrors'
 $siteEnabled = isset($_POST['site_enabled']) ? true : false;
 $offlineHtml = isset($_POST['site_offline_html']) ? (string) $_POST['site_offline_html'] : '';
 
+$normalizedDomain = normalizeHost($siteDomain);
+$normalizedMirrors = parseMirrorLines($siteMirrorsRaw);
+$candidates = array_values(array_unique(array_filter(array_merge([$normalizedDomain], $normalizedMirrors))));
+
+foreach ($candidates as $candidate) {
+    $found = $sectionRepo->findSiteByHost($candidate);
+    if ($found !== null && (int) $found['id'] !== (int) $id) {
+        redirectTo(buildAdminUrl([
+            'section_id' => $id,
+            'error' => 'Домен ' . $candidate . ' уже используется сайтом id=' . (int) $found['id'] . ' / title=' . (string) $found['title'],
+        ]));
+    }
+}
+
 $extra = decodeExtra($site);
-$extra['site_domain'] = $siteDomain;
-$extra['site_mirrors'] = parseMirrorLines($siteMirrorsRaw);
+$extra['site_domain'] = $normalizedDomain;
+$extra['site_mirrors'] = $normalizedMirrors;
 $extra['site_enabled'] = $siteEnabled;
 $extra['site_offline_html'] = $offlineHtml;
 

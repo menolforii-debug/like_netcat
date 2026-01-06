@@ -187,6 +187,8 @@ function normalizeHost(string $host): string
         $host = explode(':', $host, 2)[0];
     }
 
+    $host = rtrim($host, '.');
+
     return $host;
 }
 

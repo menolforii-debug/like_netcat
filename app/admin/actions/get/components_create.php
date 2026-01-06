@@ -4,6 +4,8 @@ if (!Auth::isAdmin()) {
     redirectTo(buildAdminUrl(['error' => 'Недостаточно прав']));
 }
 
+redirectTo(buildAdminUrl(['action' => 'component_new']));
+
 AdminLayout::renderHeader('Новый компонент');
 renderAlert($notice, 'success');
 renderAlert($errorMessage, 'error');

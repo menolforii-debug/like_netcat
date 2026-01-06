@@ -26,36 +26,35 @@ if ($infoblock !== null) {
     ]));
 }
 
-$viewNames = [];
-if (DB::hasTable('component_views')) {
-    $viewRepo = new ComponentViewRepo();
-    $viewNames = $viewRepo->listNamesForComponent($componentId);
-}
-
-if (empty($viewNames)) {
-    $viewsJson = $component['views_json'] ?? '[]';
-    $decoded = json_decode((string) $viewsJson, true);
-    if (is_array($decoded)) {
-        $viewNames = $decoded;
-    }
-}
-
-$componentRepo->deleteWithViews($componentId);
-
 $componentKey = (string) ($component['keyword'] ?? '');
-if ($componentKey !== '' && !empty($viewNames)) {
+if ($componentKey !== '' && !componentKeyIsValid($componentKey)) {
+    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'error' => 'Некорректный ключ компонента.']));
+}
+
+try {
+    $pdo = DB::pdo();
+    $pdo->beginTransaction();
+
+    $componentRepo->deleteWithViews($componentId);
+
     $root = dirname(__DIR__, 3);
-    $templatesDir = $root . '/templates/' . $componentKey;
-    foreach ($viewNames as $viewName) {
-        $viewName = trim((string) $viewName);
-        if ($viewName === '') {
-            continue;
-        }
-        $templatePath = $templatesDir . '/' . $viewName . '.php';
-        if (is_file($templatePath)) {
-            @unlink($templatePath);
-        }
+    $allowedRoots = [
+        $root . '/templates',
+        $root . '/var/backups/templates',
+    ];
+
+    if ($componentKey !== '') {
+        rmTree($root . '/templates/' . $componentKey, $allowedRoots);
+        rmTree($root . '/var/backups/templates/' . $componentKey, $allowedRoots);
     }
+
+    $pdo->commit();
+} catch (Throwable $e) {
+    $pdo = DB::pdo();
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'error' => $e->getMessage()]));
 }
 
 if ($user) {
