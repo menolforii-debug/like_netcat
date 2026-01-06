@@ -3,6 +3,9 @@
 $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
 $site = $sectionRepo->findById($id);
 if ($site === null || $site['parent_id'] !== null) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Сайт не найден']);
+    }
     redirectTo(buildAdminUrl(['error' => 'Сайт не найден']));
 }
 
@@ -17,9 +20,24 @@ $siteMirrorsRaw = isset($_POST['site_mirrors']) ? (string) $_POST['site_mirrors'
 $siteEnabled = isset($_POST['site_enabled']) ? true : false;
 $offlineHtml = isset($_POST['site_offline_html']) ? (string) $_POST['site_offline_html'] : '';
 
+$normalizedDomain = normalizeHost($siteDomain);
+$normalizedMirrors = parseMirrorLines($siteMirrorsRaw);
+$candidates = array_values(array_unique(array_filter(array_merge([$normalizedDomain], $normalizedMirrors))));
+
+foreach ($candidates as $candidate) {
+    $found = $sectionRepo->findSiteByHost($candidate);
+    if ($found !== null && (int) $found['id'] !== (int) $id) {
+        $message = 'Домен ' . $candidate . ' уже используется сайтом id=' . (int) $found['id'] . ' / title=' . (string) $found['title'];
+        if (isAjaxRequest()) {
+            jsonResponse(['ok' => false, 'error' => $message]);
+        }
+        redirectTo(buildAdminUrl(['section_id' => $id, 'error' => $message]));
+    }
+}
+
 $extra = decodeExtra($site);
-$extra['site_domain'] = $siteDomain;
-$extra['site_mirrors'] = parseMirrorLines($siteMirrorsRaw);
+$extra['site_domain'] = $normalizedDomain;
+$extra['site_mirrors'] = $normalizedMirrors;
 $extra['site_enabled'] = $siteEnabled;
 $extra['site_offline_html'] = $offlineHtml;
 
@@ -42,4 +60,12 @@ if ($user) {
     ]);
 }
 
+if (isAjaxRequest()) {
+    jsonResponse([
+        'ok' => true,
+        'notice' => 'Сайт обновлен',
+        'refresh' => ['#sidebarTree', '#contentPane'],
+        'focus' => ['section_id' => $id],
+    ]);
+}
 redirectTo(buildAdminUrl(['section_id' => $id, 'notice' => 'Сайт обновлен']));
