@@ -104,9 +104,9 @@ final class SectionTree
         $actions = '<div class="section-tree-actions" aria-hidden="true">';
 
         if ($canManage) {
-            $actions .= '<a class="btn btn-icon-square btn-outline-secondary" href="'
-                . htmlspecialchars(buildAdminUrl(['action' => 'section_new', 'parent_id' => $id]), ENT_QUOTES, 'UTF-8')
-                . '" title="Добавить раздел" aria-label="Добавить раздел">+</a>';
+            $actions .= '<button type="button" class="btn btn-icon-square btn-outline-secondary" data-modal-url="'
+                . htmlspecialchars(buildAdminUrl(['action' => 'section_form', 'parent_id' => $id]), ENT_QUOTES, 'UTF-8')
+                . '" title="Добавить раздел" aria-label="Добавить раздел">+</button>';
         }
 
         $actions .= '<a class="btn btn-icon-square btn-outline-secondary" href="'
@@ -114,7 +114,7 @@ final class SectionTree
             . '" target="_blank" title="Открыть на сайте" aria-label="Открыть на сайте">↗</a>';
 
         if ($canManage && !$isSystemRoot) {
-            $actions .= '<form method="post" action="/admin.php?action=section_delete" class="m-0" onsubmit="return confirm(\'Удалить этот раздел?\')">';
+            $actions .= '<form method="post" action="/admin.php?action=section_delete" class="m-0" data-ajax="true" data-confirm="Удалить этот раздел?">';
             $actions .= csrfTokenField();
             $actions .= '<input type="hidden" name="id" value="' . $id . '">';
             $actions .= '<button class="btn btn-icon-square btn-outline-danger" type="submit" title="Удалить" aria-label="Удалить">×</button>';

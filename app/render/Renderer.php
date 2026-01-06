@@ -58,6 +58,12 @@ final class Renderer
                 return;
             }
 
+            if ((int) ($requestedObject['section_id'] ?? 0) !== (int) $section['id']) {
+                http_response_code(404);
+                echo 'Object not found';
+                return;
+            }
+
             if ($requestedObject['status'] !== 'published' && !$previewAllowed) {
                 http_response_code(404);
                 echo 'Object not found';
@@ -75,6 +81,7 @@ final class Renderer
             }
 
             $infoblock['view_template'] = $this->resolveViewTemplate($infoblock, $component);
+            $infoblock['settings'] = $this->decodeSettings($infoblock);
 
             $objects = $objectRepo->listForInfoblock((int) $infoblock['id']);
             $objects = array_values(array_filter($objects, static function (array $object): bool {
@@ -102,7 +109,7 @@ final class Renderer
         ];
 
         $seo = $this->resolveSeo($section, $infoblocks, $infoblockViews, $itemTitle);
-        $layoutKey = $this->resolveLayoutKey($path, $section);
+        $layoutKey = $this->resolveLayoutKey($path, $section, $site);
 
         Layout::render($layoutKey, [
             'title' => (string) ($seo['title'] ?? ''),
@@ -164,6 +171,7 @@ final class Renderer
         $objects = $items;
         $object = $isSingle && !empty($objects) ? $objects[0] : null;
         $isSingle = $isSingle;
+        $settings = $infoblock['settings'] ?? [];
 
         $templatePath = __DIR__ . '/../../templates/' . $component['keyword'] . '/' . $infoblock['view_template'] . '.php';
         if (!is_file($templatePath)) {
@@ -385,22 +393,41 @@ final class Renderer
         return $decoded;
     }
 
-    private function resolveLayoutKey(string $path, array $section): string
+    private function decodeSettings(array $row): array
+    {
+        if (isset($row['settings']) && is_array($row['settings'])) {
+            return $row['settings'];
+        }
+
+        $decoded = json_decode((string) ($row['settings_json'] ?? '{}'), true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        return $decoded;
+    }
+
+    private function resolveLayoutKey(string $path, array $section, array $site): string
     {
         $layoutKey = trim($path, '/') === '' ? 'home' : 'default';
-        $extra = $this->decodeExtra($section);
-        if (!empty($extra['layout']) && is_string($extra['layout'])) {
-            $candidate = trim($extra['layout']);
+
+        $siteExtra = $this->decodeExtra($site);
+        if (!empty($siteExtra['layout']) && is_string($siteExtra['layout'])) {
+            $candidate = trim($siteExtra['layout']);
             if ($candidate !== '' && Layout::layoutExists($candidate)) {
                 $layoutKey = $candidate;
             }
         }
 
-        if (!Layout::layoutExists($layoutKey)) {
-            return 'default';
+        $sectionExtra = $this->decodeExtra($section);
+        if (!empty($sectionExtra['layout']) && is_string($sectionExtra['layout'])) {
+            $candidate = trim($sectionExtra['layout']);
+            if ($candidate !== '' && Layout::layoutExists($candidate)) {
+                $layoutKey = $candidate;
+            }
         }
 
-        return $layoutKey;
+        return Layout::layoutExists($layoutKey) ? $layoutKey : 'default';
     }
 
     private function isPreviewAllowed($objectId): bool
