@@ -381,12 +381,16 @@ function rmTree(string $path, string $allowedRoot): void
     }
     $realRoot = rtrim($realRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
     if (!str_starts_with($realPath . DIRECTORY_SEPARATOR, $realRoot)) {
-        throw new RuntimeException('Запрещено удалять путь вне разрешенных директорий: ' . $realPath);
+        $message = 'Запрещено удалять путь вне разрешенных директорий: ' . $realPath;
+        error_log($message);
+        throw new RuntimeException($message);
     }
 
     if (is_file($realPath)) {
         if (!unlink($realPath)) {
-            throw new RuntimeException('Не удалось удалить файл: ' . $realPath);
+            $message = 'Не удалось удалить файл: ' . $realPath;
+            error_log($message);
+            throw new RuntimeException($message);
         }
         return;
     }
@@ -400,17 +404,23 @@ function rmTree(string $path, string $allowedRoot): void
         $itemPath = $item->getPathname();
         if ($item->isDir()) {
             if (!rmdir($itemPath)) {
-                throw new RuntimeException('Не удалось удалить директорию: ' . $itemPath);
+                $message = 'Не удалось удалить директорию: ' . $itemPath;
+                error_log($message);
+                throw new RuntimeException($message);
             }
         } else {
             if (!unlink($itemPath)) {
-                throw new RuntimeException('Не удалось удалить файл: ' . $itemPath);
+                $message = 'Не удалось удалить файл: ' . $itemPath;
+                error_log($message);
+                throw new RuntimeException($message);
             }
         }
     }
 
     if (!rmdir($realPath)) {
-        throw new RuntimeException('Не удалось удалить директорию: ' . $realPath);
+        $message = 'Не удалось удалить директорию: ' . $realPath;
+        error_log($message);
+        throw new RuntimeException($message);
     }
 }
 

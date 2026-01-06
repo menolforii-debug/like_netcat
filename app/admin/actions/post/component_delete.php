@@ -38,10 +38,12 @@ if ($infoblock !== null) {
 
 $componentKey = (string) ($component['keyword'] ?? '');
 if ($componentKey !== '' && !componentKeyIsValid($componentKey)) {
+    $message = 'Некорректный ключ компонента.';
+    error_log($message . ' keyword=' . $componentKey . ' component_id=' . $componentId);
     if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Некорректный ключ компонента.']);
+        jsonResponse(['ok' => false, 'error' => $message]);
     }
-    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'error' => 'Некорректный ключ компонента.']));
+    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'error' => $message]));
 }
 
 try {
@@ -53,6 +55,9 @@ try {
     $root = dirname(__DIR__, 3);
     if ($componentKey !== '') {
         rmTree($root . '/templates/' . $componentKey, $root . '/templates');
+        if (is_dir($root . '/templates/' . $componentKey)) {
+            error_log('Не удалось удалить каталог шаблонов компонента: ' . $root . '/templates/' . $componentKey);
+        }
     }
 
     $pdo->commit();
@@ -61,6 +66,7 @@ try {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
+    error_log('Ошибка удаления компонента: ' . $e->getMessage());
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => $e->getMessage()]);
     }
