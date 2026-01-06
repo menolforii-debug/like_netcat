@@ -64,7 +64,7 @@ $before = [
 ];
 
 $extra = decodeExtra($section);
-if (in_array($layout, ['default', 'home'], true)) {
+if ($layout !== '' && Layout::layoutExists($layout)) {
     $extra['layout'] = $layout;
 } else {
     unset($extra['layout']);

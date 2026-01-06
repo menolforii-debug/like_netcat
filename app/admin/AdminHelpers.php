@@ -364,6 +364,19 @@ function componentKeyIsValid(string $componentKey): bool
     return true;
 }
 
+function layoutKeyIsValid(string $layoutKey): bool
+{
+    if (!preg_match('/^[A-Za-z0-9_-]+$/', $layoutKey)) {
+        return false;
+    }
+
+    if (str_contains($layoutKey, '..') || str_contains($layoutKey, '/') || str_contains($layoutKey, '\\')) {
+        return false;
+    }
+
+    return true;
+}
+
 function rmTree(string $path, string $allowedRoot): void
 {
     if (!is_dir($path) && !is_file($path)) {
@@ -536,6 +549,77 @@ function writeComponentViewTemplate(string $componentKey, string $viewName, stri
     if (!rename($tmpPath, $finalPath)) {
         @unlink($tmpPath);
         $error = 'Не удалось обновить шаблон.';
+        return false;
+    }
+    @chmod($finalPath, 0660);
+
+    return true;
+}
+
+function layoutTemplatesDir(): string
+{
+    return dirname(__DIR__, 2) . '/app/ui/layouts';
+}
+
+function readLayoutTemplate(string $layoutKey): ?string
+{
+    if (!layoutKeyIsValid($layoutKey)) {
+        return null;
+    }
+
+    $path = layoutTemplatesDir() . '/' . $layoutKey . '.php';
+    if (!is_file($path)) {
+        return null;
+    }
+
+    $content = file_get_contents($path);
+    return $content === false ? null : $content;
+}
+
+function writeLayoutTemplate(string $layoutKey, string $content, ?string &$error = null): bool
+{
+    if (!layoutKeyIsValid($layoutKey)) {
+        $error = 'Некорректный ключ макета.';
+        return false;
+    }
+
+    $templatesDir = layoutTemplatesDir();
+    if (!is_dir($templatesDir)) {
+        mkdir($templatesDir, 0770, true);
+        @chmod($templatesDir, 0770);
+    }
+
+    $finalPath = $templatesDir . '/' . $layoutKey . '.php';
+    $tmpPath = $finalPath . '.tmp';
+
+    if (file_put_contents($tmpPath, $content) === false) {
+        $error = 'Не удалось сохранить макет.';
+        return false;
+    }
+    @chmod($tmpPath, 0660);
+
+    $lintOutput = @shell_exec('php -l ' . escapeshellarg($tmpPath));
+    if ($lintOutput !== null && stripos($lintOutput, 'No syntax errors detected') === false) {
+        @unlink($tmpPath);
+        $error = 'Синтаксическая ошибка в макете: ' . trim((string) $lintOutput);
+        return false;
+    }
+
+    if (is_file($finalPath)) {
+        $backupDir = dirname(__DIR__, 2) . '/var/backups/layouts';
+        if (!is_dir($backupDir)) {
+            mkdir($backupDir, 0770, true);
+            @chmod($backupDir, 0770);
+        }
+        $backupPath = $backupDir . '/' . $layoutKey . '.php.' . date('YmdHis') . '.bak';
+        if (@copy($finalPath, $backupPath)) {
+            @chmod($backupPath, 0660);
+        }
+    }
+
+    if (!rename($tmpPath, $finalPath)) {
+        @unlink($tmpPath);
+        $error = 'Не удалось обновить макет.';
         return false;
     }
     @chmod($finalPath, 0660);

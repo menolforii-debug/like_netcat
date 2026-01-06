@@ -44,7 +44,7 @@ if ($sectionRepo->existsSiblingEnglishName($siteId, $parentId, $englishName)) {
 }
 
 $extra = [];
-if (in_array($layout, ['default', 'home'], true)) {
+if ($layout !== '' && Layout::layoutExists($layout)) {
     $extra['layout'] = $layout;
 }
 

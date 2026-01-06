@@ -116,7 +116,7 @@ if ($selectedComponent === null) {
 }
 
 echo '<ul class="nav nav-tabs mb-3">';
-foreach (['general' => 'Общее', 'fields' => 'Поля', 'views' => 'Виды отображения'] as $key => $label) {
+foreach (['general' => 'Общее', 'fields' => 'Поля', 'views' => 'Шаблоны компонента'] as $key => $label) {
     $active = $tab === $key ? ' active' : '';
     $link = buildAdminUrl(['action' => 'components', 'component_id' => (int) $selectedComponent['id'], 'tab' => $key]);
     echo '<li class="nav-item"><a class="nav-link' . $active . '" href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</a></li>';
@@ -235,7 +235,7 @@ if ($tab === 'views') {
     }
     $newViewIndex = count($views);
     echo '<tr>';
-    echo '<td><input class="form-control form-control-sm" name="views[' . $newViewIndex . '][value]" placeholder="Новый вид"></td>';
+    echo '<td><input class="form-control form-control-sm" name="views[' . $newViewIndex . '][value]" placeholder="Новый шаблон"></td>';
     echo '<td></td>';
     echo '</tr>';
     echo '</tbody></table></div>';

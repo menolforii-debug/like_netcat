@@ -109,7 +109,7 @@ final class Renderer
         ];
 
         $seo = $this->resolveSeo($section, $infoblocks, $infoblockViews, $itemTitle);
-        $layoutKey = $this->resolveLayoutKey($path, $section);
+        $layoutKey = $this->resolveLayoutKey($path, $section, $site);
 
         Layout::render($layoutKey, [
             'title' => (string) ($seo['title'] ?? ''),
@@ -407,22 +407,27 @@ final class Renderer
         return $decoded;
     }
 
-    private function resolveLayoutKey(string $path, array $section): string
+    private function resolveLayoutKey(string $path, array $section, array $site): string
     {
         $layoutKey = trim($path, '/') === '' ? 'home' : 'default';
-        $extra = $this->decodeExtra($section);
-        if (!empty($extra['layout']) && is_string($extra['layout'])) {
-            $candidate = trim($extra['layout']);
+
+        $siteExtra = $this->decodeExtra($site);
+        if (!empty($siteExtra['layout']) && is_string($siteExtra['layout'])) {
+            $candidate = trim($siteExtra['layout']);
             if ($candidate !== '' && Layout::layoutExists($candidate)) {
                 $layoutKey = $candidate;
             }
         }
 
-        if (!Layout::layoutExists($layoutKey)) {
-            return 'default';
+        $sectionExtra = $this->decodeExtra($section);
+        if (!empty($sectionExtra['layout']) && is_string($sectionExtra['layout'])) {
+            $candidate = trim($sectionExtra['layout']);
+            if ($candidate !== '' && Layout::layoutExists($candidate)) {
+                $layoutKey = $candidate;
+            }
         }
 
-        return $layoutKey;
+        return Layout::layoutExists($layoutKey) ? $layoutKey : 'default';
     }
 
     private function isPreviewAllowed($objectId): bool

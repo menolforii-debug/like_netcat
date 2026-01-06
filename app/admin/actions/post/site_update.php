@@ -19,6 +19,22 @@ $siteDomain = isset($_POST['site_domain']) ? trim((string) $_POST['site_domain']
 $siteMirrorsRaw = isset($_POST['site_mirrors']) ? (string) $_POST['site_mirrors'] : '';
 $siteEnabled = isset($_POST['site_enabled']) ? true : false;
 $offlineHtml = isset($_POST['site_offline_html']) ? (string) $_POST['site_offline_html'] : '';
+$layout = isset($_POST['layout']) ? trim((string) $_POST['layout']) : '';
+
+$normalizedDomain = normalizeHost($siteDomain);
+$normalizedMirrors = parseMirrorLines($siteMirrorsRaw);
+$candidates = array_values(array_unique(array_filter(array_merge([$normalizedDomain], $normalizedMirrors))));
+
+foreach ($candidates as $candidate) {
+    $found = $sectionRepo->findSiteByHost($candidate);
+    if ($found !== null && (int) $found['id'] !== (int) $id) {
+        $message = 'Домен ' . $candidate . ' уже используется сайтом id=' . (int) $found['id'] . ' / title=' . (string) $found['title'];
+        if (isAjaxRequest()) {
+            jsonResponse(['ok' => false, 'error' => $message]);
+        }
+        redirectTo(buildAdminUrl(['section_id' => $id, 'error' => $message]));
+    }
+}
 
 $normalizedDomain = normalizeHost($siteDomain);
 $normalizedMirrors = parseMirrorLines($siteMirrorsRaw);
@@ -40,6 +56,11 @@ $extra['site_domain'] = $normalizedDomain;
 $extra['site_mirrors'] = $normalizedMirrors;
 $extra['site_enabled'] = $siteEnabled;
 $extra['site_offline_html'] = $offlineHtml;
+if ($layout !== '' && Layout::layoutExists($layout)) {
+    $extra['layout'] = $layout;
+} else {
+    unset($extra['layout']);
+}
 
 $sectionRepo->update($id, [
     'parent_id' => null,

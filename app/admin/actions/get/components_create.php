@@ -32,7 +32,7 @@ echo '<label class="form-label">Поля (JSON)</label>';
 echo '<textarea class="form-control font-monospace" name="fields_json" rows="6" required>{"fields":[]}</textarea>';
 echo '</div>';
 echo '<div class="mb-3">';
-echo '<label class="form-label">Виды отображения (JSON)</label>';
+echo '<label class="form-label">Шаблоны компонента (JSON)</label>';
 echo '<textarea class="form-control font-monospace" name="views_json" rows="3">["list"]</textarea>';
 echo '</div>';
 echo '<button class="btn btn-primary" type="submit">Сохранить</button>';

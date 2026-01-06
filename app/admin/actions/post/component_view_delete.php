@@ -9,9 +9,9 @@ $componentId = isset($_POST['component_id']) ? (int) $_POST['component_id'] : 0;
 
 if ($viewId <= 0 || $componentId <= 0) {
     if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Вид не найден']);
+        jsonResponse(['ok' => false, 'error' => 'Шаблон не найден']);
     }
-    redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Вид не найден']));
+    redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Шаблон не найден']));
 }
 
 $component = $componentRepo->findById($componentId);
@@ -26,16 +26,16 @@ $viewRepo = new ComponentViewRepo();
 $viewRow = $viewRepo->findById($viewId);
 if ($viewRow === null || (int) $viewRow['component_id'] !== $componentId) {
     if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Вид не найден']);
+        jsonResponse(['ok' => false, 'error' => 'Шаблон не найден']);
     }
-    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'error' => 'Вид не найден']));
+    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'error' => 'Шаблон не найден']));
 }
 
 if ($viewRepo->countForComponent($componentId) <= 1) {
     if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Нельзя удалить последний вид']);
+        jsonResponse(['ok' => false, 'error' => 'Нельзя удалить последний шаблон']);
     }
-    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'view' => (string) $viewRow['name'], 'error' => 'Нельзя удалить последний вид']));
+    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'view' => (string) $viewRow['name'], 'error' => 'Нельзя удалить последний шаблон']));
 }
 
 $viewName = (string) $viewRow['name'];
@@ -50,10 +50,10 @@ if (is_file($templatePath)) {
 if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
-        'notice' => 'Вид удален',
+        'notice' => 'Шаблон удален',
         'refresh' => ['#componentsSidebar', '#componentsContent'],
         'focus' => ['component_id' => $componentId],
     ]);
 }
 
-redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'notice' => 'Вид удален']));
+redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'notice' => 'Шаблон удален']));

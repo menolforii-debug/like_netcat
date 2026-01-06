@@ -12,9 +12,9 @@ $singleTpl = isset($_POST['single_tpl']) ? (string) $_POST['single_tpl'] : '';
 
 if ($viewId <= 0 || $componentId <= 0) {
     if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Вид не найден']);
+        jsonResponse(['ok' => false, 'error' => 'Шаблон не найден']);
     }
-    redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Вид не найден']));
+    redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Шаблон не найден']));
 }
 
 $component = $componentRepo->findById($componentId);
@@ -29,9 +29,9 @@ $viewRepo = new ComponentViewRepo();
 $viewRow = $viewRepo->findById($viewId);
 if ($viewRow === null || (int) $viewRow['component_id'] !== $componentId) {
     if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Вид не найден']);
+        jsonResponse(['ok' => false, 'error' => 'Шаблон не найден']);
     }
-    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'error' => 'Вид не найден']));
+    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'error' => 'Шаблон не найден']));
 }
 
 if ($viewName === '') {
@@ -40,9 +40,9 @@ if ($viewName === '') {
 
 if (!preg_match('/^[A-Za-z0-9_-]+$/', $viewName)) {
     if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Ключ вида должен быть URL-безопасным']);
+        jsonResponse(['ok' => false, 'error' => 'Ключ шаблона должен быть URL-безопасным']);
     }
-    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'view' => $viewName, 'error' => 'Ключ вида должен быть URL-безопасным']));
+    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'view' => $viewName, 'error' => 'Ключ шаблона должен быть URL-безопасным']));
 }
 
 $error = null;
@@ -59,10 +59,10 @@ syncComponentViewsJson($componentId);
 if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
-        'notice' => 'Вид обновлен',
+        'notice' => 'Шаблон обновлен',
         'refresh' => ['#componentsSidebar', '#componentsContent'],
         'focus' => ['component_id' => $componentId],
     ]);
 }
 
-redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'view' => $viewName, 'notice' => 'Вид обновлен']));
+redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'view' => $viewName, 'notice' => 'Шаблон обновлен']));

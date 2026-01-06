@@ -107,16 +107,26 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
             }
             echo '</div>';
             $extra = decodeExtra($selected);
-            $currentLayout = isset($extra['layout']) ? (string) $extra['layout'] : 'default';
-            if (!in_array($currentLayout, ['default', 'home'], true)) {
-                $currentLayout = 'default';
+            $siteExtra = $site ? decodeExtra($site) : [];
+            $sectionLayout = isset($extra['layout']) ? (string) $extra['layout'] : '';
+            $siteLayout = isset($siteExtra['layout']) ? (string) $siteExtra['layout'] : '';
+            $currentLayout = '';
+            $layoutNote = '';
+            if ($sectionLayout !== '' && Layout::layoutExists($sectionLayout)) {
+                $currentLayout = $sectionLayout;
+            } elseif ($siteLayout !== '' && Layout::layoutExists($siteLayout)) {
+                $currentLayout = $siteLayout;
+                $layoutNote = ' (наследуется от сайта)';
+            } else {
+                $currentLayout = ($selected['parent_id'] ?? null) === null ? 'home' : 'default';
+                $layoutNote = ' (по умолчанию)';
             }
             echo '<dl class="row mb-0">';
             echo '<dt class="col-sm-3">Название</dt><dd class="col-sm-9">' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '</dd>';
             echo '<dt class="col-sm-3">English name</dt><dd class="col-sm-9">' . htmlspecialchars((string) ($selected['english_name'] ?? ''), ENT_QUOTES, 'UTF-8') . '</dd>';
             echo '<dt class="col-sm-3">Родитель</dt><dd class="col-sm-9">' . htmlspecialchars((string) ($sectionRepo->findById((int) $selected['parent_id'])['title'] ?? ''), ENT_QUOTES, 'UTF-8') . '</dd>';
             echo '<dt class="col-sm-3">Сортировка</dt><dd class="col-sm-9">' . htmlspecialchars((string) ($selected['sort'] ?? 0), ENT_QUOTES, 'UTF-8') . '</dd>';
-            echo '<dt class="col-sm-3">Шаблон</dt><dd class="col-sm-9">' . htmlspecialchars($currentLayout, ENT_QUOTES, 'UTF-8') . '</dd>';
+            echo '<dt class="col-sm-3">Макет дизайна</dt><dd class="col-sm-9">' . htmlspecialchars($currentLayout . $layoutNote, ENT_QUOTES, 'UTF-8') . '</dd>';
             echo '</dl>';
         } elseif ($tab === 'seo') {
             $extra = decodeExtra($selected);

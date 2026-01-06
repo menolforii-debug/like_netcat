@@ -5,6 +5,7 @@ $siteDomain = isset($_POST['site_domain']) ? trim((string) $_POST['site_domain']
 $siteMirrorsRaw = isset($_POST['site_mirrors']) ? (string) $_POST['site_mirrors'] : '';
 $siteEnabled = isset($_POST['site_enabled']) ? true : false;
 $offlineHtml = isset($_POST['site_offline_html']) ? (string) $_POST['site_offline_html'] : '';
+$layout = isset($_POST['layout']) ? trim((string) $_POST['layout']) : '';
 
 if ($title === '') {
     if (isAjaxRequest()) {
@@ -34,6 +35,9 @@ $extra = [
     'site_enabled' => $siteEnabled,
     'site_offline_html' => $offlineHtml,
 ];
+if ($layout !== '' && Layout::layoutExists($layout)) {
+    $extra['layout'] = $layout;
+}
 
 $siteId = $sectionRepo->createSite($title, $extra);
 // Системные корневые разделы для нового сайта (создаем без дублей).

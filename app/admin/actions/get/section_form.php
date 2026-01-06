@@ -45,9 +45,10 @@ if ($site !== null) {
 }
 
 $extra = $section ? decodeExtra($section) : [];
-$currentLayout = isset($extra['layout']) ? (string) $extra['layout'] : 'default';
-if (!in_array($currentLayout, ['default', 'home'], true)) {
-    $currentLayout = 'default';
+$layouts = Layout::listLayouts();
+$currentLayout = isset($extra['layout']) ? (string) $extra['layout'] : '';
+if ($currentLayout !== '' && !in_array($currentLayout, $layouts, true)) {
+    $currentLayout = '';
 }
 
 $isSystemRoot = $section && $section['parent_id'] === null && in_array($section['english_name'] ?? '', ['index', '404'], true);
@@ -76,10 +77,11 @@ foreach ($options as $option) {
 }
 echo '</select></div>';
 echo '<div class="mb-3"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="' . htmlspecialchars((string) ($section['sort'] ?? 0), ENT_QUOTES, 'UTF-8') . '"></div>';
-echo '<div class="mb-3"><label class="form-label">Шаблон</label><select class="form-select" name="layout">';
-foreach (['default' => 'По умолчанию', 'home' => 'Главная'] as $value => $label) {
-    $selectedAttr = $currentLayout === $value ? ' selected' : '';
-    echo '<option value="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '"' . $selectedAttr . '>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</option>';
+echo '<div class="mb-3"><label class="form-label">Макет дизайна</label><select class="form-select" name="layout">';
+echo '<option value="">Наследовать макет сайта</option>';
+foreach ($layouts as $layout) {
+    $selectedAttr = $currentLayout === $layout ? ' selected' : '';
+    echo '<option value="' . htmlspecialchars($layout, ENT_QUOTES, 'UTF-8') . '"' . $selectedAttr . '>' . htmlspecialchars($layout, ENT_QUOTES, 'UTF-8') . '</option>';
 }
 echo '</select></div>';
 echo '<div class="d-flex justify-content-end gap-2">';

@@ -18,16 +18,16 @@ if ($componentId <= 0) {
 
 if ($viewName === '') {
     if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Введите название вида']);
+        jsonResponse(['ok' => false, 'error' => 'Введите название шаблона']);
     }
-    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'view' => '_new', 'error' => 'Введите название вида']));
+    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'view' => '_new', 'error' => 'Введите название шаблона']));
 }
 
 if (!preg_match('/^[A-Za-z0-9_-]+$/', $viewName)) {
     if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Ключ вида должен быть URL-безопасным']);
+        jsonResponse(['ok' => false, 'error' => 'Ключ шаблона должен быть URL-безопасным']);
     }
-    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'view' => '_new', 'error' => 'Ключ вида должен быть URL-безопасным']));
+    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'view' => '_new', 'error' => 'Ключ шаблона должен быть URL-безопасным']));
 }
 
 $component = $componentRepo->findById($componentId);
@@ -42,9 +42,9 @@ $viewRepo = new ComponentViewRepo();
 $existingView = $viewRepo->findByName($componentId, $viewName);
 if ($existingView !== null) {
     if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Вид с таким ключом уже существует']);
+        jsonResponse(['ok' => false, 'error' => 'Шаблон с таким ключом уже существует']);
     }
-    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'view' => '_new', 'error' => 'Вид с таким ключом уже существует']));
+    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'view' => '_new', 'error' => 'Шаблон с таким ключом уже существует']));
 }
 
 $viewId = $viewRepo->create($componentId, $viewName, $listTpl, $singleTpl);
@@ -62,10 +62,10 @@ syncComponentViewsJson($componentId);
 if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
-        'notice' => 'Вид создан',
+        'notice' => 'Шаблон создан',
         'refresh' => ['#componentsSidebar', '#componentsContent'],
         'focus' => ['component_id' => $componentId],
     ]);
 }
 
-redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'view' => $viewName, 'notice' => 'Вид создан']));
+redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'view' => $viewName, 'notice' => 'Шаблон создан']));

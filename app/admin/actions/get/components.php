@@ -173,12 +173,12 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
         echo '<div class="component-tree-views">';
 
         echo '<div class="d-flex align-items-center justify-content-between mb-1">';
-        echo '<div class="text-muted small text-uppercase" style="letter-spacing:.04em;">Виды</div>';
-        echo '<a class="btn btn-icon-square btn-outline-secondary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'components', 'component_id' => $id, 'view' => '_new']), ENT_QUOTES, 'UTF-8') . '" title="Добавить вид" aria-label="Добавить вид">+</a>';
+        echo '<div class="text-muted small text-uppercase" style="letter-spacing:.04em;">Шаблоны компонента</div>';
+        echo '<a class="btn btn-icon-square btn-outline-secondary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'components', 'component_id' => $id, 'view' => '_new']), ENT_QUOTES, 'UTF-8') . '" title="Добавить шаблон" aria-label="Добавить шаблон">+</a>';
         echo '</div>';
 
         if (empty($componentViews)) {
-            echo '<div class="text-muted small">Видов нет.</div>';
+            echo '<div class="text-muted small">Шаблонов нет.</div>';
         } else {
             echo '<ul class="nav flex-column component-tree-viewlist">';
             foreach ($componentViews as $viewRow) {
@@ -243,31 +243,31 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
         }
 
         echo '<ul class="nav nav-tabs mb-3">';
-        echo '<li class="nav-item"><span class="nav-link active">Редактирование вида</span></li>';
+        echo '<li class="nav-item"><span class="nav-link active">Редактирование шаблона компонента</span></li>';
         echo '</ul>';
 
         if ($isNewView) {
             echo '<form method="post" action="/admin.php?action=component_view_create">';
             echo csrfTokenField();
             echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
-            echo '<div class="mb-3"><label class="form-label">Название вида</label><input class="form-control" name="view_name" required></div>';
+            echo '<div class="mb-3"><label class="form-label">Название шаблона</label><input class="form-control" name="view_name" required></div>';
             echo '<div class="mb-3"><label class="form-label">Шаблон списка</label><textarea class="form-control font-monospace code-editor" name="list_tpl" rows="10"></textarea></div>';
             echo '<div class="mb-3"><label class="form-label">Шаблон объекта</label><textarea class="form-control font-monospace code-editor" name="single_tpl" rows="10"></textarea></div>';
             echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
             echo '</form>';
         } elseif ($viewRow === null) {
-            echo '<div class="text-muted">Вид не найден.</div>';
+            echo '<div class="text-muted">Шаблон не найден.</div>';
         } else {
             echo '<form method="post" action="/admin.php?action=component_view_update">';
             echo csrfTokenField();
             echo '<input type="hidden" name="view_id" value="' . (int) $viewRow['id'] . '">';
             echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
-            echo '<div class="mb-3"><label class="form-label">Название вида</label><input class="form-control" name="view_name" value="' . htmlspecialchars((string) $viewRow['name'], ENT_QUOTES, 'UTF-8') . '" readonly></div>';
+            echo '<div class="mb-3"><label class="form-label">Название шаблона</label><input class="form-control" name="view_name" value="' . htmlspecialchars((string) $viewRow['name'], ENT_QUOTES, 'UTF-8') . '" readonly></div>';
             echo '<div class="mb-3"><label class="form-label">Шаблон списка</label><textarea class="form-control font-monospace code-editor" name="list_tpl" rows="10">' . renderTextareaValue($viewRow['list_tpl'] ?? '') . '</textarea></div>';
             echo '<div class="mb-3"><label class="form-label">Шаблон объекта</label><textarea class="form-control font-monospace code-editor" name="single_tpl" rows="10">' . renderTextareaValue($viewRow['single_tpl'] ?? '') . '</textarea></div>';
             echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
             echo '</form>';
-            echo '<form class="mt-2" method="post" action="/admin.php?action=component_view_delete" onsubmit="return confirm(\'Удалить вид?\')">';
+            echo '<form class="mt-2" method="post" action="/admin.php?action=component_view_delete" onsubmit="return confirm(\'Удалить шаблон?\')">';
             echo csrfTokenField();
             echo '<input type="hidden" name="view_id" value="' . (int) $viewRow['id'] . '">';
             echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';

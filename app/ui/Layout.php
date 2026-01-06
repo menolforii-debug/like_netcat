@@ -80,6 +80,22 @@ final class Layout
         return is_file(self::layoutPath($layoutKey));
     }
 
+    public static function listLayouts(): array
+    {
+        $path = __DIR__ . '/layouts/*.php';
+        $files = glob($path) ?: [];
+        $layouts = [];
+        foreach ($files as $file) {
+            $name = basename($file, '.php');
+            if ($name !== '') {
+                $layouts[] = $name;
+            }
+        }
+        sort($layouts);
+
+        return $layouts;
+    }
+
     private static function layoutPath(string $layoutKey): string
     {
         return __DIR__ . '/layouts/' . $layoutKey . '.php';
