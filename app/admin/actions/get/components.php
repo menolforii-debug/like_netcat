@@ -94,23 +94,26 @@ renderAlert($errorMessage, 'error');
  */
 AdminLayout::openSidebar();
 
+echo '<div id="componentsSidebar" data-refresh-url="' . htmlspecialchars(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => $tab]), ENT_QUOTES, 'UTF-8') . '">';
 echo '<div class="card shadow-sm border-0">';
 echo '<div class="card-body p-3">';
 
 echo '<div class="d-flex align-items-center justify-content-between mb-2">';
 echo '<div class="fw-semibold">Компоненты</div>';
-echo '<a class="btn btn-icon-square btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'component_new']), ENT_QUOTES, 'UTF-8') . '" title="Добавить компонент" aria-label="Добавить компонент">+</a>';
+$createUrl = buildAdminUrl(['action' => 'component_form']);
+echo '<button class="btn btn-icon-square btn-outline-primary" data-modal-url="' . htmlspecialchars($createUrl, ENT_QUOTES, 'UTF-8') . '" title="Добавить компонент" aria-label="Добавить компонент">+</button>';
 echo '</div>';
 
 if (empty($components)) {
     echo '<div class="text-muted">Компоненты пока не созданы.</div>';
-    echo '</div></div>';
+    echo '</div></div></div>';
     AdminLayout::closeSidebar();
 
     AdminLayout::openContent();
+    echo '<div id="componentsContent" data-refresh-url="' . htmlspecialchars(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => $tab]), ENT_QUOTES, 'UTF-8') . '">';
     echo '<div class="card shadow-sm"><div class="card-body">';
     echo '<div class="text-muted">Создайте первый компонент.</div>';
-    echo '</div></div>';
+    echo '</div></div></div>';
     AdminLayout::closeContent();
     AdminLayout::renderFooter();
     return;
@@ -208,6 +211,7 @@ echo '</nav>';
 
 echo '</div>';
 echo '</div>';
+echo '</div>';
 
 AdminLayout::closeSidebar();
 
@@ -216,12 +220,13 @@ AdminLayout::closeSidebar();
  */
 AdminLayout::openContent();
 
+echo '<div id="componentsContent" data-refresh-url="' . htmlspecialchars(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => $tab, 'view' => $viewName !== '' ? $viewName : null]), ENT_QUOTES, 'UTF-8') . '">';
 echo '<div class="card shadow-sm">';
 echo '<div class="card-body">';
 
 if ($selectedComponent === null) {
     echo '<div class="text-muted"> </div>';
-    echo '</div></div>';
+    echo '</div></div></div>';
     AdminLayout::closeContent();
     AdminLayout::renderFooter();
     return;
@@ -239,7 +244,7 @@ if ($viewName !== '') {
     echo '</ul>';
 
     if ($isNewView) {
-        echo '<form method="post" action="/admin.php?action=component_view_create">';
+        echo '<form method="post" action="/admin.php?action=component_view_create" data-ajax="true">';
         echo csrfTokenField();
         echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
         echo '<div class="mb-3"><label class="form-label">Название вида</label><input class="form-control" name="view_name" required></div>';
@@ -250,7 +255,7 @@ if ($viewName !== '') {
     } elseif ($viewRow === null) {
         echo '<div class="text-muted">Вид не найден.</div>';
     } else {
-        echo '<form method="post" action="/admin.php?action=component_view_update">';
+        echo '<form method="post" action="/admin.php?action=component_view_update" data-ajax="true">';
         echo csrfTokenField();
         echo '<input type="hidden" name="view_id" value="' . (int) $viewRow['id'] . '">';
         echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
@@ -259,7 +264,7 @@ if ($viewName !== '') {
         echo '<div class="mb-3"><label class="form-label">Шаблон объекта</label><textarea class="form-control font-monospace code-editor" name="single_tpl" rows="10">' . renderTextareaValue($viewRow['single_tpl'] ?? '') . '</textarea></div>';
         echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
         echo '</form>';
-        echo '<form class="mt-2" method="post" action="/admin.php?action=component_view_delete" onsubmit="return confirm(\'Удалить вид?\')">';
+        echo '<form class="mt-2" method="post" action="/admin.php?action=component_view_delete" data-ajax="true" data-confirm="Удалить вид?">';
         echo csrfTokenField();
         echo '<input type="hidden" name="view_id" value="' . (int) $viewRow['id'] . '">';
         echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
@@ -267,123 +272,44 @@ if ($viewName !== '') {
         echo '</form>';
     }
 
-    echo '</div></div>';
+    echo '</div></div></div>';
     AdminLayout::closeContent();
     AdminLayout::renderFooter();
     return;
 }
 
-echo '<ul class="nav nav-tabs mb-3">';
-foreach (['general' => 'Общее', 'fields' => 'Поля'] as $key => $label) {
-    $active = $tab === $key ? ' active' : '';
-    $link = buildAdminUrl(['action' => 'components', 'component_id' => (int) $selectedComponent['id'], 'tab' => $key]);
-    echo '<li class="nav-item"><a class="nav-link' . $active . '" href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</a></li>';
-}
-echo '</ul>';
+echo '<div class="d-flex justify-content-between align-items-center mb-3">';
+echo '<h1 class="h5 mb-0">Компонент</h1>';
+$editUrl = buildAdminUrl(['action' => 'component_form', 'component_id' => (int) $selectedComponent['id']]);
+echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars($editUrl, ENT_QUOTES, 'UTF-8') . '">Редактировать</button>';
+echo '</div>';
+echo '<dl class="row">';
+echo '<dt class="col-sm-3">Ключ</dt><dd class="col-sm-9">' . htmlspecialchars((string) $selectedComponent['keyword'], ENT_QUOTES, 'UTF-8') . '</dd>';
+echo '<dt class="col-sm-3">Название</dt><dd class="col-sm-9">' . htmlspecialchars((string) $selectedComponent['name'], ENT_QUOTES, 'UTF-8') . '</dd>';
+echo '</dl>';
 
-if ($tab === 'general') {
-    echo '<form method="post" action="/admin.php?action=component_update">';
-    echo csrfTokenField();
-    echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
-    echo '<input type="hidden" name="keyword" value="' . htmlspecialchars((string) $selectedComponent['keyword'], ENT_QUOTES, 'UTF-8') . '">';
-    echo '<div class="mb-3"><label class="form-label">Ключ</label><input class="form-control" value="' . htmlspecialchars((string) $selectedComponent['keyword'], ENT_QUOTES, 'UTF-8') . '" disabled></div>';
-    echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" name="name" value="' . htmlspecialchars((string) $selectedComponent['name'], ENT_QUOTES, 'UTF-8') . '" required></div>';
-
-    foreach ($fields as $index => $field) {
-        echo '<input type="hidden" name="fields[' . $index . '][name]" value="' . htmlspecialchars((string) $field['name'], ENT_QUOTES, 'UTF-8') . '">';
-        echo '<input type="hidden" name="fields[' . $index . '][label]" value="' . htmlspecialchars((string) $field['label'], ENT_QUOTES, 'UTF-8') . '">';
-        echo '<input type="hidden" name="fields[' . $index . '][type]" value="' . htmlspecialchars((string) $field['type'], ENT_QUOTES, 'UTF-8') . '">';
-        echo '<input type="hidden" name="fields[' . $index . '][required]" value="' . (!empty($field['required']) ? '1' : '0') . '">';
-        if (!empty($field['options']) && is_array($field['options'])) {
-            $optIndex = 0;
-            foreach ($field['options'] as $optKey => $optLabel) {
-                echo '<input type="hidden" name="fields[' . $index . '][options][' . $optIndex . '][key]" value="' . htmlspecialchars((string) $optKey, ENT_QUOTES, 'UTF-8') . '">';
-                echo '<input type="hidden" name="fields[' . $index . '][options][' . $optIndex . '][label]" value="' . htmlspecialchars((string) $optLabel, ENT_QUOTES, 'UTF-8') . '">';
-                $optIndex++;
-            }
-        }
-    }
-
-    echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
-    echo '</form>';
-
-    echo '<form class="mt-3" method="post" action="/admin.php?action=component_delete" onsubmit="return confirm(\'Удалить компонент?\')">';
-    echo csrfTokenField();
-    echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
-    echo '<button class="btn btn-outline-danger" type="submit">Удалить компонент</button>';
-    echo '</form>';
-}
-
-if ($tab === 'fields') {
-    echo '<form method="post" action="/admin.php?action=component_update">';
-    echo csrfTokenField();
-    echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
-    echo '<input type="hidden" name="keyword" value="' . htmlspecialchars((string) $selectedComponent['keyword'], ENT_QUOTES, 'UTF-8') . '">';
-    echo '<input type="hidden" name="name" value="' . htmlspecialchars((string) $selectedComponent['name'], ENT_QUOTES, 'UTF-8') . '">';
-
-    echo '<div class="table-responsive">';
+if (!empty($fields)) {
+    echo '<div class="table-responsive mb-3">';
     echo '<table class="table table-sm align-middle">';
-    echo '<thead><tr><th>Имя</th><th>Подпись</th><th>Тип</th><th>Обязательное</th><th>Опции</th><th>Удалить</th></tr></thead><tbody>';
-
-    foreach ($fields as $index => $field) {
+    echo '<thead><tr><th>Имя</th><th>Подпись</th><th>Тип</th><th>Обязательное</th></tr></thead><tbody>';
+    foreach ($fields as $field) {
         echo '<tr>';
-        echo '<td><input class="form-control form-control-sm" name="fields[' . $index . '][name]" value="' . htmlspecialchars((string) $field['name'], ENT_QUOTES, 'UTF-8') . '"></td>';
-        echo '<td><input class="form-control form-control-sm" name="fields[' . $index . '][label]" value="' . htmlspecialchars((string) $field['label'], ENT_QUOTES, 'UTF-8') . '"></td>';
-        echo '<td><select class="form-select form-select-sm" name="fields[' . $index . '][type]">';
-        foreach (['text', 'textarea', 'number', 'date', 'checkbox', 'select'] as $type) {
-            $selected = $type === (string) $field['type'] ? ' selected' : '';
-            echo '<option value="' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '"' . $selected . '>' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '</option>';
-        }
-        echo '</select></td>';
-        $checked = !empty($field['required']) ? ' checked' : '';
-        echo '<td><input class="form-check-input" type="checkbox" name="fields[' . $index . '][required]" value="1"' . $checked . '></td>';
-        echo '<td>';
-        if ((string) $field['type'] === 'select') {
-            echo '<div class="d-flex flex-column gap-1">';
-            $optIndex = 0;
-            if (!empty($field['options']) && is_array($field['options'])) {
-                foreach ($field['options'] as $optKey => $optLabel) {
-                    echo '<div class="input-group input-group-sm">';
-                    echo '<input class="form-control" name="fields[' . $index . '][options][' . $optIndex . '][key]" value="' . htmlspecialchars((string) $optKey, ENT_QUOTES, 'UTF-8') . '" placeholder="Ключ">';
-                    echo '<input class="form-control" name="fields[' . $index . '][options][' . $optIndex . '][label]" value="' . htmlspecialchars((string) $optLabel, ENT_QUOTES, 'UTF-8') . '" placeholder="Название">';
-                    echo '<span class="input-group-text"><input type="checkbox" name="fields[' . $index . '][options][' . $optIndex . '][delete]" value="1"></span>';
-                    echo '</div>';
-                    $optIndex++;
-                }
-            }
-            echo '<div class="input-group input-group-sm">';
-            echo '<input class="form-control" name="fields[' . $index . '][options][' . $optIndex . '][key]" placeholder="Ключ">';
-            echo '<input class="form-control" name="fields[' . $index . '][options][' . $optIndex . '][label]" placeholder="Название">';
-            echo '</div>';
-            echo '</div>';
-        } else {
-            echo '<span class="text-muted small">—</span>';
-        }
-        echo '</td>';
-        echo '<td><input class="form-check-input" type="checkbox" name="fields[' . $index . '][delete]" value="1"></td>';
+        echo '<td>' . htmlspecialchars((string) $field['name'], ENT_QUOTES, 'UTF-8') . '</td>';
+        echo '<td>' . htmlspecialchars((string) $field['label'], ENT_QUOTES, 'UTF-8') . '</td>';
+        echo '<td>' . htmlspecialchars((string) $field['type'], ENT_QUOTES, 'UTF-8') . '</td>';
+        echo '<td>' . (!empty($field['required']) ? 'Да' : 'Нет') . '</td>';
         echo '</tr>';
     }
-
-    $newIndex = count($fields);
-    echo '<tr>';
-    echo '<td><input class="form-control form-control-sm" name="fields[' . $newIndex . '][name]" placeholder="Новое поле"></td>';
-    echo '<td><input class="form-control form-control-sm" name="fields[' . $newIndex . '][label]" placeholder="Подпись"></td>';
-    echo '<td><select class="form-select form-select-sm" name="fields[' . $newIndex . '][type]">';
-    foreach (['text', 'textarea', 'number', 'date', 'checkbox', 'select'] as $type) {
-        echo '<option value="' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '</option>';
-    }
-    echo '</select></td>';
-    echo '<td><input class="form-check-input" type="checkbox" name="fields[' . $newIndex . '][required]" value="1"></td>';
-    echo '<td><span class="text-muted small">—</span></td>';
-    echo '<td></td>';
-    echo '</tr>';
-
     echo '</tbody></table></div>';
-    echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
-    echo '</form>';
 }
 
-echo '</div></div>';
+echo '<form class="mt-2" method="post" action="/admin.php?action=component_delete" data-ajax="true" data-confirm="Удалить компонент?">';
+echo csrfTokenField();
+echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
+echo '<button class="btn btn-outline-danger" type="submit">Удалить компонент</button>';
+echo '</form>';
+
+echo '</div></div></div>';
 AdminLayout::closeContent();
 
 AdminLayout::renderFooter();

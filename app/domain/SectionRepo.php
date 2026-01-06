@@ -256,6 +256,30 @@ final class SectionRepo
 
     public function deleteRecursive(int $id): void
     {
+        $this->deleteSectionRecursive($id);
+    }
+
+    public function deleteSiteRecursive(int $siteId): void
+    {
+        $site = $this->findById($siteId);
+        if ($site === null || $site['parent_id'] !== null) {
+            throw new RuntimeException('Сайт не найден.');
+        }
+
+        $this->deleteSectionRecursive($siteId, $siteId);
+    }
+
+    public function deleteSectionRecursive(int $sectionId, ?int $expectedSiteId = null): void
+    {
+        $section = $this->findById($sectionId);
+        if ($section === null) {
+            throw new RuntimeException('Раздел не найден.');
+        }
+
+        if ($expectedSiteId !== null && (int) $section['site_id'] !== (int) $expectedSiteId) {
+            throw new RuntimeException('Раздел не принадлежит указанному сайту.');
+        }
+
         $pdo = DB::pdo();
         $manageTransaction = !$pdo->inTransaction();
 
@@ -264,8 +288,30 @@ final class SectionRepo
         }
 
         try {
-            $stmt = $pdo->prepare('DELETE FROM sections WHERE id = :id');
-            $stmt->execute(['id' => $id]);
+            $sectionIds = $this->listTreeIds($sectionId);
+            if (empty($sectionIds)) {
+                throw new RuntimeException('Раздел не найден.');
+            }
+
+            $placeholders = implode(',', array_fill(0, count($sectionIds), '?'));
+
+            $infoblockIds = DB::fetchAll(
+                'SELECT id FROM infoblocks WHERE section_id IN (' . $placeholders . ')',
+                $sectionIds
+            );
+            $infoblockIds = array_map(static fn(array $row): int => (int) $row['id'], $infoblockIds);
+
+            if (!empty($infoblockIds)) {
+                $infoblockPlaceholders = implode(',', array_fill(0, count($infoblockIds), '?'));
+                $stmt = $pdo->prepare('DELETE FROM objects WHERE infoblock_id IN (' . $infoblockPlaceholders . ')');
+                $stmt->execute($infoblockIds);
+
+                $stmt = $pdo->prepare('DELETE FROM infoblocks WHERE id IN (' . $infoblockPlaceholders . ')');
+                $stmt->execute($infoblockIds);
+            }
+
+            $stmt = $pdo->prepare('DELETE FROM sections WHERE id IN (' . $placeholders . ')');
+            $stmt->execute($sectionIds);
 
             if ($manageTransaction) {
                 $pdo->commit();
@@ -277,7 +323,27 @@ final class SectionRepo
             throw $e;
         }
 
-        core()->events()->emit('section.deleted', ['id' => $id]);
+        core()->events()->emit('section.deleted', ['id' => $sectionId]);
+    }
+
+    private function listTreeIds(int $rootId): array
+    {
+        $rows = DB::fetchAll(
+            'WITH RECURSIVE tree(id) AS (
+                SELECT id FROM sections WHERE id = :id
+                UNION ALL
+                SELECT s.id FROM sections s JOIN tree t ON s.parent_id = t.id
+            )
+            SELECT id FROM tree',
+            ['id' => $rootId]
+        );
+
+        $ids = [];
+        foreach ($rows as $row) {
+            $ids[] = (int) $row['id'];
+        }
+
+        return $ids;
     }
 
     private function decodeExtra(array $row): array
@@ -304,8 +370,6 @@ final class SectionRepo
         if (str_contains($host, ':')) {
             $host = explode(':', $host, 2)[0];
         }
-
-        $host = rtrim($host, '.');
 
         return $host;
     }

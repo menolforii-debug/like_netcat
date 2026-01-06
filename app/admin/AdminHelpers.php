@@ -364,7 +364,7 @@ function componentKeyIsValid(string $componentKey): bool
     return true;
 }
 
-function rmTree(string $path, array $allowedRoots): void
+function rmTree(string $path, string $allowedRoot): void
 {
     if (!is_dir($path) && !is_file($path)) {
         return;
@@ -375,20 +375,12 @@ function rmTree(string $path, array $allowedRoots): void
         return;
     }
 
-    $allowed = false;
-    foreach ($allowedRoots as $root) {
-        $realRoot = realpath($root);
-        if ($realRoot === false) {
-            continue;
-        }
-        $realRoot = rtrim($realRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
-        if (str_starts_with($realPath . DIRECTORY_SEPARATOR, $realRoot)) {
-            $allowed = true;
-            break;
-        }
+    $realRoot = realpath($allowedRoot);
+    if ($realRoot === false) {
+        throw new RuntimeException('Разрешенная директория не найдена: ' . $allowedRoot);
     }
-
-    if (!$allowed) {
+    $realRoot = rtrim($realRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+    if (!str_starts_with($realPath . DIRECTORY_SEPARATOR, $realRoot)) {
         throw new RuntimeException('Запрещено удалять путь вне разрешенных директорий: ' . $realPath);
     }
 
@@ -420,6 +412,52 @@ function rmTree(string $path, array $allowedRoots): void
     if (!rmdir($realPath)) {
         throw new RuntimeException('Не удалось удалить директорию: ' . $realPath);
     }
+}
+
+function isAjaxRequest(): bool
+{
+    return isset($_SERVER['HTTP_X_REQUESTED_WITH'])
+        && strtolower((string) $_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+}
+
+function jsonResponse(array $payload, int $status = 200): void
+{
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+function normalizeComponentFieldsInput(array $fieldsInput): array
+{
+    $normalized = [];
+
+    foreach ($fieldsInput as $row) {
+        if (is_string($row)) {
+            $normalized[] = ['name' => $row];
+            continue;
+        }
+
+        if (!is_array($row)) {
+            continue;
+        }
+
+        if (isset($row['options']) && is_array($row['options'])) {
+            $options = [];
+            foreach ($row['options'] as $key => $value) {
+                if (is_array($value)) {
+                    $options[] = $value;
+                } else {
+                    $options[] = ['key' => $key, 'label' => $value];
+                }
+            }
+            $row['options'] = $options;
+        }
+
+        $normalized[] = $row;
+    }
+
+    return $normalized;
 }
 
 function renderComponentViewTemplate(string $listTpl, string $singleTpl): string

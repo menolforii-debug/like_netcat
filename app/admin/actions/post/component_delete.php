@@ -6,11 +6,17 @@ if (!Auth::isAdmin()) {
 
 $componentId = isset($_POST['component_id']) ? (int) $_POST['component_id'] : 0;
 if ($componentId <= 0) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
+    }
     redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Компонент не найден']));
 }
 
 $component = $componentRepo->findById($componentId);
 if ($component === null) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
+    }
     redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Компонент не найден']));
 }
 
@@ -19,15 +25,22 @@ $infoblock = DB::fetchOne(
     ['component_id' => $componentId]
 );
 if ($infoblock !== null) {
+    $message = 'Нельзя удалить компонент: он используется в инфоблоках.';
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => $message]);
+    }
     redirectTo(buildAdminUrl([
         'action' => 'components',
         'component_id' => $componentId,
-        'error' => 'Нельзя удалить компонент: он используется в инфоблоках.',
+        'error' => $message,
     ]));
 }
 
 $componentKey = (string) ($component['keyword'] ?? '');
 if ($componentKey !== '' && !componentKeyIsValid($componentKey)) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Некорректный ключ компонента.']);
+    }
     redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'error' => 'Некорректный ключ компонента.']));
 }
 
@@ -38,14 +51,8 @@ try {
     $componentRepo->deleteWithViews($componentId);
 
     $root = dirname(__DIR__, 3);
-    $allowedRoots = [
-        $root . '/templates',
-        $root . '/var/backups/templates',
-    ];
-
     if ($componentKey !== '') {
-        rmTree($root . '/templates/' . $componentKey, $allowedRoots);
-        rmTree($root . '/var/backups/templates/' . $componentKey, $allowedRoots);
+        rmTree($root . '/templates/' . $componentKey, $root . '/templates');
     }
 
     $pdo->commit();
@@ -53,6 +60,9 @@ try {
     $pdo = DB::pdo();
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
+    }
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => $e->getMessage()]);
     }
     redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'error' => $e->getMessage()]));
 }
@@ -64,4 +74,11 @@ if ($user) {
     ]);
 }
 
+if (isAjaxRequest()) {
+    jsonResponse([
+        'ok' => true,
+        'notice' => 'Компонент удален',
+        'refresh' => ['#componentsSidebar', '#componentsContent'],
+    ]);
+}
 redirectTo(buildAdminUrl(['action' => 'components', 'notice' => 'Компонент удален']));
