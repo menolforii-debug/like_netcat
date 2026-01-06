@@ -3,6 +3,9 @@
 $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
 $section = $sectionRepo->findById($id);
 if ($section === null || $section['parent_id'] === null) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Раздел не найден']);
+    }
     redirectTo(buildAdminUrl(['error' => 'Раздел не найден']));
 }
 
@@ -17,24 +20,39 @@ if ($isSystemRoot) {
 }
 
 if ($title === '' || $englishName === '') {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Название и english_name обязательны']);
+    }
     redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Название и english_name обязательны']));
 }
 
 if (!englishNameIsValid($englishName)) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'English name должен быть URL-безопасным']);
+    }
     redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'English name должен быть URL-безопасным']));
 }
 
 $siteId = (int) $section['site_id'];
 if ($parentId <= 0) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Нужен родительский раздел']);
+    }
     redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Нужен родительский раздел']));
 }
 
 $parent = $sectionRepo->findById($parentId);
 if ($parent === null || (int) $parent['site_id'] !== $siteId) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Родитель должен относиться к тому же сайту']);
+    }
     redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Родитель должен относиться к тому же сайту']));
 }
 
 if ($sectionRepo->existsSiblingEnglishName($siteId, $parentId, $englishName, $id)) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'English name должен быть уникальным в пределах родительского раздела']);
+    }
     redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'English name должен быть уникальным в пределах родительского раздела']));
 }
 
@@ -75,4 +93,12 @@ if ($user) {
 }
 
 $noticeMessage = $isSystemRoot ? 'Системный раздел обновлен (english_name фиксирован)' : 'Раздел обновлен';
+if (isAjaxRequest()) {
+    jsonResponse([
+        'ok' => true,
+        'notice' => $noticeMessage,
+        'refresh' => ['#sidebarTree', '#contentPane'],
+        'focus' => ['section_id' => $id],
+    ]);
+}
 redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'notice' => $noticeMessage]));
