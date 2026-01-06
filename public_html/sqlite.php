@@ -43,11 +43,22 @@ define('SQLITE_MAX_LIMIT', 500);
  * АВТОРИЗАЦИЯ
  * ========================= */
 
-// Если у вас уже есть Auth (как в вашем проекте), можно раскомментировать:
-// require_once __DIR__ . '/../app/bootstrap.php';
-// if (!class_exists('Auth') || !Auth::isAdmin()) { http_response_code(403); exit('Forbidden'); }
+// Если у вас уже есть Auth (как в вашем проекте), включаем его по умолчанию.
+require_once __DIR__ . '/../app/bootstrap.php';
+if (class_exists('Auth')) {
+    if (!Auth::isAdmin()) {
+        http_response_code(403);
+        exit('Forbidden');
+    }
+}
 
 session_start();
+
+if (class_exists('Auth') && Auth::isAdmin()) {
+    define('SQLITE_AUTH_OK', true);
+} else {
+    define('SQLITE_AUTH_OK', false);
+}
 
 function h($v): string { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 
@@ -62,7 +73,8 @@ function csrf_check(?string $t): bool {
 }
 
 function is_logged_in(): bool {
-    if (!SQLITE_PASSWORD_ENABLED) return true;
+    if (SQLITE_AUTH_OK) return true;
+    if (!SQLITE_PASSWORD_ENABLED) return false;
     return !empty($_SESSION['sqlite_admin_ok']);
 }
 

@@ -4,6 +4,8 @@ if (!Auth::isAdmin()) {
     redirectTo(buildAdminUrl(['error' => 'Недостаточно прав']));
 }
 
+redirectTo(buildAdminUrl(['action' => 'components']));
+
 $components = $componentRepo->listAll();
 $selectedComponentId = isset($_GET['component_id']) ? (int) $_GET['component_id'] : 0;
 $selectedComponent = null;

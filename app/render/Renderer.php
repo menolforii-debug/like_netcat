@@ -58,6 +58,12 @@ final class Renderer
                 return;
             }
 
+            if ((int) ($requestedObject['section_id'] ?? 0) !== (int) $section['id']) {
+                http_response_code(404);
+                echo 'Object not found';
+                return;
+            }
+
             if ($requestedObject['status'] !== 'published' && !$previewAllowed) {
                 http_response_code(404);
                 echo 'Object not found';
@@ -75,6 +81,7 @@ final class Renderer
             }
 
             $infoblock['view_template'] = $this->resolveViewTemplate($infoblock, $component);
+            $infoblock['settings'] = $this->decodeSettings($infoblock);
 
             $objects = $objectRepo->listForInfoblock((int) $infoblock['id']);
             $objects = array_values(array_filter($objects, static function (array $object): bool {
@@ -164,6 +171,7 @@ final class Renderer
         $objects = $items;
         $object = $isSingle && !empty($objects) ? $objects[0] : null;
         $isSingle = $isSingle;
+        $settings = $infoblock['settings'] ?? [];
 
         $templatePath = __DIR__ . '/../../templates/' . $component['keyword'] . '/' . $infoblock['view_template'] . '.php';
         if (!is_file($templatePath)) {
@@ -378,6 +386,20 @@ final class Renderer
         }
 
         $decoded = json_decode((string) ($row['extra_json'] ?? '{}'), true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        return $decoded;
+    }
+
+    private function decodeSettings(array $row): array
+    {
+        if (isset($row['settings']) && is_array($row['settings'])) {
+            return $row['settings'];
+        }
+
+        $decoded = json_decode((string) ($row['settings_json'] ?? '{}'), true);
         if (!is_array($decoded)) {
             return [];
         }
