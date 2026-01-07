@@ -1,3 +1,45 @@
+.admin-body,
+body {
+  font-size: 14px;
+}
+
+.btn {
+  font-size: 14px;
+}
+
+.admin-header {
+  background-color: #0f628e;
+}
+
+.admin-header .navbar-brand,
+.admin-header .nav-link,
+.admin-header .navbar-toggler {
+  color: #fff;
+}
+
+.admin-header .nav-link {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.admin-header .nav-link:hover,
+.admin-header .nav-link:focus,
+.admin-header .nav-link.active {
+  color: #fff;
+}
+
+.admin-header .navbar-toggler {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.admin-header .navbar-toggler-icon {
+  filter: invert(1);
+}
+
+.admin-header .navbar-collapse.show,
+.admin-header .navbar-collapse.show > .navbar-nav {
+  background-color: #0f628e;
+}
+
 .code-editor {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   tab-size: 4;
