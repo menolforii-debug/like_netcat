@@ -676,6 +676,11 @@ function layoutTemplatesDir(): string
     return dirname(__DIR__, 2) . '/templates/layouts';
 }
 
+function layoutNavTemplatesDir(): string
+{
+    return dirname(__DIR__, 2) . '/templates/layouts';
+}
+
 function readLayoutTemplate(string $layoutKey): ?string
 {
     if (!layoutKeyIsValid($layoutKey)) {
@@ -683,6 +688,21 @@ function readLayoutTemplate(string $layoutKey): ?string
     }
 
     $path = layoutTemplatesDir() . '/' . $layoutKey . '.php';
+    if (!is_file($path)) {
+        return null;
+    }
+
+    $content = file_get_contents($path);
+    return $content === false ? null : $content;
+}
+
+function readLayoutNavTemplate(string $layoutKey): ?string
+{
+    if (!layoutKeyIsValid($layoutKey)) {
+        return null;
+    }
+
+    $path = layoutNavTemplatesDir() . '/' . $layoutKey . '.nav.php';
     if (!is_file($path)) {
         return null;
     }
@@ -735,6 +755,57 @@ function writeLayoutTemplate(string $layoutKey, string $content, ?string &$error
     if (!rename($tmpPath, $finalPath)) {
         @unlink($tmpPath);
         $error = 'Не удалось обновить макет.';
+        return false;
+    }
+    @chmod($finalPath, 0660);
+
+    return true;
+}
+
+function writeLayoutNavTemplate(string $layoutKey, string $content, ?string &$error = null): bool
+{
+    if (!layoutKeyIsValid($layoutKey)) {
+        $error = 'Некорректный ключ макета.';
+        return false;
+    }
+
+    $templatesDir = layoutNavTemplatesDir();
+    if (!is_dir($templatesDir)) {
+        mkdir($templatesDir, 0770, true);
+        @chmod($templatesDir, 0770);
+    }
+
+    $finalPath = $templatesDir . '/' . $layoutKey . '.nav.php';
+    $tmpPath = $finalPath . '.tmp';
+
+    if (file_put_contents($tmpPath, $content) === false) {
+        $error = 'Не удалось сохранить шаблон навигации.';
+        return false;
+    }
+    @chmod($tmpPath, 0660);
+
+    $lintOutput = @shell_exec('php -l ' . escapeshellarg($tmpPath));
+    if ($lintOutput !== null && stripos($lintOutput, 'No syntax errors detected') === false) {
+        @unlink($tmpPath);
+        $error = 'Синтаксическая ошибка в шаблоне навигации: ' . trim((string) $lintOutput);
+        return false;
+    }
+
+    if (is_file($finalPath)) {
+        $backupDir = dirname(__DIR__, 2) . '/var/backups/layouts';
+        if (!is_dir($backupDir)) {
+            mkdir($backupDir, 0770, true);
+            @chmod($backupDir, 0770);
+        }
+        $backupPath = $backupDir . '/' . $layoutKey . '.nav.php.' . date('YmdHis') . '.bak';
+        if (@copy($finalPath, $backupPath)) {
+            @chmod($backupPath, 0660);
+        }
+    }
+
+    if (!rename($tmpPath, $finalPath)) {
+        @unlink($tmpPath);
+        $error = 'Не удалось обновить шаблон навигации.';
         return false;
     }
     @chmod($finalPath, 0660);
