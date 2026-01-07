@@ -24,6 +24,13 @@ function renderAlert(?string $message, string $type = 'info'): void
         return;
     }
 
+    static $rendered = [];
+    $dedupeKey = $type . '|' . $message;
+    if (isset($rendered[$dedupeKey])) {
+        return;
+    }
+    $rendered[$dedupeKey] = true;
+
     $t = strtolower(trim($type));
     $toastType = match ($t) {
         'error', 'danger' => 'danger',
@@ -138,12 +145,7 @@ function collectSections(SectionRepo $repo, int $parentId): array
 
 function decodeExtra(array $row): array
 {
-    $decoded = json_decode((string) ($row['extra_json'] ?? '{}'), true);
-    if (!is_array($decoded)) {
-        return [];
-    }
-
-    return $decoded;
+    return Utils::decodeExtra($row);
 }
 
 function decodeSettings(array $row): array
@@ -292,31 +294,7 @@ function renderFieldInput(array $field, array $data): string
 
 function buildSectionPathFromId(SectionRepo $repo, int $sectionId): string
 {
-    $segments = [];
-    $currentId = $sectionId;
-
-    while ($currentId !== null) {
-        $section = $repo->findById($currentId);
-        if ($section === null) {
-            break;
-        }
-
-        if (!empty($section['english_name'])) {
-            if ($section['english_name'] === 'index' && (int) $section['parent_id'] === (int) $section['site_id']) {
-                // Пропускаем системную "Главную" в пути.
-            } else {
-                $segments[] = $section['english_name'];
-            }
-        }
-
-        $currentId = $section['parent_id'] !== null ? (int) $section['parent_id'] : null;
-    }
-
-    if (empty($segments)) {
-        return '/';
-    }
-
-    return '/' . implode('/', array_reverse($segments)) . '/';
+    return $repo->buildPath($sectionId);
 }
 
 function ensurePreviewToken(): string
@@ -337,7 +315,7 @@ function parseMirrorLines(string $value): array
 
     $mirrors = [];
     foreach ($lines as $line) {
-        $line = normalizeHost(trim($line));
+        $line = Utils::normalizeHost(trim($line));
         if ($line !== '') {
             $mirrors[] = $line;
         }

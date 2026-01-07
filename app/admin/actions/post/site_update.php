@@ -21,7 +21,7 @@ $siteEnabled = isset($_POST['site_enabled']) ? true : false;
 $offlineHtml = isset($_POST['site_offline_html']) ? (string) $_POST['site_offline_html'] : '';
 $layout = isset($_POST['layout']) ? trim((string) $_POST['layout']) : '';
 
-$normalizedDomain = normalizeHost($siteDomain);
+$normalizedDomain = Utils::normalizeHost($siteDomain);
 $normalizedMirrors = parseMirrorLines($siteMirrorsRaw);
 $candidates = array_values(array_unique(array_filter(array_merge([$normalizedDomain], $normalizedMirrors))));
 
@@ -36,7 +36,7 @@ foreach ($candidates as $candidate) {
     }
 }
 
-$normalizedDomain = normalizeHost($siteDomain);
+$normalizedDomain = Utils::normalizeHost($siteDomain);
 $normalizedMirrors = parseMirrorLines($siteMirrorsRaw);
 $candidates = array_values(array_unique(array_filter(array_merge([$normalizedDomain], $normalizedMirrors))));
 
