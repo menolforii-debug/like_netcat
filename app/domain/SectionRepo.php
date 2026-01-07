@@ -4,7 +4,7 @@ final class SectionRepo
 {
     public function findSiteByHost(string $host): ?array
     {
-        $host = $this->normalizeHost($host);
+        $host = Utils::normalizeHost($host);
         if ($host === '') {
             return null;
         }
@@ -12,13 +12,13 @@ final class SectionRepo
         $sites = $this->listSitesOnly();
         foreach ($sites as $site) {
             $settings = $this->getSiteSettings($site);
-            $domain = $this->normalizeHost((string) ($settings['site_domain'] ?? ''));
+            $domain = Utils::normalizeHost((string) ($settings['site_domain'] ?? ''));
             if ($domain !== '' && $domain === $host) {
                 return $site;
             }
 
             foreach ($settings['site_mirrors'] as $mirror) {
-                $mirrorHost = $this->normalizeHost($mirror);
+                $mirrorHost = Utils::normalizeHost($mirror);
                 if ($mirrorHost !== '' && $mirrorHost === $host) {
                     return $site;
                 }
@@ -102,7 +102,7 @@ final class SectionRepo
 
     public function getSiteSettings(array $site): array
     {
-        $extra = $this->decodeExtra($site);
+        $extra = Utils::decodeExtra($site);
         $mirrors = [];
         if (isset($extra['site_mirrors']) && is_array($extra['site_mirrors'])) {
             foreach ($extra['site_mirrors'] as $mirror) {
@@ -348,6 +348,34 @@ final class SectionRepo
         return $row !== null;
     }
 
+    public function buildPath(int $sectionId): string
+    {
+        $segments = [];
+        $currentId = $sectionId;
+        while ($currentId !== null) {
+            $section = $this->findById($currentId);
+            if ($section === null) {
+                break;
+            }
+
+            if (!empty($section['english_name'])) {
+                if ($section['english_name'] === 'index' && (int) $section['parent_id'] === (int) $section['site_id']) {
+                    // Пропускаем системную "Главную" в пути.
+                } else {
+                    $segments[] = $section['english_name'];
+                }
+            }
+
+            $currentId = $section['parent_id'] !== null ? (int) $section['parent_id'] : null;
+        }
+
+        if (empty($segments)) {
+            return '/';
+        }
+
+        return '/' . implode('/', array_reverse($segments)) . '/';
+    }
+
     private function listTreeIds(int $rootId): array
     {
         $rows = DB::fetchAll(
@@ -368,31 +396,4 @@ final class SectionRepo
         return $ids;
     }
 
-    private function decodeExtra(array $row): array
-    {
-        if (isset($row['extra']) && is_array($row['extra'])) {
-            return $row['extra'];
-        }
-
-        $decoded = json_decode((string) ($row['extra_json'] ?? '{}'), true);
-        if (!is_array($decoded)) {
-            return [];
-        }
-
-        return $decoded;
-    }
-
-    private function normalizeHost(string $host): string
-    {
-        $host = strtolower(trim($host));
-        if ($host === '') {
-            return '';
-        }
-
-        if (str_contains($host, ':')) {
-            $host = explode(':', $host, 2)[0];
-        }
-
-        return $host;
-    }
 }
