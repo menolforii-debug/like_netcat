@@ -82,16 +82,7 @@ $englishNameHint = $isSystemRoot ? '<div class="form-text">Системный р
 echo '<div class="mb-3"><label class="form-label">English name (латиница)</label><input class="form-control" type="text" name="english_name" value="' . htmlspecialchars((string) ($section['english_name'] ?? ''), ENT_QUOTES, 'UTF-8') . '"' . $englishNameAttributes . '>' . $englishNameHint . '</div>';
 echo '<div class="mb-3"><label class="form-label">Родительский раздел</label><select class="form-select" name="parent_id" required>';
 echo '<option value="">Выберите родителя</option>';
-foreach ($options as $option) {
-    if ($id > 0 && (int) $option['id'] === (int) $section['id']) {
-        continue;
-    }
-    if ((int) $option['site_id'] !== $siteId) {
-        continue;
-    }
-    $selectedAttr = (int) ($section['parent_id'] ?? 0) === (int) $option['id'] ? ' selected' : '';
-    echo '<option value="' . (int) $option['id'] . '"' . $selectedAttr . '>' . htmlspecialchars((string) $option['title'], ENT_QUOTES, 'UTF-8') . '</option>';
-}
+echo renderSectionTreeOptions($options, (int) ($section['parent_id'] ?? 0), $id > 0 ? (int) $section['id'] : null);
 echo '</select></div>';
 echo '<div class="mb-3"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="' . htmlspecialchars((string) ($section['sort'] ?? 0), ENT_QUOTES, 'UTF-8') . '"></div>';
 echo '<div class="mb-3"><label class="form-label">Макет дизайна</label><select class="form-select" name="layout">';

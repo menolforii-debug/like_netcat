@@ -1,7 +1,59 @@
 <?php
 
+function setFlash(string $type, string $message): void
+{
+    $message = trim($message);
+    if ($message === '') {
+        return;
+    }
+
+    if (!isset($_SESSION['flash'])) {
+        $_SESSION['flash'] = [];
+    }
+
+    if (!isset($_SESSION['flash'][$type])) {
+        $_SESSION['flash'][$type] = [];
+    }
+
+    $_SESSION['flash'][$type][] = $message;
+}
+
+function consumeFlash(string $type): array
+{
+    if (empty($_SESSION['flash'][$type]) || !is_array($_SESSION['flash'][$type])) {
+        return [];
+    }
+
+    $messages = $_SESSION['flash'][$type];
+    unset($_SESSION['flash'][$type]);
+
+    return array_values(array_filter(array_map('strval', $messages)));
+}
+
 function redirectTo(string $url): void
 {
+    $parsed = parse_url($url);
+    if (!empty($parsed['query'])) {
+        $params = [];
+        parse_str($parsed['query'], $params);
+        $notice = isset($params['notice']) ? (string) $params['notice'] : '';
+        $error = isset($params['error']) ? (string) $params['error'] : '';
+        unset($params['notice'], $params['error']);
+
+        if ($notice !== '') {
+            setFlash('notice', $notice);
+        }
+        if ($error !== '') {
+            setFlash('error', $error);
+        }
+
+        $query = http_build_query($params);
+        $url = ($parsed['path'] ?? '') . ($query !== '' ? '?' . $query : '');
+        if (!empty($parsed['fragment'])) {
+            $url .= '#' . $parsed['fragment'];
+        }
+    }
+
     header('Location: ' . $url);
     exit;
 }
@@ -119,6 +171,48 @@ function collectSections(SectionRepo $repo, int $parentId): array
     }
 
     return $items;
+}
+
+function renderSectionTreeOptions(array $sections, ?int $selectedId = null, ?int $excludeId = null): string
+{
+    $items = [];
+    foreach ($sections as $section) {
+        $section['children'] = [];
+        $items[(int) $section['id']] = $section;
+    }
+
+    $root = [];
+    foreach ($sections as $section) {
+        $id = (int) $section['id'];
+        $parentId = $section['parent_id'] !== null ? (int) $section['parent_id'] : null;
+        if ($parentId !== null && isset($items[$parentId])) {
+            $items[$parentId]['children'][] = &$items[$id];
+        } else {
+            $root[] = &$items[$id];
+        }
+    }
+
+    $render = function (array $nodes, int $depth) use (&$render, $selectedId, $excludeId): string {
+        $html = '';
+        foreach ($nodes as $node) {
+            $id = (int) $node['id'];
+            $title = (string) $node['title'];
+            $label = str_repeat('— ', $depth) . $id . '. ' . $title;
+            $selectedAttr = $selectedId !== null && $id === $selectedId ? ' selected' : '';
+
+            if ($excludeId === null || $id !== $excludeId) {
+                $html .= '<option value="' . $id . '"' . $selectedAttr . '>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</option>';
+            }
+
+            if (!empty($node['children'])) {
+                $html .= $render($node['children'], $depth + 1);
+            }
+        }
+
+        return $html;
+    };
+
+    return $render($root, 0);
 }
 
 function decodeExtra(array $row): array

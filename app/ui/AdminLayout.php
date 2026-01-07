@@ -23,16 +23,17 @@ final class AdminLayout
         echo "</head>\n";
 
         if (!$showSidebar) {
-            echo "<body class=\"bg-light\">\n";
+            echo "<body class=\"layout-admin bg-light\">\n";
             echo "<main class=\"d-flex align-items-center min-vh-100\">\n";
             echo "<div class=\"container\">\n";
             return;
         }
 
-        echo "<body class=\"bg-light\">\n";
+        echo "<body class=\"layout-admin bg-light\">\n";
         echo "<div class=\"d-flex flex-column min-vh-100\">\n";
-        echo "<header class=\"navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm\">\n";
+        echo "<header id=\"header\" class=\"header admin-header\">\n";
         echo "<div class=\"container-fluid\">\n";
+        echo "<nav class=\"navbar navbar-expand-lg navbar-dark\">\n";
         echo "<a class=\"navbar-brand fw-semibold\" href=\"/admin.php\">Админка</a>\n";
         echo "<button class=\"navbar-toggler\" type=\"button\" data-bs-toggle=\"collapse\" data-bs-target=\"#adminTopNav\" aria-controls=\"adminTopNav\" aria-expanded=\"false\" aria-label=\"Toggle navigation\">\n";
         echo "<span class=\"navbar-toggler-icon\"></span>\n";
@@ -55,9 +56,10 @@ final class AdminLayout
         }
         echo "</ul>\n";
         echo "<div class=\"d-flex gap-2\">\n";
-        echo "<a class=\"btn btn-outline-dark btn-sm\" href=\"/admin.php?action=logout\">Выйти</a>\n";
+        echo "<a class=\"btn btn-light btn-sm\" href=\"/admin.php?action=logout\">Выйти</a>\n";
         echo "</div>\n";
         echo "</div>\n";
+        echo "</nav>\n";
         echo "</div>\n";
         echo "</header>\n";
         echo "<main class=\"flex-grow-1\">\n";

@@ -229,16 +229,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                     echo '<div class="mb-3"><label class="form-label">English name (латиница)</label><input class="form-control" type="text" name="english_name" value="' . htmlspecialchars($currentEnglishName, ENT_QUOTES, 'UTF-8') . '"' . $englishAttrs . '>' . $englishHint . '</div>';
                     echo '<div class="mb-3"><label class="form-label">Родительский раздел</label><select class="form-select" name="parent_id" required>';
                     echo '<option value="">Выберите родителя</option>';
-                    foreach ($options as $option) {
-                        if ((int) $option['id'] === (int) $selected['id']) {
-                            continue;
-                        }
-                        if ((int) $option['site_id'] !== $siteId) {
-                            continue;
-                        }
-                        $selectedAttr = (int) ($selected['parent_id'] ?? 0) === (int) $option['id'] ? ' selected' : '';
-                        echo '<option value="' . (int) $option['id'] . '"' . $selectedAttr . '>' . htmlspecialchars((string) $option['title'], ENT_QUOTES, 'UTF-8') . '</option>';
-                    }
+                    echo renderSectionTreeOptions($options, (int) ($selected['parent_id'] ?? 0), (int) $selected['id']);
                     echo '</select></div>';
                     echo '<div class="mb-3"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="' . htmlspecialchars((string) ($selected['sort'] ?? 0), ENT_QUOTES, 'UTF-8') . '"></div>';
                     echo '<div class="mb-3"><label class="form-label">Макет дизайна</label><select class="form-select" name="layout">';
