@@ -6,6 +6,7 @@ date_default_timezone_set('UTC');
 require $root . '/app/core/DB.php';
 require $root . '/app/core/EventBus.php';
 require $root . '/app/core/Core.php';
+require $root . '/app/core/Utils.php';
 require $root . '/app/core/Auth.php';
 require $root . '/app/core/AdminLog.php';
 require $root . '/app/core/Permission.php';
@@ -17,6 +18,7 @@ require $root . '/app/domain/ComponentViewRepo.php';
 require $root . '/app/domain/InfoblockRepo.php';
 require $root . '/app/domain/ObjectRepo.php';
 require $root . '/app/domain/UserRepo.php';
+require $root . '/app/domain/VisualFieldRepo.php';
 require $root . '/app/render/Renderer.php';
 require $root . '/app/ui/Layout.php';
 require $root . '/app/ui/AdminLayout.php';
@@ -144,7 +146,7 @@ function ensureDefaultSite(string $host): void
         return;
     }
 
-    $host = normalizeHost($host);
+    $host = Utils::normalizeHost($host);
     if ($host === '') {
         $host = 'localhost';
     }
@@ -174,20 +176,6 @@ function ensureDefaultSite(string $host): void
             $repo->createSection((int) $rootIndex['id'], $siteId, 'news', 'News', 0, []);
         }
     }
-}
-
-function normalizeHost(string $host): string
-{
-    $host = strtolower(trim($host));
-    if ($host === '') {
-        return '';
-    }
-
-    if (str_contains($host, ':')) {
-        $host = explode(':', $host, 2)[0];
-    }
-
-    return $host;
 }
 
 function migrationManagesTransaction(string $sql): bool
