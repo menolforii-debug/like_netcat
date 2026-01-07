@@ -2,13 +2,103 @@
 
 function redirectTo(string $url): void
 {
-    header('Location: ' . $url);
+    $redirectUrl = $url;
+    $parts = parse_url($url);
+    if ($parts !== false) {
+        $queryParams = [];
+        if (isset($parts['query'])) {
+            parse_str($parts['query'], $queryParams);
+        }
+        $flashMap = [
+            'notice' => 'success',
+            'error' => 'error',
+        ];
+        $hasFlash = false;
+        foreach ($flashMap as $param => $type) {
+            if (!isset($queryParams[$param])) {
+                continue;
+            }
+            $message = (string) $queryParams[$param];
+            if ($message !== '') {
+                addFlashMessage($type, $message);
+            }
+            unset($queryParams[$param]);
+            $hasFlash = true;
+        }
+
+        if ($hasFlash) {
+            $redirectUrl = buildUrlFromParts($parts, $queryParams);
+        }
+    }
+
+    header('Location: ' . $redirectUrl);
     exit;
 }
 
 function buildAdminUrl(array $params = []): string
 {
     return '/admin.php' . (empty($params) ? '' : '?' . http_build_query($params));
+}
+
+function buildUrlFromParts(array $parts, array $queryParams): string
+{
+    $query = http_build_query($queryParams);
+    $url = '';
+
+    if (isset($parts['scheme'])) {
+        $url .= $parts['scheme'] . '://';
+        if (isset($parts['user'])) {
+            $url .= $parts['user'];
+            if (isset($parts['pass'])) {
+                $url .= ':' . $parts['pass'];
+            }
+            $url .= '@';
+        }
+        if (isset($parts['host'])) {
+            $url .= $parts['host'];
+        }
+        if (isset($parts['port'])) {
+            $url .= ':' . $parts['port'];
+        }
+    }
+
+    $url .= $parts['path'] ?? '';
+
+    if ($query !== '') {
+        $url .= '?' . $query;
+    }
+
+    if (isset($parts['fragment'])) {
+        $url .= '#' . $parts['fragment'];
+    }
+
+    return $url;
+}
+
+function addFlashMessage(string $type, string $message): void
+{
+    if (!isset($_SESSION['flash'])) {
+        $_SESSION['flash'] = [];
+    }
+    if (!isset($_SESSION['flash'][$type]) || !is_array($_SESSION['flash'][$type])) {
+        $_SESSION['flash'][$type] = [];
+    }
+    $_SESSION['flash'][$type][] = $message;
+}
+
+function pullFlashMessage(string $type): string
+{
+    if (!isset($_SESSION['flash'][$type]) || !is_array($_SESSION['flash'][$type])) {
+        return '';
+    }
+    $message = array_shift($_SESSION['flash'][$type]);
+    if (empty($_SESSION['flash'][$type])) {
+        unset($_SESSION['flash'][$type]);
+    }
+    if (empty($_SESSION['flash'])) {
+        unset($_SESSION['flash']);
+    }
+    return (string) $message;
 }
 
 /**
@@ -23,6 +113,13 @@ function renderAlert(?string $message, string $type = 'info'): void
     if ($message === null || $message === '') {
         return;
     }
+
+    static $rendered = [];
+    $dedupeKey = $type . '|' . $message;
+    if (isset($rendered[$dedupeKey])) {
+        return;
+    }
+    $rendered[$dedupeKey] = true;
 
     $t = strtolower(trim($type));
     $toastType = match ($t) {
@@ -136,14 +233,22 @@ function collectSections(SectionRepo $repo, int $parentId): array
     return $items;
 }
 
-function decodeExtra(array $row): array
+function collectSectionTree(SectionRepo $repo, int $parentId, int $depth = 0): array
 {
-    $decoded = json_decode((string) ($row['extra_json'] ?? '{}'), true);
-    if (!is_array($decoded)) {
-        return [];
+    $items = [];
+    $children = $repo->listChildren($parentId);
+    foreach ($children as $child) {
+        $child['depth'] = $depth;
+        $items[] = $child;
+        $items = array_merge($items, collectSectionTree($repo, (int) $child['id'], $depth + 1));
     }
 
-    return $decoded;
+    return $items;
+}
+
+function decodeExtra(array $row): array
+{
+    return Utils::decodeExtra($row);
 }
 
 function decodeSettings(array $row): array
@@ -292,31 +397,7 @@ function renderFieldInput(array $field, array $data): string
 
 function buildSectionPathFromId(SectionRepo $repo, int $sectionId): string
 {
-    $segments = [];
-    $currentId = $sectionId;
-
-    while ($currentId !== null) {
-        $section = $repo->findById($currentId);
-        if ($section === null) {
-            break;
-        }
-
-        if (!empty($section['english_name'])) {
-            if ($section['english_name'] === 'index' && (int) $section['parent_id'] === (int) $section['site_id']) {
-                // Пропускаем системную "Главную" в пути.
-            } else {
-                $segments[] = $section['english_name'];
-            }
-        }
-
-        $currentId = $section['parent_id'] !== null ? (int) $section['parent_id'] : null;
-    }
-
-    if (empty($segments)) {
-        return '/';
-    }
-
-    return '/' . implode('/', array_reverse($segments)) . '/';
+    return $repo->buildPath($sectionId);
 }
 
 function ensurePreviewToken(): string
@@ -337,7 +418,7 @@ function parseMirrorLines(string $value): array
 
     $mirrors = [];
     foreach ($lines as $line) {
-        $line = normalizeHost(trim($line));
+        $line = Utils::normalizeHost(trim($line));
         if ($line !== '') {
             $mirrors[] = $line;
         }
@@ -362,6 +443,40 @@ function componentKeyIsValid(string $componentKey): bool
     }
 
     return true;
+}
+
+function parseVisualFieldOptions(string $value): array
+{
+    $lines = preg_split('/\r\n|\r|\n/', $value);
+    if ($lines === false) {
+        return [];
+    }
+
+    $options = [];
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '') {
+            continue;
+        }
+
+        $key = $line;
+        $label = $line;
+        if (str_contains($line, ':')) {
+            [$key, $label] = explode(':', $line, 2);
+        } elseif (str_contains($line, '=')) {
+            [$key, $label] = explode('=', $line, 2);
+        }
+
+        $key = trim($key);
+        $label = trim($label);
+        if ($key === '') {
+            continue;
+        }
+
+        $options[$key] = $label !== '' ? $label : $key;
+    }
+
+    return $options;
 }
 
 function layoutKeyIsValid(string $layoutKey): bool

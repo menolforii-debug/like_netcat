@@ -42,7 +42,7 @@ final class AdminLayout
         $action = isset($_GET['action']) ? (string) $_GET['action'] : '';
         $action = $action !== '' ? $action : 'dashboard';
         $menu = [
-            'dashboard' => ['label' => 'Сайты и разделы', 'href' => '/admin.php'],
+            'dashboard' => ['label' => 'Разделы', 'href' => '/admin.php'],
             'logs' => ['label' => 'Логи', 'href' => '/admin.php?action=logs'],
             'users_list' => ['label' => 'Пользователи', 'href' => '/admin.php?action=users_list'],
             'components' => ['label' => 'Компоненты', 'href' => '/admin.php?action=components'],

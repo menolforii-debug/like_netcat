@@ -11,6 +11,10 @@ if ($section === null) {
 }
 
 $components = $componentRepo->listAll();
+$viewsByComponent = [];
+foreach ($components as $component) {
+    $viewsByComponent[(int) $component['id']] = componentViews($component);
+}
 $infoblocks = $infoblockRepo->listForSection($sectionId);
 $maxSort = 0;
 foreach ($infoblocks as $infoblock) {
@@ -35,13 +39,26 @@ echo '<form method="post" action="/admin.php?action=infoblock_create">';
 echo csrfTokenField();
 echo '<input type="hidden" name="section_id" value="' . (int) $sectionId . '">';
 echo '<div class="row g-3">';
-echo '<div class="col-md-4"><label class="form-label">Компонент</label><select class="form-select" name="component_id">';
+echo '<div class="col-md-4"><label class="form-label">Компонент</label><select class="form-select js-infoblock-component" name="component_id">';
+$currentView = 'list';
+$selectedComponentId = (int) ($components[0]['id'] ?? 0);
+$selectedViews = $viewsByComponent[$selectedComponentId] ?? ['list'];
+if (!in_array($currentView, $selectedViews, true)) {
+    $selectedViews[] = $currentView;
+}
 foreach ($components as $component) {
-    echo '<option value="' . (int) $component['id'] . '">' . htmlspecialchars((string) $component['name'], ENT_QUOTES, 'UTF-8') . '</option>';
+    $views = $viewsByComponent[(int) $component['id']] ?? ['list'];
+    $viewsJson = htmlspecialchars(json_encode(array_values($views), JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
+    echo '<option value="' . (int) $component['id'] . '" data-views="' . $viewsJson . '">' . htmlspecialchars((string) $component['name'], ENT_QUOTES, 'UTF-8') . '</option>';
 }
 echo '</select></div>';
 echo '<div class="col-md-4"><label class="form-label">Название</label><input class="form-control" type="text" name="name" required></div>';
-echo '<div class="col-md-4"><label class="form-label">Шаблон</label><input class="form-control" type="text" name="view_template" value="list"></div>';
+echo '<div class="col-md-4"><label class="form-label">Шаблон</label><select class="form-select js-infoblock-view" name="view_template" data-current="' . htmlspecialchars($currentView, ENT_QUOTES, 'UTF-8') . '">';
+foreach ($selectedViews as $view) {
+    $selectedAttr = $currentView === $view ? ' selected' : '';
+    echo '<option value="' . htmlspecialchars((string) $view, ENT_QUOTES, 'UTF-8') . '"' . $selectedAttr . '>' . htmlspecialchars((string) $view, ENT_QUOTES, 'UTF-8') . '</option>';
+}
+echo '</select></div>';
 echo '<div class="col-md-3"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="' . (int) $defaultSort . '"></div>';
 echo '<div class="col-md-3"><label class="form-label">Включен</label>';
 echo '<div class="form-check mt-2"><input class="form-check-input" type="checkbox" name="is_enabled" value="1" checked></div>';
