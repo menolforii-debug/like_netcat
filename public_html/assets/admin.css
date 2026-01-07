@@ -66,15 +66,16 @@ body {
 /* ===========================
    SectionTree styles
    =========================== */
-.section-tree-row {
+.section-tree .section-tree-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   padding: 4px 0;
+  flex-wrap: nowrap;
 }
 
-.section-tree-link {
+.section-tree .section-tree-link {
   flex: 1 1 auto;
   min-width: 0;
   color: inherit;
@@ -82,14 +83,14 @@ body {
   padding-bottom: 6px;
 }
 
-.section-tree-right {
+.section-tree .section-tree-right {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   flex: 0 0 auto;
 }
 
-.section-tree-actions {
+.section-tree .section-tree-actions {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -100,33 +101,33 @@ body {
   transition: opacity .12s ease, transform .12s ease, visibility .12s ease;
 }
 
-.section-tree-row:hover .section-tree-actions {
+.section-tree .section-tree-row:hover .section-tree-actions {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
   transform: translateX(0);
 }
 
-.section-tree-toggle {
+.section-tree .section-tree-toggle {
   border-color: rgba(0,0,0,.18);
 }
 
-.section-tree-toggle-spacer {
+.section-tree .section-tree-toggle-spacer {
   width: 34px;
   height: 34px;
   display: inline-block;
 }
 
-.section-tree-children {
+.section-tree .section-tree-children {
   display: none;
   padding-left: 18px;
 }
 
-.section-tree-item.is-open > .section-tree-children {
+.section-tree .section-tree-item.is-open > .section-tree-children {
   display: block;
 }
 
-.section-tree-chevron {
+.section-tree .section-tree-chevron {
   width: 10px;
   height: 10px;
   display: inline-block;
@@ -136,9 +137,13 @@ body {
   opacity: .65;
 }
 
-.section-tree-item.is-open > .section-tree-row .section-tree-chevron {
+.section-tree .section-tree-item.is-open > .section-tree-row .section-tree-chevron {
   transform: rotate(45deg);
   opacity: .8;
+}
+
+aside .section-tree-row {
+  display: flex;
 }
 
 /* ===========================
