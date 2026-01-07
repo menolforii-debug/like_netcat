@@ -3,6 +3,10 @@ body {
   font-size: 14px;
 }
 
+.btn {
+  font-size: 14px;
+}
+
 .admin-header {
   background-color: #0f628e;
 }
@@ -29,6 +33,11 @@ body {
 
 .admin-header .navbar-toggler-icon {
   filter: invert(1);
+}
+
+.admin-header .navbar-collapse.show,
+.admin-header .navbar-collapse.show > .navbar-nav {
+  background-color: #0f628e;
 }
 
 .code-editor {

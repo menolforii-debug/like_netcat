@@ -29,7 +29,7 @@ final class AdminLayout
             return;
         }
 
-        echo "<body class=\"layout-admin bg-light\">\n";
+        echo "<body class=\"layout-admin aside-sticky aside-start bg-light\">\n";
         echo "<div class=\"d-flex flex-column min-vh-100\">\n";
         echo "<header id=\"header\" class=\"header admin-header\">\n";
         echo "<div class=\"container-fluid\">\n";
@@ -62,8 +62,7 @@ final class AdminLayout
         echo "</nav>\n";
         echo "</div>\n";
         echo "</header>\n";
-        echo "<main class=\"flex-grow-1\">\n";
-        echo "<div class=\"container-fluid py-4\">\n";
+        echo "<div id=\"wrapper\" class=\"d-flex flex-grow-1\">\n";
     }
 
     public static function openSidebar(): void
@@ -73,8 +72,9 @@ final class AdminLayout
         }
 
         self::$layoutRowOpen = true;
-        echo "<div class=\"row g-4\">\n";
-        echo "<aside class=\"col-12 col-lg-3\">\n";
+        echo "<aside class=\"aside-start aside-secondary\">\n";
+        echo "<div class=\"aside-wrapper\">\n";
+        echo "<div class=\"aside-content p-3\">\n";
     }
 
     public static function closeSidebar(): void
@@ -83,6 +83,8 @@ final class AdminLayout
             return;
         }
 
+        echo "</div>\n";
+        echo "</div>\n";
         echo "</aside>\n";
     }
 
@@ -92,7 +94,8 @@ final class AdminLayout
             return;
         }
 
-        echo "<main class=\"col-12 col-lg-9\">\n";
+        echo "<div id=\"wrapper_content\" class=\"flex-grow-1\">\n";
+        echo "<div id=\"middle\">\n";
     }
 
     public static function closeContent(): void
@@ -101,7 +104,8 @@ final class AdminLayout
             return;
         }
 
-        echo "</main>\n";
+        echo "</div>\n";
+        echo "</div>\n";
         echo "</div>\n";
         self::$layoutRowOpen = false;
     }
@@ -112,8 +116,6 @@ final class AdminLayout
             echo "</div>\n";
             echo "</main>\n";
         } else {
-            echo "</div>\n";
-            echo "</main>\n";
             echo "</div>\n";
         }
 
