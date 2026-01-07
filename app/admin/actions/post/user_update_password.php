@@ -8,16 +8,16 @@ $userId = isset($_POST['user_id']) ? (int) $_POST['user_id'] : 0;
 $password = isset($_POST['password']) ? (string) $_POST['password'] : '';
 
 if ($userId <= 0) {
-    redirectTo(buildAdminUrl(['action' => 'users', 'error' => 'Пользователь не найден']));
+    redirectTo(buildAdminUrl(['action' => 'users_list', 'error' => 'Пользователь не найден']));
 }
 
 if ($password === '') {
-    redirectTo(buildAdminUrl(['action' => 'users', 'error' => 'Введите новый пароль']));
+    redirectTo(buildAdminUrl(['action' => 'users_list', 'error' => 'Введите новый пароль']));
 }
 
 $targetUser = $userRepo->findById($userId);
 if ($targetUser === null) {
-    redirectTo(buildAdminUrl(['action' => 'users', 'error' => 'Пользователь не найден']));
+    redirectTo(buildAdminUrl(['action' => 'users_list', 'error' => 'Пользователь не найден']));
 }
 
 Auth::updateUserPassword($userId, $password);
@@ -28,4 +28,4 @@ if ($user) {
     ]);
 }
 
-redirectTo(buildAdminUrl(['action' => 'users', 'notice' => 'Пароль обновлен']));
+redirectTo(buildAdminUrl(['action' => 'users_list', 'notice' => 'Пароль обновлен']));

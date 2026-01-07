@@ -14,6 +14,9 @@ $englishName = isset($_POST['english_name']) ? trim((string) $_POST['english_nam
 $parentId = isset($_POST['parent_id']) ? (int) $_POST['parent_id'] : 0;
 $sort = isset($_POST['sort']) ? (int) $_POST['sort'] : 0;
 $layout = isset($_POST['layout']) ? trim((string) $_POST['layout']) : '';
+$visualSettingsInput = isset($_POST['visual_settings']) && is_array($_POST['visual_settings']) ? $_POST['visual_settings'] : [];
+$visualInherit = isset($_POST['visual_inherit']) && is_array($_POST['visual_inherit']) ? $_POST['visual_inherit'] : [];
+$hasVisualInput = array_key_exists('visual_settings', $_POST) || array_key_exists('visual_inherit', $_POST);
 $isSystemRoot = $section['parent_id'] === null && in_array($section['english_name'], ['index', '404'], true);
 if ($isSystemRoot) {
     $englishName = (string) $section['english_name'];
@@ -39,6 +42,14 @@ if ($parentId <= 0) {
         jsonResponse(['ok' => false, 'error' => 'Нужен родительский раздел']);
     }
     redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Нужен родительский раздел']));
+}
+
+$parentIdInvalid = $parentId === $id || $sectionRepo->isDescendant($id, $parentId);
+if ($parentIdInvalid) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Нельзя выбрать текущий раздел или его потомка родителем']);
+    }
+    redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Нельзя выбрать текущий раздел или его потомка родителем']));
 }
 
 $parent = $sectionRepo->findById($parentId);
@@ -68,6 +79,41 @@ if ($layout !== '' && Layout::layoutExists($layout)) {
     $extra['layout'] = $layout;
 } else {
     unset($extra['layout']);
+}
+
+if ($hasVisualInput) {
+    $visualSettings = [];
+    $visualFields = $visualFieldRepo->listAll();
+    foreach ($visualFields as $field) {
+        $name = (string) $field['name'];
+        if (isset($visualInherit[$name])) {
+            continue;
+        }
+        if (!array_key_exists($name, $visualSettingsInput)) {
+            continue;
+        }
+
+        $value = $visualSettingsInput[$name];
+        $type = (string) ($field['type'] ?? 'text');
+        if ($type === 'checkbox') {
+            $visualSettings[$name] = !empty($value) ? '1' : '0';
+            continue;
+        }
+
+        if (is_string($value)) {
+            $value = trim($value);
+        }
+        if ($value === '' || $value === null) {
+            continue;
+        }
+        $visualSettings[$name] = $value;
+    }
+
+    if (!empty($visualSettings)) {
+        $extra['visual_settings'] = $visualSettings;
+    } else {
+        unset($extra['visual_settings']);
+    }
 }
 
 $sectionRepo->update($id, [

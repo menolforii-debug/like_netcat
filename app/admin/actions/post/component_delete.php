@@ -54,7 +54,7 @@ try {
 
     $root = dirname(__DIR__, 4);
     if ($componentKey !== '') {
-        $templatesRoot = $root . '/templates';
+        $templatesRoot = $root . '/templates/component';
         $componentTemplates = $templatesRoot . '/' . $componentKey;
         rmTree($componentTemplates, $templatesRoot);
         if (is_dir($componentTemplates)) {
