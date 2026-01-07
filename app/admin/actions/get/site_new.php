@@ -25,6 +25,13 @@ echo '<input class="form-check-input" type="checkbox" name="site_enabled" value=
 echo '<label class="form-check-label">Сайт включен</label>';
 echo '</div>';
 echo '<div class="mb-3"><label class="form-label">HTML для отключенного сайта</label><textarea class="form-control" name="site_offline_html" rows="4"></textarea></div>';
+$layouts = Layout::listLayouts();
+echo '<div class="mb-3"><label class="form-label">Макет дизайна по умолчанию</label><select class="form-select" name="layout">';
+echo '<option value="">По умолчанию</option>';
+foreach ($layouts as $layout) {
+    echo '<option value="' . htmlspecialchars($layout, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($layout, ENT_QUOTES, 'UTF-8') . '</option>';
+}
+echo '</select><div class="form-text">Наследуется разделами, если у них не задан собственный макет.</div></div>';
 echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
 echo '</form>';
 echo '</div>';
