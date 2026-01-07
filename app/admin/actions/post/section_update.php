@@ -17,9 +17,10 @@ $layout = isset($_POST['layout']) ? trim((string) $_POST['layout']) : '';
 $visualSettingsInput = isset($_POST['visual_settings']) && is_array($_POST['visual_settings']) ? $_POST['visual_settings'] : [];
 $visualInherit = isset($_POST['visual_inherit']) && is_array($_POST['visual_inherit']) ? $_POST['visual_inherit'] : [];
 $hasVisualInput = array_key_exists('visual_settings', $_POST) || array_key_exists('visual_inherit', $_POST);
-$isSystemRoot = $section['parent_id'] === null && in_array($section['english_name'], ['index', '404'], true);
+$isSystemRoot = in_array($section['english_name'], ['index', '404'], true);
 if ($isSystemRoot) {
     $englishName = (string) $section['english_name'];
+    $parentId = (int) $section['parent_id'];
 }
 
 if ($title === '' || $englishName === '') {
@@ -37,27 +38,29 @@ if (!englishNameIsValid($englishName)) {
 }
 
 $siteId = (int) $section['site_id'];
-if ($parentId <= 0) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Нужен родительский раздел']);
+if (!$isSystemRoot) {
+    if ($parentId <= 0) {
+        if (isAjaxRequest()) {
+            jsonResponse(['ok' => false, 'error' => 'Нужен родительский раздел']);
+        }
+        redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Нужен родительский раздел']));
     }
-    redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Нужен родительский раздел']));
-}
 
-$parentIdInvalid = $parentId === $id || $sectionRepo->isDescendant($id, $parentId);
-if ($parentIdInvalid) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Нельзя выбрать текущий раздел или его потомка родителем']);
+    $parentIdInvalid = $parentId === $id || $sectionRepo->isDescendant($id, $parentId);
+    if ($parentIdInvalid) {
+        if (isAjaxRequest()) {
+            jsonResponse(['ok' => false, 'error' => 'Нельзя выбрать текущий раздел или его потомка родителем']);
+        }
+        redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Нельзя выбрать текущий раздел или его потомка родителем']));
     }
-    redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Нельзя выбрать текущий раздел или его потомка родителем']));
-}
 
-$parent = $sectionRepo->findById($parentId);
-if ($parent === null || (int) $parent['site_id'] !== $siteId) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Родитель должен относиться к тому же сайту']);
+    $parent = $sectionRepo->findById($parentId);
+    if ($parent === null || (int) $parent['site_id'] !== $siteId) {
+        if (isAjaxRequest()) {
+            jsonResponse(['ok' => false, 'error' => 'Родитель должен относиться к тому же сайту']);
+        }
+        redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Родитель должен относиться к тому же сайту']));
     }
-    redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Родитель должен относиться к тому же сайту']));
 }
 
 if ($sectionRepo->existsSiblingEnglishName($siteId, $parentId, $englishName, $id)) {

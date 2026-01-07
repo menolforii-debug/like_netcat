@@ -73,8 +73,7 @@ final class SectionTree
         $repo = new SectionRepo();
         $sitePath = buildSectionPathFromId($repo, $id);
 
-        $isSystemRoot = $node['parent_id'] === null
-            && isset($node['english_name'])
+        $isSystemRoot = isset($node['english_name'])
             && in_array($node['english_name'], ['index', '404'], true);
         $isSiteRoot = $node['parent_id'] === null && (int) $node['site_id'] === $id;
 

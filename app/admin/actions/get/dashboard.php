@@ -241,7 +241,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                 $layoutNote = ' (по умолчанию)';
             }
             if ($isAdmin) {
-                $isSystemRoot = $selected['parent_id'] === null && in_array($selected['english_name'], ['index', '404'], true);
+                $isSystemRoot = in_array($selected['english_name'], ['index', '404'], true);
                 echo '<form method="post" action="/admin.php?action=section_update">';
                 echo csrfTokenField();
                 echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
@@ -249,21 +249,26 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                 $englishNameAttributes = $isSystemRoot ? ' disabled' : ' required';
                 $englishNameHint = $isSystemRoot ? '<div class="form-text">Системный раздел: English name фиксирован.</div>' : '';
                 echo '<div class="mb-3"><label class="form-label">English name (латиница)</label><input class="form-control" type="text" name="english_name" value="' . htmlspecialchars((string) ($selected['english_name'] ?? ''), ENT_QUOTES, 'UTF-8') . '"' . $englishNameAttributes . '>' . $englishNameHint . '</div>';
-                echo '<div class="mb-3"><label class="form-label">Родительский раздел</label><select class="form-select" name="parent_id" required>';
-                echo '<option value="">Выберите родителя</option>';
-                foreach ($options as $option) {
-                    if ((int) $option['id'] === (int) $selected['id']) {
-                        continue;
+                if ($isSystemRoot) {
+                    echo '<input type="hidden" name="parent_id" value="' . (int) ($selected['parent_id'] ?? 0) . '">';
+                    echo '<div class="mb-3"><label class="form-label">Родительский раздел</label><div class="form-text">Системный раздел нельзя перемещать.</div></div>';
+                } else {
+                    echo '<div class="mb-3"><label class="form-label">Родительский раздел</label><select class="form-select" name="parent_id" required>';
+                    echo '<option value="">Выберите родителя</option>';
+                    foreach ($options as $option) {
+                        if ((int) $option['id'] === (int) $selected['id']) {
+                            continue;
+                        }
+                        if ((int) $option['site_id'] !== $siteId) {
+                            continue;
+                        }
+                        $selectedAttr = (int) ($selected['parent_id'] ?? 0) === (int) $option['id'] ? ' selected' : '';
+                        $depthPrefix = str_repeat('— ', (int) ($option['depth'] ?? 0));
+                        $label = $depthPrefix . '[' . (int) $option['id'] . '] ' . (string) $option['title'];
+                        echo '<option value="' . (int) $option['id'] . '"' . $selectedAttr . '>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</option>';
                     }
-                    if ((int) $option['site_id'] !== $siteId) {
-                        continue;
-                    }
-                    $selectedAttr = (int) ($selected['parent_id'] ?? 0) === (int) $option['id'] ? ' selected' : '';
-                    $depthPrefix = str_repeat('— ', (int) ($option['depth'] ?? 0));
-                    $label = $depthPrefix . '[' . (int) $option['id'] . '] ' . (string) $option['title'];
-                    echo '<option value="' . (int) $option['id'] . '"' . $selectedAttr . '>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</option>';
+                    echo '</select></div>';
                 }
-                echo '</select></div>';
                 echo '<div class="mb-3"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="' . htmlspecialchars((string) ($selected['sort'] ?? 0), ENT_QUOTES, 'UTF-8') . '"></div>';
 
                 echo '<div class="d-flex justify-content-end gap-2 mt-3">';
