@@ -16,6 +16,7 @@ $sort = isset($_POST['sort']) ? (int) $_POST['sort'] : 0;
 $layout = isset($_POST['layout']) ? trim((string) $_POST['layout']) : '';
 $visualSettingsInput = isset($_POST['visual_settings']) && is_array($_POST['visual_settings']) ? $_POST['visual_settings'] : [];
 $visualInherit = isset($_POST['visual_inherit']) && is_array($_POST['visual_inherit']) ? $_POST['visual_inherit'] : [];
+$hasVisualInput = array_key_exists('visual_settings', $_POST) || array_key_exists('visual_inherit', $_POST);
 $isSystemRoot = $section['parent_id'] === null && in_array($section['english_name'], ['index', '404'], true);
 if ($isSystemRoot) {
     $englishName = (string) $section['english_name'];
@@ -80,37 +81,39 @@ if ($layout !== '' && Layout::layoutExists($layout)) {
     unset($extra['layout']);
 }
 
-$visualSettings = [];
-$visualFields = $visualFieldRepo->listAll();
-foreach ($visualFields as $field) {
-    $name = (string) $field['name'];
-    if (isset($visualInherit[$name])) {
-        continue;
-    }
-    if (!array_key_exists($name, $visualSettingsInput)) {
-        continue;
+if ($hasVisualInput) {
+    $visualSettings = [];
+    $visualFields = $visualFieldRepo->listAll();
+    foreach ($visualFields as $field) {
+        $name = (string) $field['name'];
+        if (isset($visualInherit[$name])) {
+            continue;
+        }
+        if (!array_key_exists($name, $visualSettingsInput)) {
+            continue;
+        }
+
+        $value = $visualSettingsInput[$name];
+        $type = (string) ($field['type'] ?? 'text');
+        if ($type === 'checkbox') {
+            $visualSettings[$name] = !empty($value) ? '1' : '0';
+            continue;
+        }
+
+        if (is_string($value)) {
+            $value = trim($value);
+        }
+        if ($value === '' || $value === null) {
+            continue;
+        }
+        $visualSettings[$name] = $value;
     }
 
-    $value = $visualSettingsInput[$name];
-    $type = (string) ($field['type'] ?? 'text');
-    if ($type === 'checkbox') {
-        $visualSettings[$name] = !empty($value) ? '1' : '0';
-        continue;
+    if (!empty($visualSettings)) {
+        $extra['visual_settings'] = $visualSettings;
+    } else {
+        unset($extra['visual_settings']);
     }
-
-    if (is_string($value)) {
-        $value = trim($value);
-    }
-    if ($value === '' || $value === null) {
-        continue;
-    }
-    $visualSettings[$name] = $value;
-}
-
-if (!empty($visualSettings)) {
-    $extra['visual_settings'] = $visualSettings;
-} else {
-    unset($extra['visual_settings']);
 }
 
 $sectionRepo->update($id, [
