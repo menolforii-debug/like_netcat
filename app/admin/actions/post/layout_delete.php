@@ -31,11 +31,15 @@ if (!Layout::layoutExists($layoutKey)) {
 }
 
 $path = layoutTemplatesDir() . '/' . $layoutKey . '.php';
+$navPath = layoutNavTemplatesDir() . '/' . $layoutKey . '.nav.php';
 if (!is_file($path) || !@unlink($path)) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Не удалось удалить макет']);
     }
     redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey, 'error' => 'Не удалось удалить макет']));
+}
+if (is_file($navPath)) {
+    @unlink($navPath);
 }
 
 if (isAjaxRequest()) {

@@ -28,8 +28,8 @@ final class AdminRouter
 
         $user = Auth::user();
         self::requirePermission($action, $isPost, $user);
-        $notice = isset($_GET['notice']) ? (string) $_GET['notice'] : '';
-        $errorMessage = isset($_GET['error']) ? (string) $_GET['error'] : '';
+        $notice = pullFlashMessage('success');
+        $errorMessage = pullFlashMessage('error');
         $selectedId = isset($_GET['section_id']) ? (int) $_GET['section_id'] : null;
         $tab = isset($_GET['tab']) ? (string) $_GET['tab'] : 'section';
 
@@ -38,6 +38,7 @@ final class AdminRouter
         $componentRepo = new ComponentRepo();
         $objectRepo = new ObjectRepo();
         $userRepo = new UserRepo();
+        $visualFieldRepo = new VisualFieldRepo();
 
         $baseDir = __DIR__ . '/actions/' . ($isPost ? 'post' : 'get');
         $realBase = realpath($baseDir);
