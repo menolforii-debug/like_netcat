@@ -1,3 +1,45 @@
+.admin-body,
+body {
+  font-size: 14px;
+}
+
+.btn {
+  font-size: 14px;
+}
+
+.admin-header {
+  background-color: #0f628e;
+}
+
+.admin-header .navbar-brand,
+.admin-header .nav-link,
+.admin-header .navbar-toggler {
+  color: #fff;
+}
+
+.admin-header .nav-link {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.admin-header .nav-link:hover,
+.admin-header .nav-link:focus,
+.admin-header .nav-link.active {
+  color: #fff;
+}
+
+.admin-header .navbar-toggler {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.admin-header .navbar-toggler-icon {
+  filter: invert(1);
+}
+
+.admin-header .navbar-collapse.show,
+.admin-header .navbar-collapse.show > .navbar-nav {
+  background-color: #0f628e;
+}
+
 .code-editor {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   tab-size: 4;
@@ -103,7 +145,7 @@
    ComponentTree styles
    =========================== */
 
-/* Активный компонент: подсветка ВСЕГО li, включая блок видов */
+/* Активный компонент: подсветка ВСЕГО li, включая блок шаблонов компонента */
 .component-tree-item {
   border-radius: 12px;
   padding: 4px 6px;
@@ -158,7 +200,7 @@
   opacity: .8;
 }
 
-/* Виды: показываем только когда is-open */
+/* Шаблоны компонента: показываем только когда is-open */
 .component-tree-views {
   display: none;
   padding: 6px 0 6px 18px;
@@ -189,7 +231,7 @@
   background: rgba(0, 0, 0, 0.035);
 }
 
-/* стрелка справа от вида — без набора иконок */
+/* стрелка справа от шаблона — без набора иконок */
 .component-tree-viewarrow {
   width: 16px;
   text-align: right;

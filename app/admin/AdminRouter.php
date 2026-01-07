@@ -28,8 +28,10 @@ final class AdminRouter
 
         $user = Auth::user();
         self::requirePermission($action, $isPost, $user);
-        $notice = isset($_GET['notice']) ? (string) $_GET['notice'] : '';
-        $errorMessage = isset($_GET['error']) ? (string) $_GET['error'] : '';
+        $noticeMessages = consumeFlash('notice');
+        $errorMessages = consumeFlash('error');
+        $notice = $noticeMessages ? implode("\n", $noticeMessages) : '';
+        $errorMessage = $errorMessages ? implode("\n", $errorMessages) : '';
         $selectedId = isset($_GET['section_id']) ? (int) $_GET['section_id'] : null;
         $tab = isset($_GET['tab']) ? (string) $_GET['tab'] : 'section';
 
