@@ -72,6 +72,11 @@ final class Layout
         $ctx['site'] = isset($ctx['site']) && is_array($ctx['site']) ? $ctx['site'] : [];
         $ctx['section'] = $ctx['section'] ?? null;
 
+        $navPath = self::layoutNavPath($layoutKey);
+        if (is_file($navPath)) {
+            require $navPath;
+        }
+
         require $layoutPath;
     }
 
@@ -82,11 +87,14 @@ final class Layout
 
     public static function listLayouts(): array
     {
-        $path = __DIR__ . '/layouts/*.php';
+        $path = dirname(__DIR__, 2) . '/templates/layouts/*.php';
         $files = glob($path) ?: [];
         $layouts = [];
         foreach ($files as $file) {
             $name = basename($file, '.php');
+            if (str_ends_with($name, '.nav')) {
+                continue;
+            }
             if ($name !== '') {
                 $layouts[] = $name;
             }
@@ -98,7 +106,12 @@ final class Layout
 
     private static function layoutPath(string $layoutKey): string
     {
-        return __DIR__ . '/layouts/' . $layoutKey . '.php';
+        return dirname(__DIR__, 2) . '/templates/layouts/' . $layoutKey . '.php';
+    }
+
+    private static function layoutNavPath(string $layoutKey): string
+    {
+        return dirname(__DIR__, 2) . '/templates/layouts/' . $layoutKey . '.nav.php';
     }
 
     public static function sowAssetsAvailable(): bool
@@ -120,7 +133,7 @@ final class Layout
         return true;
     }
 
-    private static function renderCss(): void
+    public static function renderCss(): void
     {
         if (self::sowAssetsAvailable()) {
             echo "    <link href=\"/assets/sow/css/vendor_bundle.min.css\" rel=\"stylesheet\">\n";
@@ -131,7 +144,7 @@ final class Layout
         echo "    <link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css\" rel=\"stylesheet\">\n";
     }
 
-    private static function renderJs(): void
+    public static function renderJs(): void
     {
         if (self::sowAssetsAvailable()) {
             echo "<script src=\"/assets/sow/js/vendor_bundle.min.js\"></script>\n";
