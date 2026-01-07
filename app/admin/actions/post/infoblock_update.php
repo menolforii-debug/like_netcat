@@ -13,12 +13,18 @@ $beforeImage = isset($_POST['before_image']) ? (string) $_POST['before_image'] :
 $afterImage = isset($_POST['after_image']) ? (string) $_POST['after_image'] : '';
 
 if ($id === 0 || $name === '') {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Заполните обязательные поля']);
+    }
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'error' => 'Заполните обязательные поля']));
 }
 
 try {
     $settings = parseJsonField($settingsJson, 'settings_json должен быть корректным JSON');
 } catch (Throwable $e) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => $e->getMessage()]);
+    }
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'error' => $e->getMessage()]));
 }
 
@@ -49,4 +55,11 @@ if ($user) {
     ]);
 }
 
+if (isAjaxRequest()) {
+    jsonResponse([
+        'ok' => true,
+        'notice' => 'Инфоблок обновлен',
+        'refresh' => ['#sidebarTree', '#contentPane'],
+    ]);
+}
 redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'notice' => 'Инфоблок обновлен']));
