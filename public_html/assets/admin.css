@@ -3,6 +3,14 @@
   tab-size: 4;
 }
 
+body {
+  font-size: 14px;
+}
+
+.btn {
+  font-size: 14px;
+}
+
 .btn-xs {
   padding: 0.1rem 0.35rem;
   font-size: 0.75rem;

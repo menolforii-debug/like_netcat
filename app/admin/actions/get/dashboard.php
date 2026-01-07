@@ -192,12 +192,20 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
             echo '<div class="alert alert-light border">Редактирование доступно только для администратора.</div>';
         }
         } else {
+        $infoblockTab = isset($_GET['infoblock_tab']) ? (string) $_GET['infoblock_tab'] : 'list';
+        if (!in_array($infoblockTab, ['list', 'content'], true)) {
+            $infoblockTab = 'list';
+        }
+        if ($tab === 'content') {
+            $tab = 'infoblocks';
+            $infoblockTab = 'content';
+        }
+
         $tabs = [
             'section' => 'Раздел',
             'design' => 'Макет дизайна',
             'seo' => 'SEO',
             'infoblocks' => 'Инфоблоки',
-            'content' => 'Контент',
         ];
         echo '<ul class="nav nav-tabs mb-3">';
         foreach ($tabs as $key => $label) {
@@ -334,8 +342,6 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                 echo '<div class="alert alert-light border">Редактирование доступно только для администратора.</div>';
             }
         } elseif ($tab === 'infoblocks') {
-            // ... оставлено без изменений ...
-            // твой исходный код ниже без правок
             $infoblocks = $infoblockRepo->listForSection((int) $selected['id']);
             $components = $componentRepo->listAll();
             $componentMap = [];
@@ -343,155 +349,154 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                 $componentMap[(int) $component['id']] = $component;
             }
 
-            $maxSort = 0;
-            foreach ($infoblocks as $infoblock) {
-                if ((int) $infoblock['sort'] > $maxSort) {
-                    $maxSort = (int) $infoblock['sort'];
-                }
-            }
-            $defaultSort = $maxSort + 10;
+            echo '<ul class="nav nav-tabs mb-3">';
+            echo '<li class="nav-item"><a class="nav-link' . ($infoblockTab === 'list' ? ' active' : '') . '" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $selectedId, 'tab' => 'infoblocks', 'infoblock_tab' => 'list']), ENT_QUOTES, 'UTF-8') . '">Список</a></li>';
+            echo '<li class="nav-item"><a class="nav-link' . ($infoblockTab === 'content' ? ' active' : '') . '" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $selectedId, 'tab' => 'infoblocks', 'infoblock_tab' => 'content']), ENT_QUOTES, 'UTF-8') . '">Контент</a></li>';
+            echo '</ul>';
 
-            echo '<div class="d-flex justify-content-between align-items-center mb-3">';
-            echo '<h2 class="h6 mb-0">Инфоблоки</h2>';
-            if ($isAdmin) {
-                $createUrl = buildAdminUrl(['action' => 'infoblock_form', 'section_id' => $selectedId]);
-                echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars($createUrl, ENT_QUOTES, 'UTF-8') . '">Добавить</button>';
-            }
-            echo '</div>';
-            if (empty($infoblocks)) {
-                echo '<div class="alert alert-light border">Инфоблоков пока нет.</div>';
-            } else {
-                echo '<div class="table-responsive">';
-                echo '<table class="table table-sm align-middle">';
-                echo '<thead><tr><th>Сортировка</th><th>Название</th><th>Компонент</th><th>Шаблон</th><th>Включен</th><th>Действия</th></tr></thead><tbody>';
-                foreach ($infoblocks as $infoblock) {
-                    $component = $componentMap[(int) $infoblock['component_id']] ?? null;
-                    $componentName = $component ? (string) $component['name'] : 'Неизвестно';
-                    echo '<tr>';
-                    echo '<td>' . (int) $infoblock['sort'] . '</td>';
-                    echo '<td>' . htmlspecialchars((string) $infoblock['name'], ENT_QUOTES, 'UTF-8') . '</td>';
-                    echo '<td>' . htmlspecialchars($componentName, ENT_QUOTES, 'UTF-8') . '</td>';
-                    echo '<td>' . htmlspecialchars((string) $infoblock['view_template'], ENT_QUOTES, 'UTF-8') . '</td>';
-                    echo '<td>' . (!empty($infoblock['is_enabled']) ? 'Да' : 'Нет') . '</td>';
-                    echo '<td class="d-flex gap-2">';
-                    if ($isAdmin) {
-                        $editUrl = buildAdminUrl(['action' => 'infoblock_form', 'id' => (int) $infoblock['id'], 'section_id' => $selectedId]);
-                        echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars($editUrl, ENT_QUOTES, 'UTF-8') . '">Редактировать</button>';
-                        echo '<form method="post" action="/admin.php?action=infoblock_delete" data-ajax="true" data-confirm="Удалить инфоблок?">';
-                        echo csrfTokenField();
-                        echo '<input type="hidden" name="id" value="' . (int) $infoblock['id'] . '">';
-                        echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
-                        echo '<input type="hidden" name="name" value="' . htmlspecialchars((string) $infoblock['name'], ENT_QUOTES, 'UTF-8') . '">';
-                        echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>';
-                        echo '</form>';
-                    } else {
-                        echo '<span class="text-muted">Недоступно</span>';
-                    }
-                    echo '</td>';
-                    echo '</tr>';
-                }
-                echo '</tbody></table></div>';
-            }
-        } elseif ($tab === 'content') {
-            // ... оставлено без изменений ...
-            // твой исходный код ниже без правок
-            $infoblocks = $infoblockRepo->listForSection((int) $selected['id']);
-            $components = $componentRepo->listAll();
-            $componentMap = [];
-            foreach ($components as $component) {
-                $componentMap[(int) $component['id']] = $component;
-            }
-            $previewToken = ensurePreviewToken();
-            $sectionPath = buildSectionPathFromId($sectionRepo, (int) $selected['id']);
+            if ($infoblockTab === 'content') {
+                $previewToken = ensurePreviewToken();
+                $sectionPath = buildSectionPathFromId($sectionRepo, (int) $selected['id']);
 
-            echo '<h2 class="h6">Контент</h2>';
-            if (empty($infoblocks)) {
-                echo '<div class="alert alert-light border">В этом разделе нет инфоблоков.</div>';
-            } else {
-                foreach ($infoblocks as $infoblock) {
-                    $component = $componentMap[(int) $infoblock['component_id']] ?? null;
-                    $componentName = $component ? (string) $component['name'] : 'Неизвестно';
-                    $objects = $objectRepo->listForInfoblock((int) $infoblock['id']);
-                    $canCreate = Permission::canAction($currentUser, $infoblock, 'create');
-                    $canEdit = Permission::canAction($currentUser, $infoblock, 'edit');
-                    $canDelete = Permission::canAction($currentUser, $infoblock, 'delete');
-                    $canPublish = Permission::canAction($currentUser, $infoblock, 'publish');
-                    $canUnpublish = Permission::canAction($currentUser, $infoblock, 'unpublish');
+                echo '<h2 class="h6">Контент</h2>';
+                if (empty($infoblocks)) {
+                    echo '<div class="alert alert-light border">В этом разделе нет инфоблоков.</div>';
+                } else {
+                    foreach ($infoblocks as $infoblock) {
+                        $component = $componentMap[(int) $infoblock['component_id']] ?? null;
+                        $componentName = $component ? (string) $component['name'] : 'Неизвестно';
+                        $objects = $objectRepo->listForInfoblock((int) $infoblock['id']);
+                        $canCreate = Permission::canAction($currentUser, $infoblock, 'create');
+                        $canEdit = Permission::canAction($currentUser, $infoblock, 'edit');
+                        $canDelete = Permission::canAction($currentUser, $infoblock, 'delete');
+                        $canPublish = Permission::canAction($currentUser, $infoblock, 'publish');
+                        $canUnpublish = Permission::canAction($currentUser, $infoblock, 'unpublish');
 
-                    echo '<div class="border rounded p-3 mb-4">';
-                    echo '<div class="d-flex justify-content-between align-items-center mb-3">';
-                    echo '<h3 class="h6 mb-0">' . htmlspecialchars((string) $infoblock['name'], ENT_QUOTES, 'UTF-8') . ' <span class="text-muted">(' . htmlspecialchars($componentName, ENT_QUOTES, 'UTF-8') . ')</span></h3>';
-                    if ($canCreate) {
-                        $createUrl = buildAdminUrl(['action' => 'object_form', 'section_id' => $selected['id'], 'infoblock_id' => $infoblock['id']]);
-                        echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars($createUrl, ENT_QUOTES, 'UTF-8') . '">Добавить объект</button>';
-                    }
-                    echo '</div>';
-
-                    if (empty($objects)) {
-                        echo '<div class="alert alert-light border">Объекты отсутствуют.</div>';
-                    } else {
-                        echo '<div class="table-responsive">';
-                        echo '<table class="table table-sm align-middle">';
-                        echo '<thead><tr><th>ID</th><th>Заголовок</th><th>Статус</th><th>Действия</th></tr></thead><tbody>';
-                        foreach ($objects as $object) {
-                            $data = json_decode((string) $object['data_json'], true);
-                            if (!is_array($data)) {
-                                $data = [];
-                            }
-                            $title = isset($data['title']) ? (string) $data['title'] : 'Без заголовка';
-                            $status = (string) ($object['status'] ?? 'draft');
-                            $statusLabel = match ($status) {
-                                'published' => 'Опубликован',
-                                'draft' => 'Черновик',
-                                default => $status,
-                            };
-                            $previewUrl = $sectionPath . '?object_id=' . (int) $object['id'] . '&preview_token=' . urlencode($previewToken);
-
-                            echo '<tr>';
-                            echo '<td>' . (int) $object['id'] . '</td>';
-                            echo '<td>' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</td>';
-                            echo '<td>' . htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8') . '</td>';
-                            echo '<td class="d-flex flex-wrap gap-2">';
-                            if ($canEdit) {
-                                echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'object_form', 'section_id' => $selected['id'], 'id' => $object['id']]), ENT_QUOTES, 'UTF-8') . '">Редактировать</a>';
-                            }
-                            if ($status === 'draft') {
-                                if ($canPublish) {
-                                    echo '<form method="post" action="/admin.php?action=object_publish">';
-                                    echo csrfTokenField();
-                                    echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
-                                    echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
-                                    echo '<button class="btn btn-sm btn-success" type="submit">Опубликовать</button>';
-                                    echo '</form>';
-                                }
-                            } else {
-                                if ($canUnpublish) {
-                                    echo '<form method="post" action="/admin.php?action=object_unpublish">';
-                                    echo csrfTokenField();
-                                    echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
-                                    echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
-                                    echo '<button class="btn btn-sm btn-warning" type="submit">Снять с публикации</button>';
-                                    echo '</form>';
-                                }
-                            }
-                            if (Permission::canView($currentUser, $infoblock)) {
-                                echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars($previewUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank">Предпросмотр</a>';
-                            }
-                            if ($canDelete) {
-                                echo '<form method="post" action="/admin.php?action=object_delete" onsubmit="return confirm(\"Удалить объект?\")">';
-                                echo csrfTokenField();
-                                echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
-                                echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
-                                echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>';
-                                echo '</form>';
-                            }
-                            echo '</td>';
-                            echo '</tr>';
+                        echo '<div class="border rounded p-3 mb-4">';
+                        echo '<div class="d-flex justify-content-between align-items-center mb-3">';
+                        echo '<h3 class="h6 mb-0">' . htmlspecialchars((string) $infoblock['name'], ENT_QUOTES, 'UTF-8') . ' <span class="text-muted">(' . htmlspecialchars($componentName, ENT_QUOTES, 'UTF-8') . ')</span></h3>';
+                        if ($canCreate) {
+                            $createUrl = buildAdminUrl(['action' => 'object_form', 'section_id' => $selected['id'], 'infoblock_id' => $infoblock['id']]);
+                            echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars($createUrl, ENT_QUOTES, 'UTF-8') . '">Добавить объект</button>';
                         }
-                        echo '</tbody></table></div>';
-                    }
+                        echo '</div>';
 
-                    echo '</div>';
+                        if (empty($objects)) {
+                            echo '<div class="alert alert-light border">Объекты отсутствуют.</div>';
+                        } else {
+                            echo '<div class="table-responsive">';
+                            echo '<table class="table table-sm align-middle">';
+                            echo '<thead><tr><th>ID</th><th>Заголовок</th><th>Статус</th><th>Действия</th></tr></thead><tbody>';
+                            foreach ($objects as $object) {
+                                $data = json_decode((string) $object['data_json'], true);
+                                if (!is_array($data)) {
+                                    $data = [];
+                                }
+                                $title = isset($data['title']) ? (string) $data['title'] : 'Без заголовка';
+                                $status = (string) ($object['status'] ?? 'draft');
+                                $statusLabel = match ($status) {
+                                    'published' => 'Опубликован',
+                                    'draft' => 'Черновик',
+                                    default => $status,
+                                };
+                                $previewUrl = $sectionPath . '?object_id=' . (int) $object['id'] . '&preview_token=' . urlencode($previewToken);
+
+                                echo '<tr>';
+                                echo '<td>' . (int) $object['id'] . '</td>';
+                                echo '<td>' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</td>';
+                                echo '<td>' . htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8') . '</td>';
+                                echo '<td class="d-flex flex-wrap gap-2">';
+                                if ($canEdit) {
+                                    echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'object_form', 'section_id' => $selected['id'], 'id' => $object['id']]), ENT_QUOTES, 'UTF-8') . '">Редактировать</a>';
+                                }
+                                if ($status === 'draft') {
+                                    if ($canPublish) {
+                                        echo '<form method="post" action="/admin.php?action=object_publish">';
+                                        echo csrfTokenField();
+                                        echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
+                                        echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
+                                        echo '<button class="btn btn-sm btn-success" type="submit">Опубликовать</button>';
+                                        echo '</form>';
+                                    }
+                                } else {
+                                    if ($canUnpublish) {
+                                        echo '<form method="post" action="/admin.php?action=object_unpublish">';
+                                        echo csrfTokenField();
+                                        echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
+                                        echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
+                                        echo '<button class="btn btn-sm btn-warning" type="submit">Снять с публикации</button>';
+                                        echo '</form>';
+                                    }
+                                }
+                                if (Permission::canView($currentUser, $infoblock)) {
+                                    echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars($previewUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank">Предпросмотр</a>';
+                                }
+                                if ($canDelete) {
+                                    echo '<form method="post" action="/admin.php?action=object_delete" onsubmit="return confirm(\"Удалить объект?\")">';
+                                    echo csrfTokenField();
+                                    echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
+                                    echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
+                                    echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>';
+                                    echo '</form>';
+                                }
+                                echo '</td>';
+                                echo '</tr>';
+                            }
+                            echo '</tbody></table></div>';
+                        }
+
+                        echo '</div>';
+                    }
+                }
+            } else {
+                $maxSort = 0;
+                foreach ($infoblocks as $infoblock) {
+                    if ((int) $infoblock['sort'] > $maxSort) {
+                        $maxSort = (int) $infoblock['sort'];
+                    }
+                }
+                $defaultSort = $maxSort + 10;
+
+                echo '<div class="d-flex justify-content-between align-items-center mb-3">';
+                echo '<h2 class="h6 mb-0">Инфоблоки</h2>';
+                if ($isAdmin) {
+                    $createUrl = buildAdminUrl(['action' => 'infoblock_form', 'section_id' => $selectedId]);
+                    echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars($createUrl, ENT_QUOTES, 'UTF-8') . '">Добавить</button>';
+                }
+                echo '</div>';
+                if (empty($infoblocks)) {
+                    echo '<div class="alert alert-light border">Инфоблоков пока нет.</div>';
+                } else {
+                    echo '<div class="table-responsive">';
+                    echo '<table class="table table-sm align-middle">';
+                    echo '<thead><tr><th>Сортировка</th><th>Название</th><th>Компонент</th><th>Шаблон</th><th>Включен</th><th>Действия</th></tr></thead><tbody>';
+                    foreach ($infoblocks as $infoblock) {
+                        $component = $componentMap[(int) $infoblock['component_id']] ?? null;
+                        $componentName = $component ? (string) $component['name'] : 'Неизвестно';
+                        echo '<tr>';
+                        echo '<td>' . (int) $infoblock['sort'] . '</td>';
+                        echo '<td>' . htmlspecialchars((string) $infoblock['name'], ENT_QUOTES, 'UTF-8') . '</td>';
+                        echo '<td>' . htmlspecialchars($componentName, ENT_QUOTES, 'UTF-8') . '</td>';
+                        echo '<td>' . htmlspecialchars((string) $infoblock['view_template'], ENT_QUOTES, 'UTF-8') . '</td>';
+                        echo '<td>' . (!empty($infoblock['is_enabled']) ? 'Да' : 'Нет') . '</td>';
+                        echo '<td class="d-flex gap-2">';
+                        if ($isAdmin) {
+                            $editUrl = buildAdminUrl(['action' => 'infoblock_form', 'id' => (int) $infoblock['id'], 'section_id' => $selectedId]);
+                            echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars($editUrl, ENT_QUOTES, 'UTF-8') . '">Редактировать</button>';
+                            echo '<form method="post" action="/admin.php?action=infoblock_delete" data-ajax="true" data-confirm="Удалить инфоблок?">';
+                            echo csrfTokenField();
+                            echo '<input type="hidden" name="id" value="' . (int) $infoblock['id'] . '">';
+                            echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
+                            echo '<input type="hidden" name="name" value="' . htmlspecialchars((string) $infoblock['name'], ENT_QUOTES, 'UTF-8') . '">';
+                            echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>';
+                            echo '</form>';
+                        } else {
+                            echo '<span class="text-muted">Недоступно</span>';
+                        }
+                        echo '</td>';
+                        echo '</tr>';
+                    }
+                    echo '</tbody></table></div>';
                 }
             }
         }

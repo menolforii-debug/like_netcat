@@ -17,6 +17,55 @@ function initVisualInheritToggles(scope) {
   });
 }
 
+function initInfoblockViewSelects(scope) {
+  const root = scope || document;
+  root.querySelectorAll('.js-infoblock-component').forEach((componentSelect) => {
+    const form = componentSelect.closest('form');
+    const viewSelect = form ? form.querySelector('.js-infoblock-view') : null;
+    if (!viewSelect) return;
+
+    const updateOptions = () => {
+      const selectedOption = componentSelect.selectedOptions[0];
+      let views = [];
+      if (selectedOption) {
+        const rawViews = selectedOption.getAttribute('data-views');
+        if (rawViews) {
+          try {
+            const parsed = JSON.parse(rawViews);
+            if (Array.isArray(parsed)) {
+              views = parsed;
+            }
+          } catch (e) {}
+        }
+      }
+      if (!Array.isArray(views) || views.length === 0) {
+        views = ['list'];
+      }
+
+      const currentValue = viewSelect.value;
+      const fallbackValue = viewSelect.dataset.current || '';
+      viewSelect.innerHTML = '';
+      views.forEach((view) => {
+        const option = document.createElement('option');
+        option.value = view;
+        option.textContent = view;
+        viewSelect.appendChild(option);
+      });
+
+      if (currentValue && views.includes(currentValue)) {
+        viewSelect.value = currentValue;
+      } else if (fallbackValue && views.includes(fallbackValue)) {
+        viewSelect.value = fallbackValue;
+      } else if (views.length > 0) {
+        viewSelect.value = views[0];
+      }
+    };
+
+    componentSelect.addEventListener('change', updateOptions);
+    updateOptions();
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('textarea.code-editor').forEach((textarea) => {
     textarea.addEventListener('keydown', (event) => {
@@ -32,6 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   initVisualInheritToggles(document);
+  initInfoblockViewSelects(document);
 });
 
 function showAdminToast(type, message) {
@@ -56,6 +106,7 @@ function refreshAdminBlocks(selectors) {
       .then((html) => {
         target.innerHTML = html;
         initVisualInheritToggles(target);
+        initInfoblockViewSelects(target);
       });
   });
 }
@@ -69,6 +120,12 @@ function handleAjaxResponse(payload) {
     if (payload.focus && payload.focus.section_id) {
       const url = new URL(window.location.href);
       url.searchParams.set('section_id', payload.focus.section_id);
+      if (payload.focus.tab) {
+        url.searchParams.set('tab', payload.focus.tab);
+        if (payload.focus.tab !== 'infoblocks') {
+          url.searchParams.delete('infoblock_tab');
+        }
+      }
       window.history.replaceState({}, '', url);
     }
     if (payload.focus && payload.focus.component_id) {
@@ -99,6 +156,8 @@ function openAdminModal(url) {
         modalTitle.textContent = title.getAttribute('data-modal-title') || 'Редактирование';
         title.remove();
       }
+      initInfoblockViewSelects(modalBody || document);
+      initVisualInheritToggles(modalBody || document);
     })
     .catch(() => {
       if (modalBody) modalBody.innerHTML = '<div class="text-danger">Не удалось загрузить форму.</div>';
