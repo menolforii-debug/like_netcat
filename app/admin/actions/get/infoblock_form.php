@@ -26,6 +26,20 @@ if ($section === null) {
 $components = $componentRepo->listAll();
 $extra = $infoblock ? decodeExtra($infoblock) : [];
 $settings = $infoblock ? decodeSettings($infoblock) : [];
+$selectedComponent = null;
+if (!empty($components)) {
+    $selectedComponent = $components[0];
+}
+if ($infoblock) {
+    foreach ($components as $component) {
+        if ((int) $component['id'] === (int) $infoblock['component_id']) {
+            $selectedComponent = $component;
+            break;
+        }
+    }
+}
+$availableViews = $selectedComponent ? componentViews($selectedComponent) : ['list'];
+$currentView = $infoblock['view_template'] ?? ($availableViews[0] ?? 'list');
 
 echo '<span data-modal-title="' . ($infoblock ? 'Редактировать инфоблок' : 'Новый инфоблок') . '"></span>';
 echo '<form method="post" action="/admin.php?action=' . ($infoblock ? 'infoblock_update' : 'infoblock_create') . '" data-ajax="true">';
@@ -43,7 +57,12 @@ foreach ($components as $component) {
 }
 echo '</select></div>';
 echo '<div class="col-md-6"><label class="form-label">Название</label><input class="form-control" type="text" name="name" value="' . htmlspecialchars((string) ($infoblock['name'] ?? ''), ENT_QUOTES, 'UTF-8') . '" required></div>';
-echo '<div class="col-md-4"><label class="form-label">Шаблон</label><input class="form-control" type="text" name="view_template" value="' . htmlspecialchars((string) ($infoblock['view_template'] ?? 'list'), ENT_QUOTES, 'UTF-8') . '"></div>';
+echo '<div class="col-md-4"><label class="form-label">Шаблон</label><select class="form-select" name="view_template">';
+foreach ($availableViews as $view) {
+    $selectedAttr = (string) $currentView === (string) $view ? ' selected' : '';
+    echo '<option value="' . htmlspecialchars((string) $view, ENT_QUOTES, 'UTF-8') . '"' . $selectedAttr . '>' . htmlspecialchars((string) $view, ENT_QUOTES, 'UTF-8') . '</option>';
+}
+echo '</select></div>';
 echo '<div class="col-md-4"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="' . htmlspecialchars((string) ($infoblock['sort'] ?? 0), ENT_QUOTES, 'UTF-8') . '"></div>';
 $checked = !empty($infoblock['is_enabled']) || $infoblock === null ? ' checked' : '';
 echo '<div class="col-md-4"><label class="form-label">Включен</label><div class="form-check mt-2"><input class="form-check-input" type="checkbox" name="is_enabled" value="1"' . $checked . '></div></div>';

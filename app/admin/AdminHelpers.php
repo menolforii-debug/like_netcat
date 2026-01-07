@@ -516,7 +516,7 @@ function renderComponentViewTemplate(string $listTpl, string $singleTpl): string
 function writeComponentViewTemplate(string $componentKey, string $viewName, string $listTpl, string $singleTpl, ?string &$error = null): bool
 {
     $root = dirname(__DIR__, 2);
-    $templatesDir = $root . '/templates/' . $componentKey;
+    $templatesDir = $root . '/templates/component/' . $componentKey;
     if (!is_dir($templatesDir)) {
         mkdir($templatesDir, 0770, true);
         @chmod($templatesDir, 0770);
@@ -563,7 +563,7 @@ function writeComponentViewTemplate(string $componentKey, string $viewName, stri
 
 function layoutTemplatesDir(): string
 {
-    return dirname(__DIR__, 2) . '/app/ui/layouts';
+    return dirname(__DIR__, 2) . '/templates/layouts';
 }
 
 function layoutFieldsPath(string $layoutKey): string

@@ -82,7 +82,7 @@ final class Layout
 
     public static function listLayouts(): array
     {
-        $path = __DIR__ . '/layouts/*.php';
+        $path = dirname(__DIR__, 2) . '/templates/layouts/*.php';
         $files = glob($path) ?: [];
         $layouts = [];
         foreach ($files as $file) {
@@ -98,7 +98,7 @@ final class Layout
 
     private static function layoutPath(string $layoutKey): string
     {
-        return __DIR__ . '/layouts/' . $layoutKey . '.php';
+        return dirname(__DIR__, 2) . '/templates/layouts/' . $layoutKey . '.php';
     }
 
     public static function sowAssetsAvailable(): bool

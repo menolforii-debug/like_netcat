@@ -423,7 +423,32 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
             if (empty($infoblocks)) {
                 echo '<div class="alert alert-light border">В этом разделе нет инфоблоков.</div>';
             } else {
+                $activeInfoblockId = isset($_GET['content_infoblock']) ? (int) $_GET['content_infoblock'] : 0;
+                $knownIds = array_map(static fn(array $infoblock): int => (int) $infoblock['id'], $infoblocks);
+                if ($activeInfoblockId <= 0 || !in_array($activeInfoblockId, $knownIds, true)) {
+                    $activeInfoblockId = (int) $infoblocks[0]['id'];
+                }
+
+                if (count($infoblocks) > 1) {
+                    echo '<ul class="nav nav-tabs mb-3">';
+                    foreach ($infoblocks as $infoblock) {
+                        $active = (int) $infoblock['id'] === $activeInfoblockId ? ' active' : '';
+                        $tabLink = buildAdminUrl([
+                            'section_id' => $selectedId,
+                            'tab' => 'content',
+                            'content_infoblock' => (int) $infoblock['id'],
+                        ]);
+                        echo '<li class="nav-item"><a class="nav-link' . $active . '" href="' . htmlspecialchars($tabLink, ENT_QUOTES, 'UTF-8') . '">';
+                        echo htmlspecialchars((string) $infoblock['name'], ENT_QUOTES, 'UTF-8');
+                        echo '</a></li>';
+                    }
+                    echo '</ul>';
+                }
+
                 foreach ($infoblocks as $infoblock) {
+                    if ((int) $infoblock['id'] !== $activeInfoblockId) {
+                        continue;
+                    }
                     $component = $componentMap[(int) $infoblock['component_id']] ?? null;
                     $componentName = $component ? (string) $component['name'] : 'Неизвестно';
                     $objects = $objectRepo->listForInfoblock((int) $infoblock['id']);

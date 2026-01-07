@@ -42,7 +42,7 @@ $viewName = (string) $viewRow['name'];
 $viewRepo->delete($viewId);
 syncComponentViewsJson($componentId);
 
-$templatePath = dirname(__DIR__, 3) . '/templates/' . (string) $component['keyword'] . '/' . $viewName . '.php';
+$templatePath = dirname(__DIR__, 3) . '/templates/component/' . (string) $component['keyword'] . '/' . $viewName . '.php';
 if (is_file($templatePath)) {
     @unlink($templatePath);
 }

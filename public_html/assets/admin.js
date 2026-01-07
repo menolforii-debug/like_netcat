@@ -47,6 +47,9 @@ function handleAjaxResponse(payload) {
     if (payload.focus && payload.focus.section_id) {
       const url = new URL(window.location.href);
       url.searchParams.set('section_id', payload.focus.section_id);
+      if (payload.focus.tab) {
+        url.searchParams.set('tab', payload.focus.tab);
+      }
       window.history.replaceState({}, '', url);
     }
     if (payload.focus && payload.focus.component_id) {
