@@ -176,7 +176,7 @@ final class Renderer
         $isSingle = $isSingle;
         $settings = $infoblock['settings'] ?? [];
 
-        $templatePath = __DIR__ . '/../../templates/' . $component['keyword'] . '/' . $infoblock['view_template'] . '.php';
+        $templatePath = __DIR__ . '/../../templates/component/' . $component['keyword'] . '/' . $infoblock['view_template'] . '.php';
         if (!is_file($templatePath)) {
             return '';
         }
