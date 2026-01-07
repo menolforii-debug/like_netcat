@@ -4,28 +4,12 @@ final class SectionRepo
 {
     public function findSiteByHost(string $host): ?array
     {
-        $host = Utils::normalizeHost($host);
-        if ($host === '') {
+        $sites = $this->listSitesOnly();
+        if (empty($sites)) {
             return null;
         }
 
-        $sites = $this->listSitesOnly();
-        foreach ($sites as $site) {
-            $settings = $this->getSiteSettings($site);
-            $domain = Utils::normalizeHost((string) ($settings['site_domain'] ?? ''));
-            if ($domain !== '' && $domain === $host) {
-                return $site;
-            }
-
-            foreach ($settings['site_mirrors'] as $mirror) {
-                $mirrorHost = Utils::normalizeHost($mirror);
-                if ($mirrorHost !== '' && $mirrorHost === $host) {
-                    return $site;
-                }
-            }
-        }
-
-        return null;
+        return $sites[0];
     }
 
     public function listSites(): array

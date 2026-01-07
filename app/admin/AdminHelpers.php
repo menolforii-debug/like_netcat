@@ -24,6 +24,13 @@ function renderAlert(?string $message, string $type = 'info'): void
         return;
     }
 
+    static $rendered = [];
+    $dedupeKey = $type . '|' . $message;
+    if (isset($rendered[$dedupeKey])) {
+        return;
+    }
+    $rendered[$dedupeKey] = true;
+
     $t = strtolower(trim($type));
     $toastType = match ($t) {
         'error', 'danger' => 'danger',
