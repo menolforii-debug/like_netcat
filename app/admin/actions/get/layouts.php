@@ -143,7 +143,10 @@ echo '</ul>';
 if ($tab === 'visual') {
     $visualFields = $visualFieldRepo->listAll();
     echo '<div class="mb-4">';
-    echo '<h2 class="h6 mb-3">Поля визуальных настроек</h2>';
+    echo '<div class="d-flex align-items-center justify-content-between mb-3">';
+    echo '<h2 class="h6 mb-0">Поля визуальных настроек</h2>';
+    echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars(buildAdminUrl(['action' => 'visual_field_form']), ENT_QUOTES, 'UTF-8') . '">Добавить поле</button>';
+    echo '</div>';
     if (empty($visualFields)) {
         echo '<div class="alert alert-light border">Поля пока не созданы.</div>';
     } else {
@@ -154,54 +157,30 @@ if ($tab === 'visual') {
                     $optionsText .= $optKey . ':' . $optLabel . "\n";
                 }
             }
-            echo '<form class="border rounded p-3 mb-3" method="post" action="/admin.php?action=visual_field_update">';
-            echo csrfTokenField();
-            echo '<input type="hidden" name="id" value="' . (int) $field['id'] . '">';
-            echo '<div class="row g-3">';
-            echo '<div class="col-md-3"><label class="form-label">Ключ</label><input class="form-control" value="' . htmlspecialchars((string) $field['name'], ENT_QUOTES, 'UTF-8') . '" readonly></div>';
-            echo '<div class="col-md-3"><label class="form-label">Название</label><input class="form-control" name="label" value="' . htmlspecialchars((string) $field['label'], ENT_QUOTES, 'UTF-8') . '" required></div>';
-            echo '<div class="col-md-3"><label class="form-label">Тип</label>';
-            echo '<select class="form-select" name="type">';
-            foreach (['text' => 'Текст', 'textarea' => 'Текст (многострочный)', 'number' => 'Число', 'checkbox' => 'Флаг', 'select' => 'Список', 'color' => 'Цвет'] as $typeKey => $typeLabel) {
-                $selected = $field['type'] === $typeKey ? ' selected' : '';
-                echo '<option value="' . htmlspecialchars($typeKey, ENT_QUOTES, 'UTF-8') . '"' . $selected . '>' . htmlspecialchars($typeLabel, ENT_QUOTES, 'UTF-8') . '</option>';
+            echo '<div class="border rounded p-3 mb-3">';
+            echo '<div class="d-flex align-items-start justify-content-between gap-3">';
+            echo '<div>';
+            echo '<div class="fw-semibold">' . htmlspecialchars((string) $field['label'], ENT_QUOTES, 'UTF-8') . '</div>';
+            echo '<div class="text-muted small">Ключ: ' . htmlspecialchars((string) $field['name'], ENT_QUOTES, 'UTF-8') . '</div>';
+            echo '<div class="text-muted small">Тип: ' . htmlspecialchars((string) $field['type'], ENT_QUOTES, 'UTF-8') . '</div>';
+            echo '<div class="text-muted small">Сортировка: ' . (int) ($field['sort'] ?? 0) . '</div>';
+            if (trim($optionsText) !== '') {
+                echo '<div class="text-muted small mt-2"><pre class="mb-0">' . htmlspecialchars(trim($optionsText), ENT_QUOTES, 'UTF-8') . '</pre></div>';
             }
-            echo '</select></div>';
-            echo '<div class="col-md-2"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="' . (int) ($field['sort'] ?? 0) . '"></div>';
-            echo '<div class="col-md-6"><label class="form-label">Опции (ключ:подпись)</label><textarea class="form-control font-monospace" name="options" rows="3">' . htmlspecialchars(trim($optionsText), ENT_QUOTES, 'UTF-8') . '</textarea></div>';
             echo '</div>';
-            echo '<div class="d-flex justify-content-end gap-2 mt-3">';
-            echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
-            echo '</div>';
-            echo '</form>';
-            echo '<form class="text-end mb-4" method="post" action="/admin.php?action=visual_field_delete" onsubmit="return confirm(\'Удалить поле?\')">';
+            echo '<div class="d-flex gap-2">';
+            echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars(buildAdminUrl(['action' => 'visual_field_form', 'id' => (int) $field['id']]), ENT_QUOTES, 'UTF-8') . '">Редактировать</button>';
+            echo '<form method="post" action="/admin.php?action=visual_field_delete" onsubmit="return confirm(\'Удалить поле?\')">';
             echo csrfTokenField();
             echo '<input type="hidden" name="id" value="' . (int) $field['id'] . '">';
-            echo '<button class="btn btn-outline-danger btn-sm" type="submit">Удалить</button>';
+            echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>';
             echo '</form>';
+            echo '</div>';
+            echo '</div>';
+            echo '</div>';
         }
     }
     echo '</div>';
-
-    echo '<h2 class="h6 mb-3">Новое поле</h2>';
-    echo '<form method="post" action="/admin.php?action=visual_field_create">';
-    echo csrfTokenField();
-    echo '<div class="row g-3">';
-    echo '<div class="col-md-3"><label class="form-label">Ключ</label><input class="form-control" name="name" required></div>';
-    echo '<div class="col-md-3"><label class="form-label">Название</label><input class="form-control" name="label" required></div>';
-    echo '<div class="col-md-3"><label class="form-label">Тип</label>';
-    echo '<select class="form-select" name="type">';
-    foreach (['text' => 'Текст', 'textarea' => 'Текст (многострочный)', 'number' => 'Число', 'checkbox' => 'Флаг', 'select' => 'Список', 'color' => 'Цвет'] as $typeKey => $typeLabel) {
-        echo '<option value="' . htmlspecialchars($typeKey, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($typeLabel, ENT_QUOTES, 'UTF-8') . '</option>';
-    }
-    echo '</select></div>';
-    echo '<div class="col-md-2"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="0"></div>';
-    echo '<div class="col-md-6"><label class="form-label">Опции (ключ:подпись)</label><textarea class="form-control font-monospace" name="options" rows="3"></textarea></div>';
-    echo '</div>';
-    echo '<div class="d-flex justify-content-end gap-2 mt-3">';
-    echo '<button class="btn btn-primary" type="submit">Создать</button>';
-    echo '</div>';
-    echo '</form>';
 } else {
     if ($layoutKey === '_new') {
         echo '<form method="post" action="/admin.php?action=layout_create">';
