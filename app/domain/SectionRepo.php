@@ -326,6 +326,28 @@ final class SectionRepo
         core()->events()->emit('section.deleted', ['id' => $sectionId]);
     }
 
+    public function isDescendant(int $sectionId, int $candidateParentId): bool
+    {
+        if ($sectionId <= 0 || $candidateParentId <= 0) {
+            return false;
+        }
+
+        $row = DB::fetchOne(
+            'WITH RECURSIVE tree(id) AS (
+                SELECT id FROM sections WHERE id = :section_id
+                UNION ALL
+                SELECT s.id FROM sections s JOIN tree t ON s.parent_id = t.id
+            )
+            SELECT 1 FROM tree WHERE id = :candidate_id AND id != :section_id LIMIT 1',
+            [
+                'section_id' => $sectionId,
+                'candidate_id' => $candidateParentId,
+            ]
+        );
+
+        return $row !== null;
+    }
+
     private function listTreeIds(int $rootId): array
     {
         $rows = DB::fetchAll(
