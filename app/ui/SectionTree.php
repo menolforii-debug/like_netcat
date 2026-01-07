@@ -76,6 +76,7 @@ final class SectionTree
         $isSystemRoot = $node['parent_id'] === null
             && isset($node['english_name'])
             && in_array($node['english_name'], ['index', '404'], true);
+        $isSiteRoot = $node['parent_id'] === null && (int) $node['site_id'] === $id;
 
         $link = buildAdminUrl(['section_id' => $id]);
 
@@ -113,7 +114,7 @@ final class SectionTree
             . htmlspecialchars($sitePath, ENT_QUOTES, 'UTF-8')
             . '" target="_blank" title="Открыть на сайте" aria-label="Открыть на сайте">↗</a>';
 
-        if ($canManage && !$isSystemRoot) {
+        if ($canManage && !$isSystemRoot && !$isSiteRoot) {
             $actions .= '<form method="post" action="/admin.php?action=section_delete" class="m-0" data-ajax="true" data-confirm="Удалить этот раздел?">';
             $actions .= csrfTokenField();
             $actions .= '<input type="hidden" name="id" value="' . $id . '">';
