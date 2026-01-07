@@ -3,3 +3,7 @@
 /.vscode/
 .DS_Store
 *cms.devel9.ru.error*
+
+# local backups
+/var/backups/
+*.bak
