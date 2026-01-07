@@ -219,8 +219,9 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
             $site = $sectionRepo->findById($siteId);
             $options = [];
             if ($site !== null) {
+                $site['depth'] = 0;
                 $options[] = $site;
-                $options = array_merge($options, collectSections($sectionRepo, $siteId));
+                $options = array_merge($options, collectSectionTree($sectionRepo, $siteId, 1));
             }
 
             echo '<h1 class="h5 mb-3">Настройки раздела</h1>';
@@ -258,7 +259,9 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                         continue;
                     }
                     $selectedAttr = (int) ($selected['parent_id'] ?? 0) === (int) $option['id'] ? ' selected' : '';
-                    echo '<option value="' . (int) $option['id'] . '"' . $selectedAttr . '>' . htmlspecialchars((string) $option['title'], ENT_QUOTES, 'UTF-8') . '</option>';
+                    $depthPrefix = str_repeat('— ', (int) ($option['depth'] ?? 0));
+                    $label = $depthPrefix . '[' . (int) $option['id'] . '] ' . (string) $option['title'];
+                    echo '<option value="' . (int) $option['id'] . '"' . $selectedAttr . '>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</option>';
                 }
                 echo '</select></div>';
                 echo '<div class="mb-3"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="' . htmlspecialchars((string) ($selected['sort'] ?? 0), ENT_QUOTES, 'UTF-8') . '"></div>';

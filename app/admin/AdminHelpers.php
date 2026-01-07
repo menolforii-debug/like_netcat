@@ -2,13 +2,103 @@
 
 function redirectTo(string $url): void
 {
-    header('Location: ' . $url);
+    $redirectUrl = $url;
+    $parts = parse_url($url);
+    if ($parts !== false) {
+        $queryParams = [];
+        if (isset($parts['query'])) {
+            parse_str($parts['query'], $queryParams);
+        }
+        $flashMap = [
+            'notice' => 'success',
+            'error' => 'error',
+        ];
+        $hasFlash = false;
+        foreach ($flashMap as $param => $type) {
+            if (!isset($queryParams[$param])) {
+                continue;
+            }
+            $message = (string) $queryParams[$param];
+            if ($message !== '') {
+                addFlashMessage($type, $message);
+            }
+            unset($queryParams[$param]);
+            $hasFlash = true;
+        }
+
+        if ($hasFlash) {
+            $redirectUrl = buildUrlFromParts($parts, $queryParams);
+        }
+    }
+
+    header('Location: ' . $redirectUrl);
     exit;
 }
 
 function buildAdminUrl(array $params = []): string
 {
     return '/admin.php' . (empty($params) ? '' : '?' . http_build_query($params));
+}
+
+function buildUrlFromParts(array $parts, array $queryParams): string
+{
+    $query = http_build_query($queryParams);
+    $url = '';
+
+    if (isset($parts['scheme'])) {
+        $url .= $parts['scheme'] . '://';
+        if (isset($parts['user'])) {
+            $url .= $parts['user'];
+            if (isset($parts['pass'])) {
+                $url .= ':' . $parts['pass'];
+            }
+            $url .= '@';
+        }
+        if (isset($parts['host'])) {
+            $url .= $parts['host'];
+        }
+        if (isset($parts['port'])) {
+            $url .= ':' . $parts['port'];
+        }
+    }
+
+    $url .= $parts['path'] ?? '';
+
+    if ($query !== '') {
+        $url .= '?' . $query;
+    }
+
+    if (isset($parts['fragment'])) {
+        $url .= '#' . $parts['fragment'];
+    }
+
+    return $url;
+}
+
+function addFlashMessage(string $type, string $message): void
+{
+    if (!isset($_SESSION['flash'])) {
+        $_SESSION['flash'] = [];
+    }
+    if (!isset($_SESSION['flash'][$type]) || !is_array($_SESSION['flash'][$type])) {
+        $_SESSION['flash'][$type] = [];
+    }
+    $_SESSION['flash'][$type][] = $message;
+}
+
+function pullFlashMessage(string $type): string
+{
+    if (!isset($_SESSION['flash'][$type]) || !is_array($_SESSION['flash'][$type])) {
+        return '';
+    }
+    $message = array_shift($_SESSION['flash'][$type]);
+    if (empty($_SESSION['flash'][$type])) {
+        unset($_SESSION['flash'][$type]);
+    }
+    if (empty($_SESSION['flash'])) {
+        unset($_SESSION['flash']);
+    }
+    return (string) $message;
 }
 
 /**
@@ -138,6 +228,19 @@ function collectSections(SectionRepo $repo, int $parentId): array
     foreach ($children as $child) {
         $items[] = $child;
         $items = array_merge($items, collectSections($repo, (int) $child['id']));
+    }
+
+    return $items;
+}
+
+function collectSectionTree(SectionRepo $repo, int $parentId, int $depth = 0): array
+{
+    $items = [];
+    $children = $repo->listChildren($parentId);
+    foreach ($children as $child) {
+        $child['depth'] = $depth;
+        $items[] = $child;
+        $items = array_merge($items, collectSectionTree($repo, (int) $child['id'], $depth + 1));
     }
 
     return $items;
