@@ -6,6 +6,8 @@ $siteMirrorsRaw = isset($_POST['site_mirrors']) ? (string) $_POST['site_mirrors'
 $siteEnabled = isset($_POST['site_enabled']) ? true : false;
 $offlineHtml = isset($_POST['site_offline_html']) ? (string) $_POST['site_offline_html'] : '';
 $layout = isset($_POST['layout']) ? trim((string) $_POST['layout']) : '';
+$layoutFieldsKey = isset($_POST['layout_fields_key']) ? trim((string) $_POST['layout_fields_key']) : '';
+$layoutFieldsInput = isset($_POST['layout_fields']) && is_array($_POST['layout_fields']) ? $_POST['layout_fields'] : [];
 
 if ($title === '') {
     if (isAjaxRequest()) {
@@ -37,6 +39,13 @@ $extra = [
 ];
 if ($layout !== '' && Layout::layoutExists($layout)) {
     $extra['layout'] = $layout;
+}
+if ($layoutFieldsKey !== '' && Layout::layoutExists($layoutFieldsKey)) {
+    $fields = readLayoutFields($layoutFieldsKey);
+    $values = filterLayoutFieldValues($fields, $layoutFieldsInput);
+    if (!empty($values)) {
+        $extra['layout_fields'] = [$layoutFieldsKey => $values];
+    }
 }
 
 $siteId = $sectionRepo->createSite($title, $extra);

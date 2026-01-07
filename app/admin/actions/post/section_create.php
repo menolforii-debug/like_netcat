@@ -5,6 +5,8 @@ $title = isset($_POST['title']) ? trim((string) $_POST['title']) : '';
 $englishName = isset($_POST['english_name']) ? trim((string) $_POST['english_name']) : '';
 $sort = isset($_POST['sort']) ? (int) $_POST['sort'] : 0;
 $layout = isset($_POST['layout']) ? trim((string) $_POST['layout']) : '';
+$layoutFieldsKey = isset($_POST['layout_fields_key']) ? trim((string) $_POST['layout_fields_key']) : '';
+$layoutFieldsInput = isset($_POST['layout_fields']) && is_array($_POST['layout_fields']) ? $_POST['layout_fields'] : [];
 
 if ($parentId <= 0) {
     if (isAjaxRequest()) {
@@ -46,6 +48,13 @@ if ($sectionRepo->existsSiblingEnglishName($siteId, $parentId, $englishName)) {
 $extra = [];
 if ($layout !== '' && Layout::layoutExists($layout)) {
     $extra['layout'] = $layout;
+}
+if ($layoutFieldsKey !== '' && Layout::layoutExists($layoutFieldsKey)) {
+    $fields = readLayoutFields($layoutFieldsKey);
+    $values = filterLayoutFieldValues($fields, $layoutFieldsInput);
+    if (!empty($values)) {
+        $extra['layout_fields'] = [$layoutFieldsKey => $values];
+    }
 }
 
 $sectionId = $sectionRepo->createSection($parentId, $siteId, $englishName, $title, $sort, $extra);

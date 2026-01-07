@@ -20,21 +20,8 @@ $siteMirrorsRaw = isset($_POST['site_mirrors']) ? (string) $_POST['site_mirrors'
 $siteEnabled = isset($_POST['site_enabled']) ? true : false;
 $offlineHtml = isset($_POST['site_offline_html']) ? (string) $_POST['site_offline_html'] : '';
 $layout = isset($_POST['layout']) ? trim((string) $_POST['layout']) : '';
-
-$normalizedDomain = normalizeHost($siteDomain);
-$normalizedMirrors = parseMirrorLines($siteMirrorsRaw);
-$candidates = array_values(array_unique(array_filter(array_merge([$normalizedDomain], $normalizedMirrors))));
-
-foreach ($candidates as $candidate) {
-    $found = $sectionRepo->findSiteByHost($candidate);
-    if ($found !== null && (int) $found['id'] !== (int) $id) {
-        $message = 'Домен ' . $candidate . ' уже используется сайтом id=' . (int) $found['id'] . ' / title=' . (string) $found['title'];
-        if (isAjaxRequest()) {
-            jsonResponse(['ok' => false, 'error' => $message]);
-        }
-        redirectTo(buildAdminUrl(['section_id' => $id, 'error' => $message]));
-    }
-}
+$layoutFieldsKey = isset($_POST['layout_fields_key']) ? trim((string) $_POST['layout_fields_key']) : '';
+$layoutFieldsInput = isset($_POST['layout_fields']) && is_array($_POST['layout_fields']) ? $_POST['layout_fields'] : [];
 
 $normalizedDomain = normalizeHost($siteDomain);
 $normalizedMirrors = parseMirrorLines($siteMirrorsRaw);
@@ -60,6 +47,18 @@ if ($layout !== '' && Layout::layoutExists($layout)) {
     $extra['layout'] = $layout;
 } else {
     unset($extra['layout']);
+}
+if ($layoutFieldsKey !== '' && Layout::layoutExists($layoutFieldsKey)) {
+    $fields = readLayoutFields($layoutFieldsKey);
+    $values = filterLayoutFieldValues($fields, $layoutFieldsInput);
+    if (!empty($values)) {
+        $extra['layout_fields'][$layoutFieldsKey] = $values;
+    } elseif (!empty($extra['layout_fields']) && is_array($extra['layout_fields'])) {
+        unset($extra['layout_fields'][$layoutFieldsKey]);
+        if (empty($extra['layout_fields'])) {
+            unset($extra['layout_fields']);
+        }
+    }
 }
 
 $sectionRepo->update($id, [

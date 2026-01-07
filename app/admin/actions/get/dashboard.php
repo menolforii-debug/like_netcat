@@ -30,10 +30,10 @@ $renderSidebar = function () use ($sections, $selectedId, $currentSiteId, $isAdm
     echo '<div class="d-flex justify-content-between align-items-center mb-2">';
     echo '<div class="fw-semibold">Сайты и разделы</div>';
     if ($isAdmin) {
-        $createUrl = buildAdminUrl(['action' => 'site_form']);
-        echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars($createUrl, ENT_QUOTES, 'UTF-8') . '" title="Добавить сайт" aria-label="Добавить сайт">';
+        $createUrl = buildAdminUrl(['action' => 'site_new']);
+        echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars($createUrl, ENT_QUOTES, 'UTF-8') . '" title="Добавить сайт" aria-label="Добавить сайт">';
         echo '<i class="fi fi-plus"></i>';
-        echo '</button>';
+        echo '</a>';
     }
     echo '</div>';
 
@@ -66,7 +66,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
         echo '<h1 class="h5 mb-0">Настройки сайта</h1>';
         if ($isAdmin) {
             $editUrl = buildAdminUrl(['action' => 'site_form', 'id' => (int) $selected['id']]);
-            echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars($editUrl, ENT_QUOTES, 'UTF-8') . '">Редактировать</button>';
+            echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars($editUrl, ENT_QUOTES, 'UTF-8') . '">Редактировать</a>';
         }
         echo '</div>';
         echo '<dl class="row mb-0">';
@@ -103,7 +103,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
             echo '<h1 class="h5 mb-0">Настройки раздела</h1>';
             if ($isAdmin) {
                 $editUrl = buildAdminUrl(['action' => 'section_form', 'id' => (int) $selected['id']]);
-                echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars($editUrl, ENT_QUOTES, 'UTF-8') . '">Редактировать</button>';
+                echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars($editUrl, ENT_QUOTES, 'UTF-8') . '">Редактировать</a>';
             }
             echo '</div>';
             $extra = decodeExtra($selected);

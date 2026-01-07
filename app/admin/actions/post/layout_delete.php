@@ -38,6 +38,11 @@ if (!is_file($path) || !@unlink($path)) {
     redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey, 'error' => 'Не удалось удалить макет']));
 }
 
+$fieldsPath = layoutFieldsPath($layoutKey);
+if (is_file($fieldsPath)) {
+    @unlink($fieldsPath);
+}
+
 if (isAjaxRequest()) {
     jsonResponse(['ok' => true, 'notice' => 'Макет удален']);
 }

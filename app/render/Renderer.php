@@ -110,12 +110,14 @@ final class Renderer
 
         $seo = $this->resolveSeo($section, $infoblocks, $infoblockViews, $itemTitle);
         $layoutKey = $this->resolveLayoutKey($path, $section, $site);
+        $layoutSettings = $this->resolveLayoutSettings($sectionRepo, $site, $section, $layoutKey);
 
         Layout::render($layoutKey, [
             'title' => (string) ($seo['title'] ?? ''),
             'meta' => $seo,
             'site' => $site,
             'section' => $section,
+            'layout_settings' => $layoutSettings,
         ], function () use ($section, $children, $core): void {
             $this->renderSection($section, $children, $core, false);
         });
@@ -428,6 +430,47 @@ final class Renderer
         }
 
         return Layout::layoutExists($layoutKey) ? $layoutKey : 'default';
+    }
+
+    private function resolveLayoutSettings(SectionRepo $sectionRepo, array $site, array $section, string $layoutKey): array
+    {
+        if ($layoutKey === '') {
+            return [];
+        }
+
+        $nodes = [$site];
+        $chain = [];
+        $current = $section;
+        while ($current && $current['parent_id'] !== null) {
+            $chain[] = $current;
+            if ((int) $current['parent_id'] === (int) $site['id']) {
+                break;
+            }
+            $current = $sectionRepo->findById((int) $current['parent_id']);
+        }
+        if (!empty($chain)) {
+            $nodes = array_merge($nodes, array_reverse($chain));
+        }
+
+        $settings = [];
+        foreach ($nodes as $node) {
+            $extra = $this->decodeExtra($node);
+            if (empty($extra['layout_fields']) || !is_array($extra['layout_fields'])) {
+                continue;
+            }
+            $values = $extra['layout_fields'][$layoutKey] ?? null;
+            if (!is_array($values)) {
+                continue;
+            }
+            foreach ($values as $key => $value) {
+                if ($value === '' || $value === null) {
+                    continue;
+                }
+                $settings[(string) $key] = $value;
+            }
+        }
+
+        return $settings;
     }
 
     private function isPreviewAllowed($objectId): bool

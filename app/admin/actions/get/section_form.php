@@ -46,15 +46,32 @@ if ($site !== null) {
 
 $extra = $section ? decodeExtra($section) : [];
 $layouts = Layout::listLayouts();
+$siteExtra = $site ? decodeExtra($site) : [];
+$siteLayout = isset($siteExtra['layout']) ? (string) $siteExtra['layout'] : '';
 $currentLayout = isset($extra['layout']) ? (string) $extra['layout'] : '';
 if ($currentLayout !== '' && !in_array($currentLayout, $layouts, true)) {
     $currentLayout = '';
 }
+$layoutForFields = $currentLayout !== '' ? $currentLayout : $siteLayout;
+$isAjax = isAjaxRequest();
 
 $isSystemRoot = $section && $section['parent_id'] === null && in_array($section['english_name'] ?? '', ['index', '404'], true);
 
-echo '<span data-modal-title="' . ($id > 0 ? 'Редактировать раздел' : 'Новый раздел') . '"></span>';
-echo '<form method="post" action="/admin.php?action=' . ($id > 0 ? 'section_update' : 'section_create') . '" data-ajax="true">';
+if (!$isAjax) {
+    AdminLayout::renderHeader($id > 0 ? 'Редактировать раздел' : 'Новый раздел');
+    renderAlert($notice, 'success');
+    renderAlert($errorMessage, 'error');
+    echo '<div class="d-flex justify-content-between align-items-center mb-3">';
+    echo '<h1 class="h4 mb-0">' . ($id > 0 ? 'Редактировать раздел' : 'Новый раздел') . '</h1>';
+    echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $siteId]), ENT_QUOTES, 'UTF-8') . '">Назад</a>';
+    echo '</div>';
+    echo '<div class="card shadow-sm"><div class="card-body">';
+}
+
+if ($isAjax) {
+    echo '<span data-modal-title="' . ($id > 0 ? 'Редактировать раздел' : 'Новый раздел') . '"></span>';
+}
+echo '<form method="post" action="/admin.php?action=' . ($id > 0 ? 'section_update' : 'section_create') . '"' . ($isAjax ? ' data-ajax="true"' : '') . '>';
 echo csrfTokenField();
 if ($id > 0) {
     echo '<input type="hidden" name="id" value="' . (int) $section['id'] . '">';
@@ -84,7 +101,68 @@ foreach ($layouts as $layout) {
     echo '<option value="' . htmlspecialchars($layout, ENT_QUOTES, 'UTF-8') . '"' . $selectedAttr . '>' . htmlspecialchars($layout, ENT_QUOTES, 'UTF-8') . '</option>';
 }
 echo '</select></div>';
+
+$layoutFields = $layoutForFields !== '' ? readLayoutFields($layoutForFields) : [];
+$layoutValues = [];
+if (!empty($extra['layout_fields']) && is_array($extra['layout_fields']) && $layoutForFields !== '') {
+    $valuesForLayout = $extra['layout_fields'][$layoutForFields] ?? null;
+    if (is_array($valuesForLayout)) {
+        $layoutValues = $valuesForLayout;
+    }
+}
+
+if ($layoutForFields !== '' && !empty($layoutFields)) {
+    echo '<h2 class="h6 mt-4">Визуальные настройки</h2>';
+    echo '<input type="hidden" name="layout_fields_key" value="' . htmlspecialchars($layoutForFields, ENT_QUOTES, 'UTF-8') . '">';
+    if ($currentLayout === '' && $siteLayout !== '') {
+        echo '<div class="form-text mb-2">Используется макет сайта: ' . htmlspecialchars($siteLayout, ENT_QUOTES, 'UTF-8') . '.</div>';
+    }
+    foreach ($layoutFields as $field) {
+        $name = (string) $field['name'];
+        $label = (string) ($field['label'] ?? $name);
+        $type = (string) ($field['type'] ?? 'text');
+        $value = isset($layoutValues[$name]) ? (string) $layoutValues[$name] : '';
+        echo '<div class="mb-3">';
+        echo '<label class="form-label">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</label>';
+        if ($type === 'textarea') {
+            echo '<textarea class="form-control" name="layout_fields[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" rows="3">' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '</textarea>';
+        } elseif ($type === 'select' && !empty($field['options']) && is_array($field['options'])) {
+            echo '<select class="form-select" name="layout_fields[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']">';
+            echo '<option value="">—</option>';
+            foreach ($field['options'] as $option) {
+                if (!is_array($option)) {
+                    continue;
+                }
+                $optKey = (string) ($option['key'] ?? '');
+                $optLabel = (string) ($option['label'] ?? $optKey);
+                if ($optKey === '') {
+                    continue;
+                }
+                $selectedAttr = $optKey === $value ? ' selected' : '';
+                echo '<option value="' . htmlspecialchars($optKey, ENT_QUOTES, 'UTF-8') . '"' . $selectedAttr . '>' . htmlspecialchars($optLabel, ENT_QUOTES, 'UTF-8') . '</option>';
+            }
+            echo '</select>';
+        } elseif ($type === 'checkbox') {
+            echo '<select class="form-select" name="layout_fields[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']">';
+            echo '<option value="">—</option>';
+            $yesSelected = $value === '1' ? ' selected' : '';
+            $noSelected = $value === '0' ? ' selected' : '';
+            echo '<option value="1"' . $yesSelected . '>Да</option>';
+            echo '<option value="0"' . $noSelected . '>Нет</option>';
+            echo '</select>';
+        } else {
+            $inputType = $type === 'number' ? 'number' : ($type === 'date' ? 'date' : 'text');
+            echo '<input class="form-control" type="' . htmlspecialchars($inputType, ENT_QUOTES, 'UTF-8') . '" name="layout_fields[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" value="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '">';
+        }
+        echo '</div>';
+    }
+}
 echo '<div class="d-flex justify-content-end gap-2">';
 echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
 echo '</div>';
 echo '</form>';
+
+if (!$isAjax) {
+    echo '</div></div>';
+    AdminLayout::renderFooter();
+}

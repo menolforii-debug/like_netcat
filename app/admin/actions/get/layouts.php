@@ -6,6 +6,10 @@ if (!Auth::isAdmin()) {
 
 $layouts = Layout::listLayouts();
 $layoutKey = isset($_GET['layout']) ? trim((string) $_GET['layout']) : '';
+$tab = isset($_GET['tab']) ? trim((string) $_GET['tab']) : 'edit';
+if (!in_array($tab, ['edit', 'visual'], true)) {
+    $tab = 'edit';
+}
 
 if ($layoutKey !== '' && $layoutKey !== '_new' && !in_array($layoutKey, $layouts, true)) {
     $layoutKey = '';
@@ -105,11 +109,79 @@ if ($layoutKey === '_new') {
     echo '</form>';
 } elseif ($layoutKey !== '') {
     $content = readLayoutTemplate($layoutKey);
+    $editLink = buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey, 'tab' => 'edit']);
+    $visualLink = buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey, 'tab' => 'visual']);
     echo '<ul class="nav nav-tabs mb-3">';
-    echo '<li class="nav-item"><span class="nav-link active">Редактирование макета</span></li>';
+    echo '<li class="nav-item"><a class="nav-link' . ($tab === 'edit' ? ' active' : '') . '" href="' . htmlspecialchars($editLink, ENT_QUOTES, 'UTF-8') . '">Редактирование макета</a></li>';
+    echo '<li class="nav-item"><a class="nav-link' . ($tab === 'visual' ? ' active' : '') . '" href="' . htmlspecialchars($visualLink, ENT_QUOTES, 'UTF-8') . '">Визуальные настройки</a></li>';
     echo '</ul>';
+
     if ($content === null) {
         echo '<div class="text-muted">Макет не найден.</div>';
+    } elseif ($tab === 'visual') {
+        $fields = readLayoutFields($layoutKey);
+        echo '<form method="post" action="/admin.php?action=layout_fields_update">';
+        echo csrfTokenField();
+        echo '<input type="hidden" name="layout_key" value="' . htmlspecialchars($layoutKey, ENT_QUOTES, 'UTF-8') . '">';
+        echo '<div class="table-responsive">';
+        echo '<table class="table table-sm align-middle">';
+        echo '<thead><tr><th>Имя</th><th>Подпись</th><th>Тип</th><th>Обязательное</th><th>Опции</th><th>Удалить</th></tr></thead><tbody>';
+
+        foreach ($fields as $index => $field) {
+            echo '<tr>';
+            echo '<td><input class="form-control form-control-sm" name="fields[' . $index . '][name]" value="' . htmlspecialchars((string) $field['name'], ENT_QUOTES, 'UTF-8') . '"></td>';
+            echo '<td><input class="form-control form-control-sm" name="fields[' . $index . '][label]" value="' . htmlspecialchars((string) $field['label'], ENT_QUOTES, 'UTF-8') . '"></td>';
+            echo '<td><select class="form-select form-select-sm" name="fields[' . $index . '][type]">';
+            foreach (['text', 'textarea', 'number', 'date', 'checkbox', 'select'] as $type) {
+                $selected = $type === (string) $field['type'] ? ' selected' : '';
+                echo '<option value="' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '"' . $selected . '>' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '</option>';
+            }
+            echo '</select></td>';
+            $checked = !empty($field['required']) ? ' checked' : '';
+            echo '<td><input class="form-check-input" type="checkbox" name="fields[' . $index . '][required]" value="1"' . $checked . '></td>';
+            echo '<td>';
+            if ((string) $field['type'] === 'select') {
+                echo '<div class="d-flex flex-column gap-1">';
+                $optIndex = 0;
+                if (!empty($field['options']) && is_array($field['options'])) {
+                    foreach ($field['options'] as $optKey => $optLabel) {
+                        echo '<div class="input-group input-group-sm">';
+                        echo '<input class="form-control" name="fields[' . $index . '][options][' . $optIndex . '][key]" value="' . htmlspecialchars((string) $optKey, ENT_QUOTES, 'UTF-8') . '" placeholder="Ключ">';
+                        echo '<input class="form-control" name="fields[' . $index . '][options][' . $optIndex . '][label]" value="' . htmlspecialchars((string) $optLabel, ENT_QUOTES, 'UTF-8') . '" placeholder="Название">';
+                        echo '<span class="input-group-text"><input type="checkbox" name="fields[' . $index . '][options][' . $optIndex . '][delete]" value="1"></span>';
+                        echo '</div>';
+                        $optIndex++;
+                    }
+                }
+                echo '<div class="input-group input-group-sm">';
+                echo '<input class="form-control" name="fields[' . $index . '][options][' . $optIndex . '][key]" placeholder="Ключ">';
+                echo '<input class="form-control" name="fields[' . $index . '][options][' . $optIndex . '][label]" placeholder="Название">';
+                echo '</div>';
+                echo '</div>';
+            } else {
+                echo '<span class="text-muted small">—</span>';
+            }
+            echo '</td>';
+            echo '<td><input class="form-check-input" type="checkbox" name="fields[' . $index . '][delete]" value="1"></td>';
+            echo '</tr>';
+        }
+
+        $newIndex = count($fields);
+        echo '<tr>';
+        echo '<td><input class="form-control form-control-sm" name="fields[' . $newIndex . '][name]" placeholder="Новое поле"></td>';
+        echo '<td><input class="form-control form-control-sm" name="fields[' . $newIndex . '][label]" placeholder="Подпись"></td>';
+        echo '<td><select class="form-select form-select-sm" name="fields[' . $newIndex . '][type]">';
+        foreach (['text', 'textarea', 'number', 'date', 'checkbox', 'select'] as $type) {
+            echo '<option value="' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '</option>';
+        }
+        echo '</select></td>';
+        echo '<td><input class="form-check-input" type="checkbox" name="fields[' . $newIndex . '][required]" value="1"></td>';
+        echo '<td><span class="text-muted small">—</span></td>';
+        echo '<td></td>';
+        echo '</tr>';
+        echo '</tbody></table></div>';
+        echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
+        echo '</form>';
     } else {
         echo '<form method="post" action="/admin.php?action=layout_update">';
         echo csrfTokenField();

@@ -490,6 +490,11 @@ function normalizeComponentFieldsInput(array $fieldsInput): array
     return $normalized;
 }
 
+function normalizeLayoutFieldsInput(array $fieldsInput): array
+{
+    return normalizeComponentFieldsInput($fieldsInput);
+}
+
 function renderComponentViewTemplate(string $listTpl, string $singleTpl): string
 {
     $content = "<?php\n";
@@ -561,6 +566,110 @@ function layoutTemplatesDir(): string
     return dirname(__DIR__, 2) . '/app/ui/layouts';
 }
 
+function layoutFieldsPath(string $layoutKey): string
+{
+    return layoutTemplatesDir() . '/' . $layoutKey . '.fields.json';
+}
+
+function readLayoutFields(string $layoutKey): array
+{
+    if (!layoutKeyIsValid($layoutKey)) {
+        return [];
+    }
+
+    $path = layoutFieldsPath($layoutKey);
+    if (!is_file($path)) {
+        return [];
+    }
+
+    $content = file_get_contents($path);
+    if ($content === false) {
+        return [];
+    }
+
+    $decoded = json_decode($content, true);
+    if (!is_array($decoded)) {
+        return [];
+    }
+
+    $fields = $decoded['fields'] ?? $decoded;
+    if (!is_array($fields)) {
+        return [];
+    }
+
+    return normalizeLayoutFieldsInput($fields);
+}
+
+function writeLayoutFields(string $layoutKey, array $fields, ?string &$error = null): bool
+{
+    if (!layoutKeyIsValid($layoutKey)) {
+        $error = 'Некорректный ключ макета.';
+        return false;
+    }
+
+    $path = layoutFieldsPath($layoutKey);
+    $payload = json_encode(['fields' => $fields], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    if ($payload === false) {
+        $error = 'Не удалось сохранить поля макета.';
+        return false;
+    }
+
+    if (file_put_contents($path, $payload) === false) {
+        $error = 'Не удалось сохранить поля макета.';
+        return false;
+    }
+    @chmod($path, 0660);
+
+    return true;
+}
+
+function filterLayoutFieldValues(array $fields, array $input): array
+{
+    $values = [];
+    foreach ($fields as $field) {
+        $name = (string) ($field['name'] ?? '');
+        if ($name === '' || !array_key_exists($name, $input)) {
+            continue;
+        }
+
+        $raw = $input[$name];
+        if (is_array($raw)) {
+            continue;
+        }
+
+        $value = trim((string) $raw);
+        if ($value === '') {
+            continue;
+        }
+
+        $type = (string) ($field['type'] ?? 'text');
+        if ($type === 'checkbox') {
+            if ($value === '1' || $value === '0') {
+                $values[$name] = $value;
+            }
+            continue;
+        }
+
+        if ($type === 'select') {
+            $options = $field['options'] ?? [];
+            $allowed = [];
+            if (is_array($options)) {
+                foreach ($options as $option) {
+                    if (is_array($option) && isset($option['key'])) {
+                        $allowed[] = (string) $option['key'];
+                    }
+                }
+            }
+            if (!in_array($value, $allowed, true)) {
+                continue;
+            }
+        }
+
+        $values[$name] = $value;
+    }
+
+    return $values;
+}
 function readLayoutTemplate(string $layoutKey): ?string
 {
     if (!layoutKeyIsValid($layoutKey)) {
