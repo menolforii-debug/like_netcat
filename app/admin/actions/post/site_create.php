@@ -14,7 +14,16 @@ if ($title === '') {
     redirectTo(buildAdminUrl(['action' => 'site_new', 'error' => 'Название сайта обязательно']));
 }
 
-$normalizedDomain = normalizeHost($siteDomain);
+$existingSites = $sectionRepo->listSitesOnly();
+if (!empty($existingSites)) {
+    $message = 'В системе уже есть сайт. Поддерживается только один сайт.';
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => $message]);
+    }
+    redirectTo(buildAdminUrl(['action' => 'site_new', 'error' => $message]));
+}
+
+$normalizedDomain = Utils::normalizeHost($siteDomain);
 $normalizedMirrors = parseMirrorLines($siteMirrorsRaw);
 $candidates = array_values(array_unique(array_filter(array_merge([$normalizedDomain], $normalizedMirrors))));
 
