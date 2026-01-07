@@ -72,7 +72,7 @@ if (isAjaxRequest()) {
         'ok' => true,
         'notice' => 'Раздел создан',
         'refresh' => ['#sidebarTree', '#contentPane'],
-        'focus' => ['section_id' => $sectionId],
+        'focus' => ['section_id' => $sectionId, 'tab' => 'section'],
     ]);
 }
-redirectTo(buildAdminUrl(['section_id' => $sectionId, 'notice' => 'Раздел создан']));
+redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'section', 'notice' => 'Раздел создан']));
