@@ -41,6 +41,14 @@ if ($parentId <= 0) {
     redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Нужен родительский раздел']));
 }
 
+$parentIdInvalid = $parentId === $id || $sectionRepo->isDescendant($id, $parentId);
+if ($parentIdInvalid) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Нельзя выбрать текущий раздел или его потомка родителем']);
+    }
+    redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Нельзя выбрать текущий раздел или его потомка родителем']));
+}
+
 $parent = $sectionRepo->findById($parentId);
 if ($parent === null || (int) $parent['site_id'] !== $siteId) {
     if (isAjaxRequest()) {
