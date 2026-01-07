@@ -5,32 +5,56 @@ $title = isset($_POST['title']) ? trim((string) $_POST['title']) : '';
 $englishName = isset($_POST['english_name']) ? trim((string) $_POST['english_name']) : '';
 $sort = isset($_POST['sort']) ? (int) $_POST['sort'] : 0;
 $layout = isset($_POST['layout']) ? trim((string) $_POST['layout']) : '';
+$layoutFieldsKey = isset($_POST['layout_fields_key']) ? trim((string) $_POST['layout_fields_key']) : '';
+$layoutFieldsInput = isset($_POST['layout_fields']) && is_array($_POST['layout_fields']) ? $_POST['layout_fields'] : [];
 
 if ($parentId <= 0) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Родитель не найден']);
+    }
     redirectTo(buildAdminUrl(['error' => 'Родитель не найден']));
 }
 
 $parent = $sectionRepo->findById($parentId);
 if ($parent === null) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Родитель не найден']);
+    }
     redirectTo(buildAdminUrl(['error' => 'Родитель не найден']));
 }
 
 if ($title === '' || $englishName === '') {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Название и english_name обязательны']);
+    }
     redirectTo(buildAdminUrl(['action' => 'section_new', 'parent_id' => $parentId, 'error' => 'Название и english_name обязательны']));
 }
 
 if (!englishNameIsValid($englishName)) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'English name должен быть URL-безопасным']);
+    }
     redirectTo(buildAdminUrl(['action' => 'section_new', 'parent_id' => $parentId, 'error' => 'English name должен быть URL-безопасным']));
 }
 
 $siteId = (int) $parent['site_id'];
 if ($sectionRepo->existsSiblingEnglishName($siteId, $parentId, $englishName)) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'English name должен быть уникальным в пределах родительского раздела']);
+    }
     redirectTo(buildAdminUrl(['action' => 'section_new', 'parent_id' => $parentId, 'error' => 'English name должен быть уникальным в пределах родительского раздела']));
 }
 
 $extra = [];
-if (in_array($layout, ['default', 'home'], true)) {
+if ($layout !== '' && Layout::layoutExists($layout)) {
     $extra['layout'] = $layout;
+}
+if ($layoutFieldsKey !== '' && Layout::layoutExists($layoutFieldsKey)) {
+    $fields = readLayoutFields($layoutFieldsKey);
+    $values = filterLayoutFieldValues($fields, $layoutFieldsInput);
+    if (!empty($values)) {
+        $extra['layout_fields'] = [$layoutFieldsKey => $values];
+    }
 }
 
 $sectionId = $sectionRepo->createSection($parentId, $siteId, $englishName, $title, $sort, $extra);
@@ -41,6 +65,14 @@ if ($user) {
         'english_name' => $englishName,
         'sort' => $sort,
         'layout' => $extra['layout'] ?? '',
+    ]);
+}
+if (isAjaxRequest()) {
+    jsonResponse([
+        'ok' => true,
+        'notice' => 'Раздел создан',
+        'refresh' => ['#sidebarTree', '#contentPane'],
+        'focus' => ['section_id' => $sectionId],
     ]);
 }
 redirectTo(buildAdminUrl(['section_id' => $sectionId, 'notice' => 'Раздел создан']));

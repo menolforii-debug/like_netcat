@@ -27,9 +27,11 @@ echo '<input type="hidden" name="parent_id" value="' . (int) $parentId . '">';
 echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" type="text" name="title" required></div>';
 echo '<div class="mb-3"><label class="form-label">English name</label><input class="form-control" type="text" name="english_name" required></div>';
 echo '<div class="mb-3"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="0"></div>';
-echo '<div class="mb-3"><label class="form-label">Шаблон</label><select class="form-select" name="layout">';
-foreach (['default' => 'По умолчанию', 'home' => 'Главная'] as $value => $label) {
-    echo '<option value="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</option>';
+$layouts = Layout::listLayouts();
+echo '<div class="mb-3"><label class="form-label">Макет дизайна</label><select class="form-select" name="layout">';
+echo '<option value="">Наследовать макет сайта</option>';
+foreach ($layouts as $layout) {
+    echo '<option value="' . htmlspecialchars($layout, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($layout, ENT_QUOTES, 'UTF-8') . '</option>';
 }
 echo '</select></div>';
 echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
