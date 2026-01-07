@@ -114,7 +114,7 @@ final class SectionTree
             . '" target="_blank" title="Открыть на сайте" aria-label="Открыть на сайте">↗</a>';
 
         if ($canManage && !$isSystemRoot) {
-            $actions .= '<form method="post" action="/admin.php?action=section_delete" class="m-0" data-ajax="true" data-confirm="Удалить этот раздел?">';
+            $actions .= '<form method="post" action="/admin.php?action=section_delete" class="m-0" onsubmit="return confirm(\'Удалить этот раздел?\')">';
             $actions .= csrfTokenField();
             $actions .= '<input type="hidden" name="id" value="' . $id . '">';
             $actions .= '<button class="btn btn-icon-square btn-outline-danger" type="submit" title="Удалить" aria-label="Удалить">×</button>';

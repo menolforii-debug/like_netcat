@@ -3,9 +3,6 @@
 $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
 $section = $sectionRepo->findById($id);
 if ($section === null || $section['parent_id'] === null) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Раздел не найден']);
-    }
     redirectTo(buildAdminUrl(['error' => 'Раздел не найден']));
 }
 
@@ -14,47 +11,30 @@ $englishName = isset($_POST['english_name']) ? trim((string) $_POST['english_nam
 $parentId = isset($_POST['parent_id']) ? (int) $_POST['parent_id'] : 0;
 $sort = isset($_POST['sort']) ? (int) $_POST['sort'] : 0;
 $layout = isset($_POST['layout']) ? trim((string) $_POST['layout']) : '';
-$layoutFieldsKey = isset($_POST['layout_fields_key']) ? trim((string) $_POST['layout_fields_key']) : '';
-$layoutFieldsInput = isset($_POST['layout_fields']) && is_array($_POST['layout_fields']) ? $_POST['layout_fields'] : [];
 $isSystemRoot = $section['parent_id'] === null && in_array($section['english_name'], ['index', '404'], true);
 if ($isSystemRoot) {
     $englishName = (string) $section['english_name'];
 }
 
 if ($title === '' || $englishName === '') {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Название и english_name обязательны']);
-    }
     redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Название и english_name обязательны']));
 }
 
 if (!englishNameIsValid($englishName)) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'English name должен быть URL-безопасным']);
-    }
     redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'English name должен быть URL-безопасным']));
 }
 
 $siteId = (int) $section['site_id'];
 if ($parentId <= 0) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Нужен родительский раздел']);
-    }
     redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Нужен родительский раздел']));
 }
 
 $parent = $sectionRepo->findById($parentId);
 if ($parent === null || (int) $parent['site_id'] !== $siteId) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Родитель должен относиться к тому же сайту']);
-    }
     redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Родитель должен относиться к тому же сайту']));
 }
 
 if ($sectionRepo->existsSiblingEnglishName($siteId, $parentId, $englishName, $id)) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'English name должен быть уникальным в пределах родительского раздела']);
-    }
     redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'English name должен быть уникальным в пределах родительского раздела']));
 }
 
@@ -66,22 +46,10 @@ $before = [
 ];
 
 $extra = decodeExtra($section);
-if ($layout !== '' && Layout::layoutExists($layout)) {
+if (in_array($layout, ['default', 'home'], true)) {
     $extra['layout'] = $layout;
 } else {
     unset($extra['layout']);
-}
-if ($layoutFieldsKey !== '' && Layout::layoutExists($layoutFieldsKey)) {
-    $fields = readLayoutFields($layoutFieldsKey);
-    $values = filterLayoutFieldValues($fields, $layoutFieldsInput);
-    if (!empty($values)) {
-        $extra['layout_fields'][$layoutFieldsKey] = $values;
-    } elseif (!empty($extra['layout_fields']) && is_array($extra['layout_fields'])) {
-        unset($extra['layout_fields'][$layoutFieldsKey]);
-        if (empty($extra['layout_fields'])) {
-            unset($extra['layout_fields']);
-        }
-    }
 }
 
 $sectionRepo->update($id, [
@@ -107,12 +75,4 @@ if ($user) {
 }
 
 $noticeMessage = $isSystemRoot ? 'Системный раздел обновлен (english_name фиксирован)' : 'Раздел обновлен';
-if (isAjaxRequest()) {
-    jsonResponse([
-        'ok' => true,
-        'notice' => $noticeMessage,
-        'refresh' => ['#sidebarTree', '#contentPane'],
-        'focus' => ['section_id' => $id],
-    ]);
-}
 redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'notice' => $noticeMessage]));

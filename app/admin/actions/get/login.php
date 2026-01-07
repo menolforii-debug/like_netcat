@@ -1,6 +1,6 @@
 <?php
 
-$error = isset($errorMessage) ? (string) $errorMessage : '';
+$error = isset($error) ? (string) $error : '';
 $bootstrapNotice = '';
 
 if (usersCount() === 0) {

@@ -86,41 +86,4 @@ final class InfoblockRepo
 
         core()->events()->emit('infoblock.deleted', ['id' => $id]);
     }
-
-    public function deleteRecursive(int $id, ?int $expectedSectionId = null): void
-    {
-        $infoblock = $this->findById($id);
-        if ($infoblock === null) {
-            throw new RuntimeException('Инфоблок не найден.');
-        }
-
-        if ($expectedSectionId !== null && (int) $infoblock['section_id'] !== (int) $expectedSectionId) {
-            throw new RuntimeException('Инфоблок не принадлежит указанному разделу.');
-        }
-
-        $pdo = DB::pdo();
-        $manageTransaction = !$pdo->inTransaction();
-        if ($manageTransaction) {
-            $pdo->beginTransaction();
-        }
-
-        try {
-            $stmt = $pdo->prepare('DELETE FROM objects WHERE infoblock_id = :id');
-            $stmt->execute(['id' => $id]);
-
-            $stmt = $pdo->prepare('DELETE FROM infoblocks WHERE id = :id');
-            $stmt->execute(['id' => $id]);
-
-            if ($manageTransaction) {
-                $pdo->commit();
-            }
-        } catch (Throwable $e) {
-            if ($manageTransaction && $pdo->inTransaction()) {
-                $pdo->rollBack();
-            }
-            throw $e;
-        }
-
-        core()->events()->emit('infoblock.deleted', ['id' => $id]);
-    }
 }

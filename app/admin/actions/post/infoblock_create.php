@@ -14,17 +14,11 @@ $afterImage = isset($_POST['after_image']) ? (string) $_POST['after_image'] : ''
 
 $section = $sectionRepo->findById($sectionId);
 if ($section === null || $componentId === 0 || $name === '') {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Заполните обязательные поля']);
-    }
     redirectTo(buildAdminUrl(['action' => 'infoblock_new', 'section_id' => $sectionId, 'error' => 'Заполните обязательные поля']));
 }
 
 $component = $componentRepo->findById($componentId);
 if ($component === null) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
-    }
     redirectTo(buildAdminUrl(['action' => 'infoblock_new', 'section_id' => $sectionId, 'error' => 'Компонент не найден']));
 }
 
@@ -36,9 +30,6 @@ if ($viewTemplate === '') {
 try {
     $settings = parseJsonField($settingsJson, 'settings_json должен быть корректным JSON');
 } catch (Throwable $e) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => $e->getMessage()]);
-    }
     redirectTo(buildAdminUrl(['action' => 'infoblock_new', 'section_id' => $sectionId, 'error' => $e->getMessage()]));
 }
 
@@ -74,11 +65,4 @@ if ($user) {
     ]);
 }
 
-if (isAjaxRequest()) {
-    jsonResponse([
-        'ok' => true,
-        'notice' => 'Инфоблок создан',
-        'refresh' => ['#sidebarTree', '#contentPane'],
-    ]);
-}
 redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'notice' => 'Инфоблок создан']));

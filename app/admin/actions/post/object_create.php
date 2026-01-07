@@ -14,31 +14,19 @@ foreach ($infoblocks as $row) {
 }
 
 if ($infoblock === null) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Инфоблок не найден']);
-    }
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Инфоблок не найден']));
 }
 
 if (!Permission::canAction($user, $infoblock, 'create')) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Недостаточно прав']);
-    }
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Недостаточно прав']));
 }
 
 if ($saveAs === 'publish' && !Permission::canAction($user, $infoblock, 'publish')) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Недостаточно прав для публикации']);
-    }
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Недостаточно прав для публикации']));
 }
 
 $component = $componentRepo->findById((int) $infoblock['component_id']);
 if ($component === null) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
-    }
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Компонент не найден']));
 }
 
@@ -46,9 +34,6 @@ $fields = parseComponentFields($component);
 $data = extractFormData($fields);
 $errors = validateRequiredFields($fields, $data);
 if (!empty($errors)) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => implode(' ', $errors)]);
-    }
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => implode(' ', $errors)]));
 }
 
@@ -67,13 +52,6 @@ if ($user) {
         'infoblock_id' => $infoblockId,
         'data' => $data,
         'status' => $status,
-    ]);
-}
-
-if (isAjaxRequest()) {
-    jsonResponse([
-        'ok' => true,
-        'refresh' => ['#contentPane'],
     ]);
 }
 

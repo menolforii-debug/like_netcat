@@ -23,17 +23,16 @@ final class AdminLayout
         echo "</head>\n";
 
         if (!$showSidebar) {
-            echo "<body class=\"layout-admin bg-light\">\n";
+            echo "<body class=\"bg-light\">\n";
             echo "<main class=\"d-flex align-items-center min-vh-100\">\n";
             echo "<div class=\"container\">\n";
             return;
         }
 
-        echo "<body class=\"layout-admin aside-sticky aside-start bg-light\">\n";
+        echo "<body class=\"bg-light\">\n";
         echo "<div class=\"d-flex flex-column min-vh-100\">\n";
-        echo "<header id=\"header\" class=\"header admin-header\">\n";
+        echo "<header class=\"navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm\">\n";
         echo "<div class=\"container-fluid\">\n";
-        echo "<nav class=\"navbar navbar-expand-lg navbar-dark\">\n";
         echo "<a class=\"navbar-brand fw-semibold\" href=\"/admin.php\">Админка</a>\n";
         echo "<button class=\"navbar-toggler\" type=\"button\" data-bs-toggle=\"collapse\" data-bs-target=\"#adminTopNav\" aria-controls=\"adminTopNav\" aria-expanded=\"false\" aria-label=\"Toggle navigation\">\n";
         echo "<span class=\"navbar-toggler-icon\"></span>\n";
@@ -47,7 +46,6 @@ final class AdminLayout
             'logs' => ['label' => 'Логи', 'href' => '/admin.php?action=logs'],
             'users_list' => ['label' => 'Пользователи', 'href' => '/admin.php?action=users_list'],
             'components' => ['label' => 'Компоненты', 'href' => '/admin.php?action=components'],
-            'layouts' => ['label' => 'Макеты дизайна', 'href' => '/admin.php?action=layouts'],
             'sql' => ['label' => 'SQL', 'href' => '/admin.php?action=sql'],
         ];
         foreach ($menu as $key => $item) {
@@ -56,13 +54,13 @@ final class AdminLayout
         }
         echo "</ul>\n";
         echo "<div class=\"d-flex gap-2\">\n";
-        echo "<a class=\"btn btn-light btn-sm\" href=\"/admin.php?action=logout\">Выйти</a>\n";
+        echo "<a class=\"btn btn-outline-dark btn-sm\" href=\"/admin.php?action=logout\">Выйти</a>\n";
         echo "</div>\n";
         echo "</div>\n";
-        echo "</nav>\n";
         echo "</div>\n";
         echo "</header>\n";
-        echo "<div id=\"wrapper\" class=\"d-flex flex-grow-1\">\n";
+        echo "<main class=\"flex-grow-1\">\n";
+        echo "<div class=\"container-fluid py-4\">\n";
     }
 
     public static function openSidebar(): void
@@ -72,9 +70,8 @@ final class AdminLayout
         }
 
         self::$layoutRowOpen = true;
-        echo "<aside class=\"aside-start aside-secondary\">\n";
-        echo "<div class=\"aside-wrapper\">\n";
-        echo "<div class=\"aside-content p-3\">\n";
+        echo "<div class=\"row g-4\">\n";
+        echo "<aside class=\"col-12 col-lg-3\">\n";
     }
 
     public static function closeSidebar(): void
@@ -83,8 +80,6 @@ final class AdminLayout
             return;
         }
 
-        echo "</div>\n";
-        echo "</div>\n";
         echo "</aside>\n";
     }
 
@@ -94,8 +89,7 @@ final class AdminLayout
             return;
         }
 
-        echo "<div id=\"wrapper_content\" class=\"flex-grow-1\">\n";
-        echo "<div id=\"middle\">\n";
+        echo "<main class=\"col-12 col-lg-9\">\n";
     }
 
     public static function closeContent(): void
@@ -104,8 +98,7 @@ final class AdminLayout
             return;
         }
 
-        echo "</div>\n";
-        echo "</div>\n";
+        echo "</main>\n";
         echo "</div>\n";
         self::$layoutRowOpen = false;
     }
@@ -117,35 +110,9 @@ final class AdminLayout
             echo "</main>\n";
         } else {
             echo "</div>\n";
+            echo "</main>\n";
+            echo "</div>\n";
         }
-
-        echo '<div class="modal fade" id="adminModal" tabindex="-1" aria-hidden="true">';
-        echo '<div class="modal-dialog modal-lg modal-dialog-scrollable">';
-        echo '<div class="modal-content">';
-        echo '<div class="modal-header">';
-        echo '<h5 class="modal-title">Загрузка...</h5>';
-        echo '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>';
-        echo '</div>';
-        echo '<div class="modal-body"><div class="text-muted">Загрузка...</div></div>';
-        echo '</div>';
-        echo '</div>';
-        echo '</div>';
-
-        echo '<div class="modal fade" id="adminConfirmModal" tabindex="-1" aria-hidden="true">';
-        echo '<div class="modal-dialog modal-dialog-centered">';
-        echo '<div class="modal-content">';
-        echo '<div class="modal-header">';
-        echo '<h5 class="modal-title">Подтверждение</h5>';
-        echo '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>';
-        echo '</div>';
-        echo '<div class="modal-body"><div class="text-muted">Подтвердите действие.</div></div>';
-        echo '<div class="modal-footer">';
-        echo '<button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>';
-        echo '<button type="button" class="btn btn-danger" data-confirm-action="true">Удалить</button>';
-        echo '</div>';
-        echo '</div>';
-        echo '</div>';
-        echo '</div>';
 
         echo "<script src=\"/assets/sow/js/vendor_bundle.min.js\"></script>\n";
         echo "<script src=\"/assets/sow/js/core.min.js\"></script>\n";
