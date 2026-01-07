@@ -38,6 +38,7 @@ final class AdminRouter
         $componentRepo = new ComponentRepo();
         $objectRepo = new ObjectRepo();
         $userRepo = new UserRepo();
+        $visualFieldRepo = new VisualFieldRepo();
 
         $baseDir = __DIR__ . '/actions/' . ($isPost ? 'post' : 'get');
         $realBase = realpath($baseDir);

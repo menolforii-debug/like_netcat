@@ -26,6 +26,16 @@ if ($section === null) {
 $components = $componentRepo->listAll();
 $extra = $infoblock ? decodeExtra($infoblock) : [];
 $settings = $infoblock ? decodeSettings($infoblock) : [];
+$viewsByComponent = [];
+foreach ($components as $component) {
+    $viewsByComponent[(int) $component['id']] = componentViews($component);
+}
+$selectedComponentId = $infoblock ? (int) $infoblock['component_id'] : ((int) ($components[0]['id'] ?? 0));
+$currentView = (string) ($infoblock['view_template'] ?? 'list');
+$selectedViews = $viewsByComponent[$selectedComponentId] ?? ['list'];
+if (!in_array($currentView, $selectedViews, true)) {
+    $selectedViews[] = $currentView;
+}
 
 echo '<span data-modal-title="' . ($infoblock ? 'Редактировать инфоблок' : 'Новый инфоблок') . '"></span>';
 echo '<form method="post" action="/admin.php?action=' . ($infoblock ? 'infoblock_update' : 'infoblock_create') . '" data-ajax="true">';
@@ -36,14 +46,21 @@ if ($infoblock) {
 }
 
 echo '<div class="row g-3">';
-echo '<div class="col-md-6"><label class="form-label">Компонент</label><select class="form-select" name="component_id">';
+echo '<div class="col-md-6"><label class="form-label">Компонент</label><select class="form-select js-infoblock-component" name="component_id">';
 foreach ($components as $component) {
     $selectedAttr = $infoblock && (int) $infoblock['component_id'] === (int) $component['id'] ? ' selected' : '';
-    echo '<option value="' . (int) $component['id'] . '"' . $selectedAttr . '>' . htmlspecialchars((string) $component['name'], ENT_QUOTES, 'UTF-8') . '</option>';
+    $views = $viewsByComponent[(int) $component['id']] ?? ['list'];
+    $viewsJson = htmlspecialchars(json_encode(array_values($views), JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
+    echo '<option value="' . (int) $component['id'] . '" data-views="' . $viewsJson . '"' . $selectedAttr . '>' . htmlspecialchars((string) $component['name'], ENT_QUOTES, 'UTF-8') . '</option>';
 }
 echo '</select></div>';
 echo '<div class="col-md-6"><label class="form-label">Название</label><input class="form-control" type="text" name="name" value="' . htmlspecialchars((string) ($infoblock['name'] ?? ''), ENT_QUOTES, 'UTF-8') . '" required></div>';
-echo '<div class="col-md-4"><label class="form-label">Шаблон</label><input class="form-control" type="text" name="view_template" value="' . htmlspecialchars((string) ($infoblock['view_template'] ?? 'list'), ENT_QUOTES, 'UTF-8') . '"></div>';
+echo '<div class="col-md-4"><label class="form-label">Шаблон</label><select class="form-select js-infoblock-view" name="view_template" data-current="' . htmlspecialchars($currentView, ENT_QUOTES, 'UTF-8') . '">';
+foreach ($selectedViews as $view) {
+    $selectedAttr = $currentView === $view ? ' selected' : '';
+    echo '<option value="' . htmlspecialchars((string) $view, ENT_QUOTES, 'UTF-8') . '"' . $selectedAttr . '>' . htmlspecialchars((string) $view, ENT_QUOTES, 'UTF-8') . '</option>';
+}
+echo '</select></div>';
 echo '<div class="col-md-4"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="' . htmlspecialchars((string) ($infoblock['sort'] ?? 0), ENT_QUOTES, 'UTF-8') . '"></div>';
 $checked = !empty($infoblock['is_enabled']) || $infoblock === null ? ' checked' : '';
 echo '<div class="col-md-4"><label class="form-label">Включен</label><div class="form-check mt-2"><input class="form-check-input" type="checkbox" name="is_enabled" value="1"' . $checked . '></div></div>';
