@@ -360,6 +360,35 @@ final class SectionRepo
         return '/' . implode('/', array_reverse($segments)) . '/';
     }
 
+    public function resolveVisualSettings(int $sectionId): array
+    {
+        $chain = [];
+        $currentId = $sectionId;
+        while ($currentId !== null) {
+            $section = $this->findById($currentId);
+            if ($section === null) {
+                break;
+            }
+            $chain[] = $section;
+            $currentId = $section['parent_id'] !== null ? (int) $section['parent_id'] : null;
+        }
+
+        $chain = array_reverse($chain);
+        $resolved = [];
+        foreach ($chain as $section) {
+            $extra = Utils::decodeExtra($section);
+            $visual = $extra['visual_settings'] ?? [];
+            if (!is_array($visual)) {
+                continue;
+            }
+            foreach ($visual as $key => $value) {
+                $resolved[$key] = $value;
+            }
+        }
+
+        return $resolved;
+    }
+
     private function listTreeIds(int $rootId): array
     {
         $rows = DB::fetchAll(

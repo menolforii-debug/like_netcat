@@ -342,6 +342,40 @@ function componentKeyIsValid(string $componentKey): bool
     return true;
 }
 
+function parseVisualFieldOptions(string $value): array
+{
+    $lines = preg_split('/\r\n|\r|\n/', $value);
+    if ($lines === false) {
+        return [];
+    }
+
+    $options = [];
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '') {
+            continue;
+        }
+
+        $key = $line;
+        $label = $line;
+        if (str_contains($line, ':')) {
+            [$key, $label] = explode(':', $line, 2);
+        } elseif (str_contains($line, '=')) {
+            [$key, $label] = explode('=', $line, 2);
+        }
+
+        $key = trim($key);
+        $label = trim($label);
+        if ($key === '') {
+            continue;
+        }
+
+        $options[$key] = $label !== '' ? $label : $key;
+    }
+
+    return $options;
+}
+
 function layoutKeyIsValid(string $layoutKey): bool
 {
     if (!preg_match('/^[A-Za-z0-9_-]+$/', $layoutKey)) {

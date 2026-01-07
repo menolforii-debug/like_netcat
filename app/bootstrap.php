@@ -18,6 +18,7 @@ require $root . '/app/domain/ComponentViewRepo.php';
 require $root . '/app/domain/InfoblockRepo.php';
 require $root . '/app/domain/ObjectRepo.php';
 require $root . '/app/domain/UserRepo.php';
+require $root . '/app/domain/VisualFieldRepo.php';
 require $root . '/app/render/Renderer.php';
 require $root . '/app/ui/Layout.php';
 require $root . '/app/ui/AdminLayout.php';

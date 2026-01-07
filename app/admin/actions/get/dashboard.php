@@ -22,14 +22,83 @@ if ($selectedId !== null) {
 
 $currentUser = $user ?? Auth::user();
 $isAdmin = Auth::isAdmin();
+$visualFields = $visualFieldRepo->listAll();
 
-$renderSidebar = function () use ($sections, $selectedId, $currentSiteId, $isAdmin): void {
+$renderVisualSettings = function (array $visualFields, array $resolvedVisual, array $localVisual, string $scopeId): void {
+    if (empty($visualFields)) {
+        echo '<div class="text-muted">Визуальные настройки не определены.</div>';
+        return;
+    }
+
+    echo '<div class="border rounded p-3 mt-4">';
+    echo '<h2 class="h6 mb-3">Визуальные настройки</h2>';
+    foreach ($visualFields as $field) {
+        $name = (string) $field['name'];
+        $label = (string) $field['label'];
+        $type = (string) ($field['type'] ?? 'text');
+        $options = isset($field['options']) && is_array($field['options']) ? $field['options'] : [];
+        $hasLocal = array_key_exists($name, $localVisual);
+        $resolvedValue = $resolvedVisual[$name] ?? '';
+        $value = $hasLocal ? $localVisual[$name] : $resolvedValue;
+        $inheritChecked = $hasLocal ? '' : ' checked';
+        $disabledAttr = $hasLocal ? '' : ' disabled';
+        $fieldId = $scopeId . '-' . $name;
+
+        echo '<div class="mb-3">';
+        echo '<div class="d-flex justify-content-between align-items-center">';
+        echo '<label class="form-label mb-0">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</label>';
+        echo '<div class="form-check form-switch">';
+        echo '<input class="form-check-input js-visual-inherit" type="checkbox" name="visual_inherit[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" value="1" data-target="visual-field-' . htmlspecialchars($fieldId, ENT_QUOTES, 'UTF-8') . '"' . $inheritChecked . '>';
+        echo '<label class="form-check-label">Наследовать</label>';
+        echo '</div>';
+        echo '</div>';
+
+        echo '<div id="visual-field-' . htmlspecialchars($fieldId, ENT_QUOTES, 'UTF-8') . '">';
+        $valueEscaped = htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+        if ($type === 'textarea') {
+            echo '<textarea class="form-control" name="visual_settings[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" rows="3" data-visual-input' . $disabledAttr . '>' . $valueEscaped . '</textarea>';
+        } elseif ($type === 'number') {
+            echo '<input class="form-control" type="number" name="visual_settings[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" value="' . $valueEscaped . '" data-visual-input' . $disabledAttr . '>';
+        } elseif ($type === 'checkbox') {
+            echo '<input type="hidden" name="visual_settings[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" value="0" data-visual-input' . $disabledAttr . '>';
+            $checked = !empty($value) ? ' checked' : '';
+            echo '<div class="form-check mt-2">';
+            echo '<input class="form-check-input" type="checkbox" name="visual_settings[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" value="1" data-visual-input' . $checked . $disabledAttr . '>';
+            echo '<label class="form-check-label">Да</label>';
+            echo '</div>';
+        } elseif ($type === 'select') {
+            echo '<select class="form-select" name="visual_settings[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" data-visual-input' . $disabledAttr . '>';
+            echo '<option value="">—</option>';
+            foreach ($options as $optKey => $optLabel) {
+                $optKey = (string) $optKey;
+                $optLabel = (string) $optLabel;
+                $selected = (string) $value === $optKey ? ' selected' : '';
+                echo '<option value="' . htmlspecialchars($optKey, ENT_QUOTES, 'UTF-8') . '"' . $selected . '>' . htmlspecialchars($optLabel, ENT_QUOTES, 'UTF-8') . '</option>';
+            }
+            echo '</select>';
+        } elseif ($type === 'color') {
+            $colorValue = $value !== '' ? $value : '#ffffff';
+            echo '<input class="form-control form-control-color" type="color" name="visual_settings[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" value="' . htmlspecialchars((string) $colorValue, ENT_QUOTES, 'UTF-8') . '" data-visual-input' . $disabledAttr . '>';
+        } else {
+            echo '<input class="form-control" type="text" name="visual_settings[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" value="' . $valueEscaped . '" data-visual-input' . $disabledAttr . '>';
+        }
+        echo '</div>';
+
+        if (!$hasLocal && $resolvedValue !== '') {
+            echo '<div class="form-text">Наследуется значение: ' . htmlspecialchars((string) $resolvedValue, ENT_QUOTES, 'UTF-8') . '</div>';
+        }
+        echo '</div>';
+    }
+    echo '</div>';
+};
+
+$renderSidebar = function () use ($sections, $selectedId, $currentSiteId, $isAdmin, $sites): void {
     echo '<div class="card shadow-sm border-0">';
     echo '<div class="card-body p-3">';
 
     echo '<div class="d-flex justify-content-between align-items-center mb-2">';
     echo '<div class="fw-semibold">Сайты и разделы</div>';
-    if ($isAdmin) {
+    if ($isAdmin && empty($sites)) {
         $createUrl = buildAdminUrl(['action' => 'site_form']);
         echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars($createUrl, ENT_QUOTES, 'UTF-8') . '" title="Добавить сайт" aria-label="Добавить сайт">';
         echo '<i class="fi fi-plus"></i>';
@@ -43,7 +112,7 @@ $renderSidebar = function () use ($sections, $selectedId, $currentSiteId, $isAdm
     echo '</div>';
 };
 
-$renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $infoblockRepo, $componentRepo, $objectRepo, $currentUser, $isAdmin): void {
+$renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $infoblockRepo, $componentRepo, $objectRepo, $currentUser, $isAdmin, $visualFields, $renderVisualSettings): void {
     echo '<div class="card shadow-sm">';
     echo '<div class="card-body">';
 
@@ -58,24 +127,49 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
         $mirrorsText = isset($extra['site_mirrors']) && is_array($extra['site_mirrors']) ? implode("\n", $extra['site_mirrors']) : '';
         $enabled = !empty($extra['site_enabled']);
         $offlineHtml = isset($extra['site_offline_html']) ? (string) $extra['site_offline_html'] : '';
+        $layouts = Layout::listLayouts();
+        $currentLayout = isset($extra['layout']) ? (string) $extra['layout'] : '';
+        if ($currentLayout !== '' && !in_array($currentLayout, $layouts, true)) {
+            $currentLayout = '';
+        }
 
         echo '<ul class="nav nav-tabs mb-3">';
         echo '<li class="nav-item"><a class="nav-link active" href="#">Настройки</a></li>';
         echo '</ul>';
-        echo '<div class="d-flex justify-content-between align-items-center mb-3">';
-        echo '<h1 class="h5 mb-0">Настройки сайта</h1>';
+        echo '<h1 class="h5 mb-3">Настройки сайта</h1>';
+
         if ($isAdmin) {
-            $editUrl = buildAdminUrl(['action' => 'site_form', 'id' => (int) $selected['id']]);
-            echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars($editUrl, ENT_QUOTES, 'UTF-8') . '">Редактировать</button>';
+            echo '<form method="post" action="/admin.php?action=site_update">';
+            echo csrfTokenField();
+            echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
+            echo '<div class="mb-3"><label class="form-label">Название сайта</label><input class="form-control" type="text" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '" required></div>';
+            echo '<div class="mb-3"><label class="form-label">Основной домен</label><input class="form-control" type="text" name="site_domain" value="' . htmlspecialchars((string) ($extra['site_domain'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
+            echo '<div class="mb-3"><label class="form-label">Зеркала домена (по одному в строке)</label><textarea class="form-control" name="site_mirrors" rows="3">' . htmlspecialchars($mirrorsText, ENT_QUOTES, 'UTF-8') . '</textarea></div>';
+            $checked = $enabled ? ' checked' : '';
+            echo '<div class="mb-3 form-check">';
+            echo '<input class="form-check-input" type="checkbox" name="site_enabled" value="1"' . $checked . '>';
+            echo '<label class="form-check-label">Сайт включен</label>';
+            echo '</div>';
+            echo '<div class="mb-3"><label class="form-label">HTML для отключенного сайта</label><textarea class="form-control" name="site_offline_html" rows="4">' . htmlspecialchars($offlineHtml, ENT_QUOTES, 'UTF-8') . '</textarea></div>';
+            echo '<div class="mb-3"><label class="form-label">Макет дизайна по умолчанию</label><select class="form-select" name="layout">';
+            echo '<option value="">По умолчанию</option>';
+            foreach ($layouts as $layout) {
+                $selectedAttr = $currentLayout === $layout ? ' selected' : '';
+                echo '<option value="' . htmlspecialchars($layout, ENT_QUOTES, 'UTF-8') . '"' . $selectedAttr . '>' . htmlspecialchars($layout, ENT_QUOTES, 'UTF-8') . '</option>';
+            }
+            echo '</select><div class="form-text">Наследуется разделами, если у них не задан собственный макет.</div></div>';
+
+            $localVisual = isset($extra['visual_settings']) && is_array($extra['visual_settings']) ? $extra['visual_settings'] : [];
+            $resolvedVisual = $sectionRepo->resolveVisualSettings((int) $selected['id']);
+            $renderVisualSettings($visualFields, $resolvedVisual, $localVisual, 'site-' . (int) $selected['id']);
+
+            echo '<div class="d-flex justify-content-end gap-2 mt-3">';
+            echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
+            echo '</div>';
+            echo '</form>';
+        } else {
+            echo '<div class="alert alert-light border">Редактирование доступно только для администратора.</div>';
         }
-        echo '</div>';
-        echo '<dl class="row mb-0">';
-        echo '<dt class="col-sm-3">Название</dt><dd class="col-sm-9">' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '</dd>';
-        echo '<dt class="col-sm-3">Домен</dt><dd class="col-sm-9">' . htmlspecialchars((string) ($extra['site_domain'] ?? ''), ENT_QUOTES, 'UTF-8') . '</dd>';
-        echo '<dt class="col-sm-3">Зеркала</dt><dd class="col-sm-9"><pre class="mb-0">' . htmlspecialchars($mirrorsText, ENT_QUOTES, 'UTF-8') . '</pre></dd>';
-        echo '<dt class="col-sm-3">Статус</dt><dd class="col-sm-9">' . ($enabled ? 'Включен' : 'Отключен') . '</dd>';
-        echo '<dt class="col-sm-3">Offline HTML</dt><dd class="col-sm-9"><pre class="mb-0">' . htmlspecialchars($offlineHtml, ENT_QUOTES, 'UTF-8') . '</pre></dd>';
-        echo '</dl>';
         } else {
         $tabs = [
             'section' => 'Раздел',
@@ -99,13 +193,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                 $options = array_merge($options, collectSections($sectionRepo, $siteId));
             }
 
-            echo '<div class="d-flex justify-content-between align-items-center mb-3">';
-            echo '<h1 class="h5 mb-0">Настройки раздела</h1>';
-            if ($isAdmin) {
-                $editUrl = buildAdminUrl(['action' => 'section_form', 'id' => (int) $selected['id']]);
-                echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars($editUrl, ENT_QUOTES, 'UTF-8') . '">Редактировать</button>';
-            }
-            echo '</div>';
+            echo '<h1 class="h5 mb-3">Настройки раздела</h1>';
             $extra = decodeExtra($selected);
             $siteExtra = $site ? decodeExtra($site) : [];
             $sectionLayout = isset($extra['layout']) ? (string) $extra['layout'] : '';
@@ -121,13 +209,48 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                 $currentLayout = ($selected['parent_id'] ?? null) === null ? 'home' : 'default';
                 $layoutNote = ' (по умолчанию)';
             }
-            echo '<dl class="row mb-0">';
-            echo '<dt class="col-sm-3">Название</dt><dd class="col-sm-9">' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '</dd>';
-            echo '<dt class="col-sm-3">English name</dt><dd class="col-sm-9">' . htmlspecialchars((string) ($selected['english_name'] ?? ''), ENT_QUOTES, 'UTF-8') . '</dd>';
-            echo '<dt class="col-sm-3">Родитель</dt><dd class="col-sm-9">' . htmlspecialchars((string) ($sectionRepo->findById((int) $selected['parent_id'])['title'] ?? ''), ENT_QUOTES, 'UTF-8') . '</dd>';
-            echo '<dt class="col-sm-3">Сортировка</dt><dd class="col-sm-9">' . htmlspecialchars((string) ($selected['sort'] ?? 0), ENT_QUOTES, 'UTF-8') . '</dd>';
-            echo '<dt class="col-sm-3">Макет дизайна</dt><dd class="col-sm-9">' . htmlspecialchars($currentLayout . $layoutNote, ENT_QUOTES, 'UTF-8') . '</dd>';
-            echo '</dl>';
+            if ($isAdmin) {
+                $isSystemRoot = $selected['parent_id'] === null && in_array($selected['english_name'], ['index', '404'], true);
+                echo '<form method="post" action="/admin.php?action=section_update">';
+                echo csrfTokenField();
+                echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
+                echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" type="text" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '" required></div>';
+                $englishNameAttributes = $isSystemRoot ? ' disabled' : ' required';
+                $englishNameHint = $isSystemRoot ? '<div class="form-text">Системный раздел: English name фиксирован.</div>' : '';
+                echo '<div class="mb-3"><label class="form-label">English name (латиница)</label><input class="form-control" type="text" name="english_name" value="' . htmlspecialchars((string) ($selected['english_name'] ?? ''), ENT_QUOTES, 'UTF-8') . '"' . $englishNameAttributes . '>' . $englishNameHint . '</div>';
+                echo '<div class="mb-3"><label class="form-label">Родительский раздел</label><select class="form-select" name="parent_id" required>';
+                echo '<option value="">Выберите родителя</option>';
+                foreach ($options as $option) {
+                    if ((int) $option['id'] === (int) $selected['id']) {
+                        continue;
+                    }
+                    if ((int) $option['site_id'] !== $siteId) {
+                        continue;
+                    }
+                    $selectedAttr = (int) ($selected['parent_id'] ?? 0) === (int) $option['id'] ? ' selected' : '';
+                    echo '<option value="' . (int) $option['id'] . '"' . $selectedAttr . '>' . htmlspecialchars((string) $option['title'], ENT_QUOTES, 'UTF-8') . '</option>';
+                }
+                echo '</select></div>';
+                echo '<div class="mb-3"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="' . htmlspecialchars((string) ($selected['sort'] ?? 0), ENT_QUOTES, 'UTF-8') . '"></div>';
+                echo '<div class="mb-3"><label class="form-label">Макет дизайна</label><select class="form-select" name="layout">';
+                echo '<option value="">Наследовать макет сайта</option>';
+                foreach (Layout::listLayouts() as $layout) {
+                    $selectedAttr = $sectionLayout === $layout ? ' selected' : '';
+                    echo '<option value="' . htmlspecialchars($layout, ENT_QUOTES, 'UTF-8') . '"' . $selectedAttr . '>' . htmlspecialchars($layout, ENT_QUOTES, 'UTF-8') . '</option>';
+                }
+                echo '</select><div class="form-text">Текущий: ' . htmlspecialchars($currentLayout . $layoutNote, ENT_QUOTES, 'UTF-8') . '</div></div>';
+
+                $localVisual = isset($extra['visual_settings']) && is_array($extra['visual_settings']) ? $extra['visual_settings'] : [];
+                $resolvedVisual = $sectionRepo->resolveVisualSettings((int) $selected['id']);
+                $renderVisualSettings($visualFields, $resolvedVisual, $localVisual, 'section-' . (int) $selected['id']);
+
+                echo '<div class="d-flex justify-content-end gap-2 mt-3">';
+                echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
+                echo '</div>';
+                echo '</form>';
+            } else {
+                echo '<div class="alert alert-light border">Редактирование доступно только для администратора.</div>';
+            }
         } elseif ($tab === 'seo') {
             $extra = decodeExtra($selected);
             echo '<h1 class="h5">SEO</h1>';

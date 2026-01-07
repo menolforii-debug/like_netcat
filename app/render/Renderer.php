@@ -111,11 +111,14 @@ final class Renderer
         $seo = $this->resolveSeo($section, $infoblocks, $infoblockViews, $itemTitle);
         $layoutKey = $this->resolveLayoutKey($path, $section, $site);
 
+        $visualSettings = $sectionRepo->resolveVisualSettings((int) $section['id']);
+
         Layout::render($layoutKey, [
             'title' => (string) ($seo['title'] ?? ''),
             'meta' => $seo,
             'site' => $site,
             'section' => $section,
+            'visual' => $visualSettings,
         ], function () use ($section, $children, $core): void {
             $this->renderSection($section, $children, $core, false);
         });
