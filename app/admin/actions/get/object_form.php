@@ -41,15 +41,21 @@ if ($object !== null) {
     }
 }
 
-AdminLayout::renderHeader('Объект');
-echo '<div class="container" style="max-width: 900px">';
-echo '<div class="card shadow-sm">';
-echo '<div class="card-body">';
-echo '<div class="d-flex justify-content-between align-items-center mb-3">';
-echo '<h1 class="h5 mb-0">' . ($object ? 'Редактировать объект' : 'Новый объект') . '</h1>';
-echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']), ENT_QUOTES, 'UTF-8') . '">Назад</a>';
-echo '</div>';
-echo '<form method="post" action="/admin.php?action=' . ($object ? 'object_update' : 'object_create') . '">';
+$isAjax = isAjaxRequest();
+if (!$isAjax) {
+    AdminLayout::renderHeader('Объект');
+    echo '<div class="container" style="max-width: 900px">';
+    echo '<div class="card shadow-sm">';
+    echo '<div class="card-body">';
+    echo '<div class="d-flex justify-content-between align-items-center mb-3">';
+    echo '<h1 class="h5 mb-0">' . ($object ? 'Редактировать объект' : 'Новый объект') . '</h1>';
+    echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']), ENT_QUOTES, 'UTF-8') . '">Назад</a>';
+    echo '</div>';
+} else {
+    echo '<span data-modal-title="' . ($object ? 'Редактировать объект' : 'Новый объект') . '"></span>';
+}
+
+echo '<form method="post" action="/admin.php?action=' . ($object ? 'object_update' : 'object_create') . '"' . ($isAjax ? ' data-ajax="true"' : '') . '>';
 echo csrfTokenField();
 if ($object) {
     echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
@@ -65,6 +71,9 @@ echo '<button class="btn btn-primary" type="submit" name="save_as" value="draft"
 echo '<button class="btn btn-success" type="submit" name="save_as" value="publish">Опубликовать</button>';
 echo '</div>';
 echo '</form>';
-echo '</div></div></div>';
-AdminLayout::renderFooter();
+
+if (!$isAjax) {
+    echo '</div></div></div>';
+    AdminLayout::renderFooter();
+}
 exit;

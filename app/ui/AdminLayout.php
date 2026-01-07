@@ -46,6 +46,7 @@ final class AdminLayout
             'logs' => ['label' => 'Логи', 'href' => '/admin.php?action=logs'],
             'users_list' => ['label' => 'Пользователи', 'href' => '/admin.php?action=users_list'],
             'components' => ['label' => 'Компоненты', 'href' => '/admin.php?action=components'],
+            'layouts' => ['label' => 'Макеты дизайна', 'href' => '/admin.php?action=layouts'],
             'sql' => ['label' => 'SQL', 'href' => '/admin.php?action=sql'],
         ];
         foreach ($menu as $key => $item) {
@@ -113,6 +114,34 @@ final class AdminLayout
             echo "</main>\n";
             echo "</div>\n";
         }
+
+        echo '<div class="modal fade" id="adminModal" tabindex="-1" aria-hidden="true">';
+        echo '<div class="modal-dialog modal-lg modal-dialog-scrollable">';
+        echo '<div class="modal-content">';
+        echo '<div class="modal-header">';
+        echo '<h5 class="modal-title">Загрузка...</h5>';
+        echo '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>';
+        echo '</div>';
+        echo '<div class="modal-body"><div class="text-muted">Загрузка...</div></div>';
+        echo '</div>';
+        echo '</div>';
+        echo '</div>';
+
+        echo '<div class="modal fade" id="adminConfirmModal" tabindex="-1" aria-hidden="true">';
+        echo '<div class="modal-dialog modal-dialog-centered">';
+        echo '<div class="modal-content">';
+        echo '<div class="modal-header">';
+        echo '<h5 class="modal-title">Подтверждение</h5>';
+        echo '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>';
+        echo '</div>';
+        echo '<div class="modal-body"><div class="text-muted">Подтвердите действие.</div></div>';
+        echo '<div class="modal-footer">';
+        echo '<button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>';
+        echo '<button type="button" class="btn btn-danger" data-confirm-action="true">Удалить</button>';
+        echo '</div>';
+        echo '</div>';
+        echo '</div>';
+        echo '</div>';
 
         echo "<script src=\"/assets/sow/js/vendor_bundle.min.js\"></script>\n";
         echo "<script src=\"/assets/sow/js/core.min.js\"></script>\n";
