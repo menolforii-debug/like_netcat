@@ -5,8 +5,7 @@ final class Renderer
     public function renderPath($path): void
     {
         $sectionRepo = new SectionRepo();
-        $host = isset($_SERVER['HTTP_HOST']) ? (string) $_SERVER['HTTP_HOST'] : '';
-        $site = $sectionRepo->findSiteByHost($host);
+        $site = $sectionRepo->findPrimarySite();
         if ($site === null) {
             http_response_code(404);
             echo 'Site not found';

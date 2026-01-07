@@ -2,30 +2,16 @@
 
 final class SectionRepo
 {
+    public function findPrimarySite(): ?array
+    {
+        $sites = $this->listSitesOnly();
+
+        return $sites[0] ?? null;
+    }
+
     public function findSiteByHost(string $host): ?array
     {
-        $host = $this->normalizeHost($host);
-        if ($host === '') {
-            return null;
-        }
-
-        $sites = $this->listSitesOnly();
-        foreach ($sites as $site) {
-            $settings = $this->getSiteSettings($site);
-            $domain = $this->normalizeHost((string) ($settings['site_domain'] ?? ''));
-            if ($domain !== '' && $domain === $host) {
-                return $site;
-            }
-
-            foreach ($settings['site_mirrors'] as $mirror) {
-                $mirrorHost = $this->normalizeHost($mirror);
-                if ($mirrorHost !== '' && $mirrorHost === $host) {
-                    return $site;
-                }
-            }
-        }
-
-        return null;
+        return $this->findPrimarySite();
     }
 
     public function listSites(): array

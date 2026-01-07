@@ -1,15 +1,11 @@
 <?php
 
-$sites = $sectionRepo->listSitesOnly();
-$sections = [];
-foreach ($sites as $site) {
-    $sections[] = $site;
-    $sections = array_merge($sections, collectSections($sectionRepo, (int) $site['id']));
-}
-
-$host = (string) ($_SERVER['HTTP_HOST'] ?? '');
-$currentSite = $sectionRepo->findSiteByHost($host);
+$currentSite = $sectionRepo->findPrimarySite();
 $currentSiteId = $currentSite ? (int) $currentSite['id'] : null;
+$sections = [];
+if ($currentSiteId !== null) {
+    $sections = array_merge([$currentSite], collectSections($sectionRepo, $currentSiteId));
+}
 
 if ($selectedId === null && $currentSiteId !== null) {
     $selectedId = $currentSiteId;
@@ -23,18 +19,12 @@ if ($selectedId !== null) {
 $currentUser = $user ?? Auth::user();
 $isAdmin = Auth::isAdmin();
 
-$renderSidebar = function () use ($sections, $selectedId, $currentSiteId, $isAdmin): void {
+$renderSidebar = function () use ($sections, $selectedId, $currentSiteId): void {
     echo '<div class="card shadow-sm border-0">';
     echo '<div class="card-body p-3">';
 
     echo '<div class="d-flex justify-content-between align-items-center mb-2">';
-    echo '<div class="fw-semibold">Сайты и разделы</div>';
-    if ($isAdmin) {
-        $createUrl = buildAdminUrl(['action' => 'site_new']);
-        echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars($createUrl, ENT_QUOTES, 'UTF-8') . '" title="Добавить сайт" aria-label="Добавить сайт">';
-        echo '<i class="fi fi-plus"></i>';
-        echo '</a>';
-    }
+    echo '<div class="fw-semibold">Разделы</div>';
     echo '</div>';
 
     echo SectionTree::render($sections, $selectedId, $currentSiteId);

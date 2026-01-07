@@ -15,8 +15,6 @@ function buildAdminUrl(array $params = []): string
  * Render flash/notice/error as SOW Toast instead of inline bootstrap alert.
  * Uses $.SOW.core.toast.show(type, title, body, position, delay, fill)
  *
- * Includes JS-level dedupe to prevent duplicated toasts when renderAlert()
- * is called multiple times with the same message/type.
  */
 function renderAlert(?string $message, string $type = 'info'): void
 {
@@ -44,19 +42,6 @@ function renderAlert(?string $message, string $type = 'info'): void
   var pos = {$posJs};
   var delay = 3500;
   var fill = true;
-
-  // ---- DEDUPE (per page load) ----
-  // key: type + message
-  try {
-    window.__CMS_TOASTS_SHOWN__ = window.__CMS_TOASTS_SHOWN__ || {};
-    var key = String(toastType) + '|' + String(msg);
-    if (window.__CMS_TOASTS_SHOWN__[key]) {
-      return;
-    }
-    window.__CMS_TOASTS_SHOWN__[key] = 1;
-  } catch (e) {
-    // if something goes wrong, do not block the toast
-  }
 
   function showOnce() {
     try {
