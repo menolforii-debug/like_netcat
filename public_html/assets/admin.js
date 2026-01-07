@@ -1,3 +1,22 @@
+function initVisualInheritToggles(scope) {
+  const root = scope || document;
+  root.querySelectorAll('.js-visual-inherit').forEach((checkbox) => {
+    const targetId = checkbox.getAttribute('data-target');
+    if (!targetId) return;
+    const target = root.getElementById ? root.getElementById(targetId) : document.getElementById(targetId);
+    if (!target) return;
+    const inputs = target.querySelectorAll('[data-visual-input]');
+    const applyState = () => {
+      const disabled = checkbox.checked;
+      inputs.forEach((input) => {
+        input.disabled = disabled;
+      });
+    };
+    checkbox.addEventListener('change', applyState);
+    applyState();
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('textarea.code-editor').forEach((textarea) => {
     textarea.addEventListener('keydown', (event) => {
@@ -11,6 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  initVisualInheritToggles(document);
 });
 
 function showAdminToast(type, message) {
@@ -34,6 +55,7 @@ function refreshAdminBlocks(selectors) {
       .then((res) => res.text())
       .then((html) => {
         target.innerHTML = html;
+        initVisualInheritToggles(target);
       });
   });
 }

@@ -34,7 +34,7 @@ final class Renderer
             $path = '/404';
         }
 
-        $sectionPath = $this->buildSectionPath($sectionRepo, (int) $section['id']);
+        $sectionPath = $sectionRepo->buildPath((int) $section['id']);
         $section['path'] = $sectionPath;
 
         $children = $sectionRepo->listChildren((int) $section['id']);
@@ -111,11 +111,14 @@ final class Renderer
         $seo = $this->resolveSeo($section, $infoblocks, $infoblockViews, $itemTitle);
         $layoutKey = $this->resolveLayoutKey($path, $section, $site);
 
+        $visualSettings = $sectionRepo->resolveVisualSettings((int) $section['id']);
+
         Layout::render($layoutKey, [
             'title' => (string) ($seo['title'] ?? ''),
             'meta' => $seo,
             'site' => $site,
             'section' => $section,
+            'visual' => $visualSettings,
         ], function () use ($section, $children, $core): void {
             $this->renderSection($section, $children, $core, false);
         });
@@ -139,7 +142,7 @@ final class Renderer
 
     private function renderInfoblockWithWrappers(array $section, array $site, array $infoblock, array $component, array $items, bool $isSingle, $editMode): string
     {
-        $extra = $this->decodeExtra($infoblock);
+        $extra = Utils::decodeExtra($infoblock);
         $beforeImage = isset($extra['before_image']) ? trim((string) $extra['before_image']) : '';
         $afterImage = isset($extra['after_image']) ? trim((string) $extra['after_image']) : '';
         $beforeHtml = isset($extra['before_html']) ? (string) $extra['before_html'] : '';
@@ -298,34 +301,6 @@ final class Renderer
         return $fields;
     }
 
-    private function buildSectionPath(SectionRepo $repo, $sectionId): string
-    {
-        $segments = [];
-        $currentId = $sectionId;
-        while ($currentId !== null) {
-            $section = $repo->findById($currentId);
-            if ($section === null) {
-                break;
-            }
-
-            if (!empty($section['english_name'])) {
-                if ($section['english_name'] === 'index' && (int) $section['parent_id'] === (int) $section['site_id']) {
-                    // Пропускаем системную "Главную" в пути.
-                } else {
-                    $segments[] = $section['english_name'];
-                }
-            }
-
-            $currentId = $section['parent_id'] !== null ? (int) $section['parent_id'] : null;
-        }
-
-        if (empty($segments)) {
-            return '/';
-        }
-
-        return '/' . implode('/', array_reverse($segments)) . '/';
-    }
-
     private function joinPath($basePath, $englishName): string
     {
         $basePath = rtrim($basePath, '/');
@@ -379,20 +354,6 @@ final class Renderer
         return $current;
     }
 
-    private function decodeExtra(array $row): array
-    {
-        if (isset($row['extra']) && is_array($row['extra'])) {
-            return $row['extra'];
-        }
-
-        $decoded = json_decode((string) ($row['extra_json'] ?? '{}'), true);
-        if (!is_array($decoded)) {
-            return [];
-        }
-
-        return $decoded;
-    }
-
     private function decodeSettings(array $row): array
     {
         if (isset($row['settings']) && is_array($row['settings'])) {
@@ -411,7 +372,7 @@ final class Renderer
     {
         $layoutKey = trim($path, '/') === '' ? 'home' : 'default';
 
-        $siteExtra = $this->decodeExtra($site);
+        $siteExtra = Utils::decodeExtra($site);
         if (!empty($siteExtra['layout']) && is_string($siteExtra['layout'])) {
             $candidate = trim($siteExtra['layout']);
             if ($candidate !== '' && Layout::layoutExists($candidate)) {
@@ -419,7 +380,7 @@ final class Renderer
             }
         }
 
-        $sectionExtra = $this->decodeExtra($section);
+        $sectionExtra = Utils::decodeExtra($section);
         if (!empty($sectionExtra['layout']) && is_string($sectionExtra['layout'])) {
             $candidate = trim($sectionExtra['layout']);
             if ($candidate !== '' && Layout::layoutExists($candidate)) {
