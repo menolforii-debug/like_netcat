@@ -2,6 +2,7 @@
 
 $layoutKey = isset($_POST['layout_key']) ? trim((string) $_POST['layout_key']) : '';
 $layoutTpl = isset($_POST['layout_tpl']) ? (string) $_POST['layout_tpl'] : '';
+$layoutNavTpl = isset($_POST['layout_nav_tpl']) ? (string) $_POST['layout_nav_tpl'] : '';
 
 if ($layoutKey === '') {
     if (isAjaxRequest()) {
@@ -29,6 +30,13 @@ if (!writeLayoutTemplate($layoutKey, $layoutTpl, $error)) {
         jsonResponse(['ok' => false, 'error' => $error ?? 'Не удалось сохранить макет']);
     }
     redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => '_new', 'error' => $error ?? 'Не удалось сохранить макет']));
+}
+
+if (!writeLayoutNavTemplate($layoutKey, $layoutNavTpl, $error)) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => $error ?? 'Не удалось сохранить шаблон навигации']);
+    }
+    redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => '_new', 'error' => $error ?? 'Не удалось сохранить шаблон навигации']));
 }
 
 if (isAjaxRequest()) {

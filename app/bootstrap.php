@@ -6,6 +6,7 @@ date_default_timezone_set('UTC');
 require $root . '/app/core/DB.php';
 require $root . '/app/core/EventBus.php';
 require $root . '/app/core/Core.php';
+require $root . '/app/core/Utils.php';
 require $root . '/app/core/Auth.php';
 require $root . '/app/core/AdminLog.php';
 require $root . '/app/core/Permission.php';
@@ -17,6 +18,7 @@ require $root . '/app/domain/ComponentViewRepo.php';
 require $root . '/app/domain/InfoblockRepo.php';
 require $root . '/app/domain/ObjectRepo.php';
 require $root . '/app/domain/UserRepo.php';
+require $root . '/app/domain/VisualFieldRepo.php';
 require $root . '/app/render/Renderer.php';
 require $root . '/app/ui/Layout.php';
 require $root . '/app/ui/AdminLayout.php';
@@ -37,6 +39,7 @@ $core = new Core(DB::pdo(), new EventBus());
 $GLOBALS['core'] = $core;
 require $root . '/app/events.php';
 
+ensureDefaultLayoutTemplates($root);
 ensureDefaultSite(isset($_SERVER['HTTP_HOST']) ? (string) $_SERVER['HTTP_HOST'] : '');
 
 function core(): Core
@@ -144,7 +147,7 @@ function ensureDefaultSite(string $host): void
         return;
     }
 
-    $host = normalizeHost($host);
+    $host = Utils::normalizeHost($host);
     if ($host === '') {
         $host = 'localhost';
     }
@@ -176,18 +179,77 @@ function ensureDefaultSite(string $host): void
     }
 }
 
-function normalizeHost(string $host): string
+function ensureDefaultLayoutTemplates(string $root): void
 {
-    $host = strtolower(trim($host));
-    if ($host === '') {
-        return '';
+    $templatesDir = $root . '/templates/layouts';
+    if (!is_dir($templatesDir)) {
+        mkdir($templatesDir, 0770, true);
+        @chmod($templatesDir, 0770);
     }
 
-    if (str_contains($host, ':')) {
-        $host = explode(':', $host, 2)[0];
+    $defaultLayoutPath = $templatesDir . '/default.php';
+    if (!is_file($defaultLayoutPath)) {
+        $defaultLayout = <<<'PHP'
+<?php
+/** @var array $ctx */
+/** @var callable $body */
+
+$title = (string) ($ctx['title'] ?? '');
+$meta = $ctx['meta'] ?? [];
+$site = $ctx['site'] ?? [];
+?>
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?php Layout::renderCss(); ?>
+    <title><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></title>
+    <?php if (!empty($meta['description'])): ?>
+        <meta name="description" content="<?= htmlspecialchars((string) $meta['description'], ENT_QUOTES, 'UTF-8') ?>">
+    <?php endif; ?>
+    <?php if (!empty($meta['keywords'])): ?>
+        <meta name="keywords" content="<?= htmlspecialchars((string) $meta['keywords'], ENT_QUOTES, 'UTF-8') ?>">
+    <?php endif; ?>
+</head>
+<body class="bg-light">
+<div class="page-wrapper d-flex flex-column min-vh-100">
+    <div class="content-wrapper flex-grow-1">
+        <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+            <div class="container">
+                <a class="navbar-brand fw-semibold" href="/"><?= htmlspecialchars((string) ($site['title'] ?? 'CMS'), ENT_QUOTES, 'UTF-8') ?></a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarMain">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item"><a class="nav-link" href="/admin.php">Админ</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        <main class="container py-4">
+            <?php $body(); ?>
+        </main>
+    </div>
+</div>
+<?php Layout::renderJs(); ?>
+</body>
+</html>
+PHP;
+        file_put_contents($defaultLayoutPath, $defaultLayout);
+        @chmod($defaultLayoutPath, 0660);
     }
 
-    return $host;
+    $defaultNavPath = $templatesDir . '/default.nav.php';
+    if (!is_file($defaultNavPath)) {
+        $defaultNav = <<<'PHP'
+<?php
+// Здесь можно описать функции построения меню или другие helper-функции для макета.
+PHP;
+        file_put_contents($defaultNavPath, $defaultNav);
+        @chmod($defaultNavPath, 0660);
+    }
 }
 
 function migrationManagesTransaction(string $sql): bool

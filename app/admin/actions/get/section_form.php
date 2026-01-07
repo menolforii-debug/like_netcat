@@ -51,7 +51,7 @@ if ($currentLayout !== '' && !in_array($currentLayout, $layouts, true)) {
     $currentLayout = '';
 }
 
-$isSystemRoot = $section && $section['parent_id'] === null && in_array($section['english_name'] ?? '', ['index', '404'], true);
+$isSystemRoot = $section && in_array($section['english_name'] ?? '', ['index', '404'], true);
 
 echo '<span data-modal-title="' . ($id > 0 ? 'Редактировать раздел' : 'Новый раздел') . '"></span>';
 echo '<form method="post" action="/admin.php?action=' . ($id > 0 ? 'section_update' : 'section_create') . '" data-ajax="true">';
@@ -63,19 +63,24 @@ echo '<div class="mb-3"><label class="form-label">Название</label><input
 $englishNameAttributes = $isSystemRoot ? ' disabled' : ' required';
 $englishNameHint = $isSystemRoot ? '<div class="form-text">Системный раздел: English name фиксирован.</div>' : '';
 echo '<div class="mb-3"><label class="form-label">English name (латиница)</label><input class="form-control" type="text" name="english_name" value="' . htmlspecialchars((string) ($section['english_name'] ?? ''), ENT_QUOTES, 'UTF-8') . '"' . $englishNameAttributes . '>' . $englishNameHint . '</div>';
-echo '<div class="mb-3"><label class="form-label">Родительский раздел</label><select class="form-select" name="parent_id" required>';
-echo '<option value="">Выберите родителя</option>';
-foreach ($options as $option) {
-    if ($id > 0 && (int) $option['id'] === (int) $section['id']) {
-        continue;
+if ($isSystemRoot) {
+    echo '<input type="hidden" name="parent_id" value="' . (int) ($section['parent_id'] ?? 0) . '">';
+    echo '<div class="mb-3"><label class="form-label">Родительский раздел</label><div class="form-text">Системный раздел нельзя перемещать.</div></div>';
+} else {
+    echo '<div class="mb-3"><label class="form-label">Родительский раздел</label><select class="form-select" name="parent_id" required>';
+    echo '<option value="">Выберите родителя</option>';
+    foreach ($options as $option) {
+        if ($id > 0 && (int) $option['id'] === (int) $section['id']) {
+            continue;
+        }
+        if ((int) $option['site_id'] !== $siteId) {
+            continue;
+        }
+        $selectedAttr = (int) ($section['parent_id'] ?? 0) === (int) $option['id'] ? ' selected' : '';
+        echo '<option value="' . (int) $option['id'] . '"' . $selectedAttr . '>' . htmlspecialchars((string) $option['title'], ENT_QUOTES, 'UTF-8') . '</option>';
     }
-    if ((int) $option['site_id'] !== $siteId) {
-        continue;
-    }
-    $selectedAttr = (int) ($section['parent_id'] ?? 0) === (int) $option['id'] ? ' selected' : '';
-    echo '<option value="' . (int) $option['id'] . '"' . $selectedAttr . '>' . htmlspecialchars((string) $option['title'], ENT_QUOTES, 'UTF-8') . '</option>';
+    echo '</select></div>';
 }
-echo '</select></div>';
 echo '<div class="mb-3"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="' . htmlspecialchars((string) ($section['sort'] ?? 0), ENT_QUOTES, 'UTF-8') . '"></div>';
 echo '<div class="mb-3"><label class="form-label">Макет дизайна</label><select class="form-select" name="layout">';
 echo '<option value="">Наследовать макет сайта</option>';
