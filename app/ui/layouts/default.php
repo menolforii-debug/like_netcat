@@ -11,7 +11,7 @@ Layout::renderNavbar((string) ($site['title'] ?? 'CMS'), [
     ['label' => 'Админ', 'href' => '/admin.php'],
 ]);
 
-echo '<main class="container py-4">';
+echo '<main class="container py-4">DDDDDDD';
 $body();
 echo '</main>';
 

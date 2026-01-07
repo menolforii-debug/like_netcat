@@ -3,8 +3,8 @@
 if (!isset($isSingle)) { $isSingle = false; }
 if ($isSingle && isset($object) && is_array($object)) {
 ?>
-<?php if (!empty($object['data']['title'])): ?>
-<h1><?= htmlspecialchars($object['data']['title'], ENT_QUOTES, 'UTF-8') ?></h1>
+<?php if (!empty($object['data']['text'])): ?>
+<h1><?= htmlspecialchars($object['data']['text'], ENT_QUOTES, 'UTF-8') ?></h1>
 <?php endif; ?>
 <?php
 } else {
