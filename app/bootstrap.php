@@ -33,7 +33,12 @@ if (!is_dir($varDir)) {
 
 DB::connect($varDir . '/app.sqlite');
 
-runMigrations(DB::pdo(), $root . '/migrations');
+// Миграции выполняем только в CLI или в админке, чтобы не тормозить фронтенд.
+$scriptName = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+$runMigrations = PHP_SAPI === 'cli' || $scriptName === 'admin.php';
+if ($runMigrations) {
+    runMigrations(DB::pdo(), $root . '/migrations');
+}
 
 $core = new Core(DB::pdo(), new EventBus());
 $GLOBALS['core'] = $core;

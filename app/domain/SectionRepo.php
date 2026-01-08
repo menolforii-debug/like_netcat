@@ -410,6 +410,64 @@ final class SectionRepo
         return $resolved;
     }
 
+    public function findByPath(int $siteId, array $segments): ?array
+    {
+        $rows = DB::fetchAll(
+            'SELECT id, parent_id, site_id, english_name, title, sort, extra_json
+            FROM sections
+            WHERE site_id = :site_id
+            ORDER BY id ASC',
+            ['site_id' => $siteId]
+        );
+
+        if (empty($rows)) {
+            return null;
+        }
+
+        $byId = [];
+        $childrenByParent = [];
+        foreach ($rows as $row) {
+            $id = (int) $row['id'];
+            $byId[$id] = $row;
+            $parentId = $row['parent_id'] !== null ? (int) $row['parent_id'] : null;
+            if (!isset($childrenByParent[$parentId])) {
+                $childrenByParent[$parentId] = [];
+            }
+            $childrenByParent[$parentId][] = $row;
+        }
+
+        $current = $byId[$siteId] ?? null;
+        if ($current === null) {
+            return null;
+        }
+
+        if (empty($segments)) {
+            $index = $this->findRootByEnglishName($siteId, 'index');
+            return $index ?? $current;
+        }
+
+        foreach ($segments as $segment) {
+            $segmentLower = strtolower($segment);
+            $children = $childrenByParent[(int) $current['id']] ?? [];
+            $next = null;
+            foreach ($children as $child) {
+                $childName = isset($child['english_name']) ? (string) $child['english_name'] : '';
+                if ($childName !== '' && strtolower($childName) === $segmentLower) {
+                    $next = $child;
+                    break;
+                }
+            }
+
+            if ($next === null) {
+                return null;
+            }
+
+            $current = $next;
+        }
+
+        return $current;
+    }
+
     private function listTreeIds(int $rootId): array
     {
         $rows = DB::fetchAll(
