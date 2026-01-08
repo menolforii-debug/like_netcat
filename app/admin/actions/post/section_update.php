@@ -16,7 +16,9 @@ $sort = isset($_POST['sort']) ? (int) $_POST['sort'] : 0;
 $layout = isset($_POST['layout']) ? trim((string) $_POST['layout']) : '';
 $visualSettingsInput = isset($_POST['visual_settings']) && is_array($_POST['visual_settings']) ? $_POST['visual_settings'] : [];
 $visualInherit = isset($_POST['visual_inherit']) && is_array($_POST['visual_inherit']) ? $_POST['visual_inherit'] : [];
-$hasVisualInput = array_key_exists('visual_settings', $_POST) || array_key_exists('visual_inherit', $_POST);
+$hasVisualInput = array_key_exists('visual_settings', $_POST)
+    || array_key_exists('visual_inherit', $_POST)
+    || array_key_exists('visual_settings_delete', $_POST);
 if (!$hasVisualInput && isset($_FILES['visual_settings']) && is_array($_FILES['visual_settings'])) {
     $names = $_FILES['visual_settings']['name'] ?? [];
     if (is_array($names) && array_filter($names)) {
@@ -95,6 +97,9 @@ if ($hasVisualInput) {
     $visualFields = $visualFieldRepo->listAll();
     $existingVisual = isset($extra['visual_settings']) && is_array($extra['visual_settings']) ? $extra['visual_settings'] : [];
     $visualFiles = isset($_FILES['visual_settings']) && is_array($_FILES['visual_settings']) ? $_FILES['visual_settings'] : null;
+    $deleteVisual = isset($_POST['visual_settings_delete']) && is_array($_POST['visual_settings_delete'])
+        ? $_POST['visual_settings_delete']
+        : [];
     $site = $sectionRepo->findById($siteId);
     $siteExtra = $site !== null ? decodeExtra($site) : [];
     $layoutKey = 'default';
@@ -116,12 +121,18 @@ if ($hasVisualInput) {
 
         $type = (string) ($field['type'] ?? 'text');
         if ($type === 'file') {
+            $deleteRequested = !empty($deleteVisual[$name]) && isset($existingVisual[$name]);
+            if ($deleteRequested) {
+                deleteUploadedFile((string) $existingVisual[$name]);
+                unset($existingVisual[$name]);
+            }
             if ($visualFiles !== null) {
                 $file = extractNestedUpload($visualFiles, $name);
                 if ($file !== null) {
                     $error = null;
                     $fieldId = (int) ($field['id'] ?? 0);
-                    $targetDir = dirname(__DIR__, 3) . '/public_html/files/layouts/' . $layoutKey . '/' . $fieldId;
+                    // Сохраняем файлы в public_html, поднимаемся из app/admin/actions/post в корень проекта.
+                    $targetDir = dirname(__DIR__, 5) . '/public_html/files/layouts/' . $layoutKey . '/' . $fieldId;
                     $publicPrefix = '/files/layouts/' . $layoutKey . '/' . $fieldId;
                     $storedPath = saveUploadedFile($file, $targetDir, $publicPrefix, $error);
                     if ($error !== null) {
@@ -131,6 +142,9 @@ if ($hasVisualInput) {
                         redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => $error]));
                     }
                     if ($storedPath !== null) {
+                        if (isset($existingVisual[$name]) && $existingVisual[$name] !== $storedPath) {
+                            deleteUploadedFile((string) $existingVisual[$name]);
+                        }
                         $visualSettings[$name] = $storedPath;
                         continue;
                     }
@@ -188,6 +202,8 @@ if ($user) {
 }
 
 $noticeMessage = $isSystemRoot ? 'Системный раздел обновлен (english_name фиксирован)' : 'Раздел обновлен';
+$returnTab = isset($_POST['return_tab']) ? (string) $_POST['return_tab'] : '';
+$returnDesignTab = isset($_POST['return_design_tab']) ? (string) $_POST['return_design_tab'] : '';
 if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
@@ -196,4 +212,11 @@ if (isAjaxRequest()) {
         'focus' => ['section_id' => $id],
     ]);
 }
-redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'notice' => $noticeMessage]));
+$params = ['section_id' => $id, 'tab' => 'section', 'notice' => $noticeMessage];
+if ($returnTab !== '') {
+    $params['tab'] = $returnTab;
+}
+if ($returnDesignTab !== '') {
+    $params['design_tab'] = $returnDesignTab;
+}
+redirectTo(buildAdminUrl($params));

@@ -83,10 +83,8 @@ final class Renderer
             $infoblock['view_template'] = $this->resolveViewTemplate($infoblock, $component);
             $infoblock['settings'] = $this->decodeSettings($infoblock);
 
-            $objects = $objectRepo->listForInfoblock((int) $infoblock['id']);
-            $objects = array_values(array_filter($objects, static function (array $object): bool {
-                return ($object['status'] ?? '') === 'published' && empty($object['is_deleted']);
-            }));
+            // Берем только опубликованные объекты сразу из БД, чтобы не гонять лишние данные.
+            $objects = $objectRepo->listForInfoblock((int) $infoblock['id'], false, 'published');
 
             $isSingle = $requestedObject && (int) $requestedObject['infoblock_id'] === (int) $infoblock['id'];
             if ($isSingle) {
@@ -344,36 +342,8 @@ final class Renderer
     private function resolveSectionByPath(SectionRepo $repo, array $site, string $path): ?array
     {
         $segments = trim($path, '/') === '' ? [] : explode('/', trim($path, '/'));
-        if (empty($segments)) {
-            $index = $repo->findRootByEnglishName((int) $site['id'], 'index');
-            if ($index !== null) {
-                return $index;
-            }
-
-            return $site;
-        }
-        $current = $site;
-
-        foreach ($segments as $segment) {
-            $children = $repo->listChildren((int) $current['id']);
-            $next = null;
-            $segmentLower = strtolower($segment);
-            foreach ($children as $child) {
-                $childName = isset($child['english_name']) ? (string) $child['english_name'] : '';
-                if ($childName !== '' && strtolower($childName) === $segmentLower) {
-                    $next = $child;
-                    break;
-                }
-            }
-
-            if ($next === null) {
-                return null;
-            }
-
-            $current = $next;
-        }
-
-        return $current;
+        // Разрешаем путь через один запрос, чтобы не делать N+1 по дереву.
+        return $repo->findByPath((int) $site['id'], $segments);
     }
 
     private function decodeSettings(array $row): array
