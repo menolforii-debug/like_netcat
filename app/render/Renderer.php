@@ -357,8 +357,10 @@ final class Renderer
         foreach ($segments as $segment) {
             $children = $repo->listChildren((int) $current['id']);
             $next = null;
+            $segmentLower = strtolower($segment);
             foreach ($children as $child) {
-                if (($child['english_name'] ?? null) === $segment) {
+                $childName = isset($child['english_name']) ? (string) $child['english_name'] : '';
+                if ($childName !== '' && strtolower($childName) === $segmentLower) {
                     $next = $child;
                     break;
                 }
