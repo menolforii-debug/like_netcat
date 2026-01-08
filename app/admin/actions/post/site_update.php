@@ -39,21 +39,6 @@ foreach ($candidates as $candidate) {
     }
 }
 
-$normalizedDomain = Utils::normalizeHost($siteDomain);
-$normalizedMirrors = parseMirrorLines($siteMirrorsRaw);
-$candidates = array_values(array_unique(array_filter(array_merge([$normalizedDomain], $normalizedMirrors))));
-
-foreach ($candidates as $candidate) {
-    $found = $sectionRepo->findSiteByHost($candidate);
-    if ($found !== null && (int) $found['id'] !== (int) $id) {
-        $message = 'Домен ' . $candidate . ' уже используется сайтом id=' . (int) $found['id'] . ' / title=' . (string) $found['title'];
-        if (isAjaxRequest()) {
-            jsonResponse(['ok' => false, 'error' => $message]);
-        }
-        redirectTo(buildAdminUrl(['section_id' => $id, 'error' => $message]));
-    }
-}
-
 $extra = decodeExtra($site);
 $extra['site_domain'] = $normalizedDomain;
 $extra['site_mirrors'] = $normalizedMirrors;
