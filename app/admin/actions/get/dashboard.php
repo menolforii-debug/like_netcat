@@ -192,6 +192,8 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                     }
                     echo '</select><div class="form-text">Наследуется разделами, если у них не задан собственный макет.</div></div>';
                 } else {
+                    echo '<input type="hidden" name="return_site_tab" value="design">';
+                    echo '<input type="hidden" name="return_design_tab" value="visual">';
                     echo '<input type="hidden" name="layout" value="' . htmlspecialchars($currentLayout, ENT_QUOTES, 'UTF-8') . '">';
                     $localVisual = isset($extra['visual_settings']) && is_array($extra['visual_settings']) ? $extra['visual_settings'] : [];
                     $resolvedVisual = $sectionRepo->resolveVisualSettings((int) $selected['id']);
@@ -323,6 +325,10 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
             if ($isAdmin) {
                 echo '<form method="post" action="/admin.php?action=section_update" enctype="multipart/form-data">';
                 echo csrfTokenField();
+                if ($designTab === 'visual') {
+                    echo '<input type="hidden" name="return_tab" value="design">';
+                    echo '<input type="hidden" name="return_design_tab" value="visual">';
+                }
                 echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
                 echo '<input type="hidden" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '">';
                 echo '<input type="hidden" name="english_name" value="' . htmlspecialchars((string) ($selected['english_name'] ?? ''), ENT_QUOTES, 'UTF-8') . '">';
