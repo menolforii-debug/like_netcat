@@ -403,11 +403,16 @@ function renderFieldInput(array $field, array $data, array $uploadContext = []):
             break;
         case 'file':
             $inputId = 'file-input-' . $safeId;
-            $html .= '<input class="form-control custom-file-input" id="' . $inputId . '" type="file" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" data-file-preview-container="#' . $previewId . '" data-file-preview-show-info="true" data-file-btn-clear="#' . $clearId . '">';
+            $deleteId = 'file-delete-' . $safeId;
+            $html .= '<input class="form-control" id="' . $inputId . '" type="file" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" data-file-preview-container="#' . $previewId . '" data-file-preview-show-info="true" data-file-btn-clear="#' . $clearId . '">';
             $html .= '<div id="' . $previewId . '" class="mt-2"></div>';
             $html .= '<button class="btn btn-sm btn-outline-secondary mt-2" type="button" id="' . $clearId . '">Очистить</button>';
             if ($value !== '') {
                 $html .= '<div class="form-text">Текущий файл: <a href="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener">' . htmlspecialchars(basename($value), ENT_QUOTES, 'UTF-8') . '</a></div>';
+                $html .= '<div class="form-check mt-2">';
+                $html .= '<input class="form-check-input" type="checkbox" name="delete_files[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" value="1" id="' . $deleteId . '">';
+                $html .= '<label class="form-check-label" for="' . $deleteId . '">Удалить файл</label>';
+                $html .= '</div>';
             }
             break;
         default:
@@ -434,6 +439,27 @@ function ensurePreviewToken(): string
     }
 
     return (string) $_SESSION['preview_token'];
+}
+
+function deleteUploadedFile(string $publicPath): void
+{
+    $path = trim($publicPath);
+    if ($path === '') {
+        return;
+    }
+
+    if (!str_starts_with($path, '/files/')) {
+        return;
+    }
+
+    $root = dirname(__DIR__, 2);
+    $fullPath = $root . '/public_html' . $path;
+    if (!file_exists($fullPath)) {
+        return;
+    }
+
+    // Удаляем только внутри public_html/files.
+    rmTree($fullPath, $root . '/public_html/files');
 }
 
 function parseMirrorLines(string $value): array

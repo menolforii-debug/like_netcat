@@ -41,12 +41,19 @@ $existingData = json_decode((string) $object['data_json'], true);
 if (!is_array($existingData)) {
     $existingData = [];
 }
+$deleteFiles = isset($_POST['delete_files']) && is_array($_POST['delete_files']) ? $_POST['delete_files'] : [];
 foreach ($fields as $field) {
     if (($field['type'] ?? '') !== 'file') {
         continue;
     }
 
     $name = (string) $field['name'];
+    if (!empty($deleteFiles[$name]) && isset($existingData[$name])) {
+        deleteUploadedFile((string) $existingData[$name]);
+        $data[$name] = '';
+        continue;
+    }
+
     if (isset($_FILES[$name])) {
         $error = null;
         // Сохраняем файлы в public_html, поднимаемся из app/admin/actions/post в корень проекта.
@@ -60,6 +67,9 @@ foreach ($fields as $field) {
             redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => $error]));
         }
         if ($storedPath !== null) {
+            if (isset($existingData[$name]) && $existingData[$name] !== $storedPath) {
+                deleteUploadedFile((string) $existingData[$name]);
+            }
             $data[$name] = $storedPath;
             continue;
         }

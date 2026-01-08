@@ -61,6 +61,9 @@ if ($hasVisualInput) {
     $visualFields = $visualFieldRepo->listAll();
     $existingVisual = isset($extra['visual_settings']) && is_array($extra['visual_settings']) ? $extra['visual_settings'] : [];
     $visualFiles = isset($_FILES['visual_settings']) && is_array($_FILES['visual_settings']) ? $_FILES['visual_settings'] : null;
+    $deleteVisual = isset($_POST['visual_settings_delete']) && is_array($_POST['visual_settings_delete'])
+        ? $_POST['visual_settings_delete']
+        : [];
     $layoutKey = isset($extra['layout']) && Layout::layoutExists((string) $extra['layout']) ? (string) $extra['layout'] : 'default';
     foreach ($visualFields as $field) {
         $name = (string) $field['name'];
@@ -75,6 +78,10 @@ if ($hasVisualInput) {
 
         $type = (string) ($field['type'] ?? 'text');
         if ($type === 'file') {
+            if (!empty($deleteVisual[$name]) && isset($existingVisual[$name])) {
+                deleteUploadedFile((string) $existingVisual[$name]);
+                continue;
+            }
             if ($visualFiles !== null) {
                 $file = extractNestedUpload($visualFiles, $name);
                 if ($file !== null) {
@@ -91,6 +98,9 @@ if ($hasVisualInput) {
                         redirectTo(buildAdminUrl(['section_id' => $id, 'error' => $error]));
                     }
                     if ($storedPath !== null) {
+                        if (isset($existingVisual[$name]) && $existingVisual[$name] !== $storedPath) {
+                            deleteUploadedFile((string) $existingVisual[$name]);
+                        }
                         $visualSettings[$name] = $storedPath;
                         continue;
                     }
