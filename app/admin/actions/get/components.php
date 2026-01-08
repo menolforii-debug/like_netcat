@@ -341,7 +341,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
             echo '<td><input class="form-control form-control-sm" name="fields[' . $index . '][name]" value="' . htmlspecialchars((string) $field['name'], ENT_QUOTES, 'UTF-8') . '"></td>';
             echo '<td><input class="form-control form-control-sm" name="fields[' . $index . '][label]" value="' . htmlspecialchars((string) $field['label'], ENT_QUOTES, 'UTF-8') . '"></td>';
             echo '<td><select class="form-select form-select-sm" name="fields[' . $index . '][type]">';
-            foreach (['text', 'textarea', 'number', 'date', 'checkbox', 'select'] as $type) {
+            foreach (['text', 'textarea', 'number', 'date', 'checkbox', 'select', 'file'] as $type) {
                 $selected = $type === (string) $field['type'] ? ' selected' : '';
                 echo '<option value="' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '"' . $selected . '>' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '</option>';
             }
@@ -380,7 +380,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
         echo '<td><input class="form-control form-control-sm" name="fields[' . $newIndex . '][name]" placeholder="Новое поле"></td>';
         echo '<td><input class="form-control form-control-sm" name="fields[' . $newIndex . '][label]" placeholder="Подпись"></td>';
         echo '<td><select class="form-select form-select-sm" name="fields[' . $newIndex . '][type]">';
-        foreach (['text', 'textarea', 'number', 'date', 'checkbox', 'select'] as $type) {
+        foreach (['text', 'textarea', 'number', 'date', 'checkbox', 'select', 'file'] as $type) {
             echo '<option value="' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '</option>';
         }
         echo '</select></td>';

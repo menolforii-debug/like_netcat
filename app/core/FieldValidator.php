@@ -118,6 +118,8 @@ final class FieldValidator
                     return null;
                 }
                 return $value;
+            case 'file':
+                return (string) $value;
             case 'datetime':
                 $value = (string) $value;
                 if (!$this->isValidDateTime($value)) {

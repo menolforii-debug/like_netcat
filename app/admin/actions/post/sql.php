@@ -5,6 +5,18 @@ if ($sql === '') {
     redirectTo(buildAdminUrl(['action' => 'sql', 'error' => 'Введите SQL запрос']));
 }
 
+$createdAt = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('c');
+if (DB::hasTable('sql_history')) {
+    $stmt = DB::pdo()->prepare(
+        'INSERT INTO sql_history (user_id, sql, created_at) VALUES (:user_id, :sql, :created_at)'
+    );
+    $stmt->execute([
+        'user_id' => $user ? (int) $user['id'] : null,
+        'sql' => $sql,
+        'created_at' => $createdAt,
+    ]);
+}
+
 try {
     $pdo = DB::pdo();
     $lower = ltrim(strtolower($sql));

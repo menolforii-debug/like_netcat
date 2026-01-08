@@ -189,16 +189,36 @@ final class Renderer
     private function resolveViewTemplate(array $infoblock, array $component): string
     {
         $views = [];
-        if (isset($component['views_json'])) {
+        if (DB::hasTable('component_views')) {
+            $viewRepo = new ComponentViewRepo();
+            $views = $viewRepo->listNamesForComponent((int) ($component['id'] ?? 0));
+        }
+
+        if (empty($views) && isset($component['views_json'])) {
             $decoded = json_decode((string) $component['views_json'], true);
             if (is_array($decoded)) {
                 $views = $decoded;
             }
         }
 
+        $views = array_values(array_filter($views, static function ($view): bool {
+            return is_string($view) && trim($view) !== '';
+        }));
+
+        if ($views === []) {
+            return 'list';
+        }
+
+        $keyword = (string) ($component['keyword'] ?? '');
         $template = isset($infoblock['view_template']) ? trim((string) $infoblock['view_template']) : '';
-        if ($template !== '' && in_array($template, $views, true)) {
+        if ($template !== '' && in_array($template, $views, true) && $this->templateExists($keyword, $template)) {
             return $template;
+        }
+
+        foreach ($views as $view) {
+            if ($this->templateExists($keyword, $view)) {
+                return $view;
+            }
         }
 
         return 'list';
@@ -337,8 +357,10 @@ final class Renderer
         foreach ($segments as $segment) {
             $children = $repo->listChildren((int) $current['id']);
             $next = null;
+            $segmentLower = strtolower($segment);
             foreach ($children as $child) {
-                if (($child['english_name'] ?? null) === $segment) {
+                $childName = isset($child['english_name']) ? (string) $child['english_name'] : '';
+                if ($childName !== '' && strtolower($childName) === $segmentLower) {
                     $next = $child;
                     break;
                 }
@@ -366,6 +388,17 @@ final class Renderer
         }
 
         return $decoded;
+    }
+
+    private function templateExists(string $componentKey, string $view): bool
+    {
+        if ($componentKey === '' || $view === '') {
+            return false;
+        }
+
+        $templatePath = __DIR__ . '/../../templates/component/' . $componentKey . '/' . $view . '.php';
+
+        return is_file($templatePath);
     }
 
     private function resolveLayoutKey(string $path, array $section, array $site): string

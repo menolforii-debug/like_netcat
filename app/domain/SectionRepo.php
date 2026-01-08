@@ -9,6 +9,27 @@ final class SectionRepo
             return null;
         }
 
+        $normalizedHost = Utils::normalizeHost($host);
+        if ($normalizedHost === '') {
+            return $sites[0];
+        }
+
+        foreach ($sites as $site) {
+            $settings = $this->getSiteSettings($site);
+            $siteDomain = Utils::normalizeHost((string) ($settings['site_domain'] ?? ''));
+            if ($siteDomain !== '' && $siteDomain === $normalizedHost) {
+                return $site;
+            }
+
+            $mirrors = $settings['site_mirrors'] ?? [];
+            foreach ($mirrors as $mirror) {
+                $mirrorHost = Utils::normalizeHost((string) $mirror);
+                if ($mirrorHost !== '' && $mirrorHost === $normalizedHost) {
+                    return $site;
+                }
+            }
+        }
+
         return $sites[0];
     }
 

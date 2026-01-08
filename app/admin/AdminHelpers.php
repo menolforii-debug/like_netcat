@@ -332,6 +332,21 @@ function extractFormData(array $fields): array
     return $data;
 }
 
+function extractNestedUpload(array $files, string $key): ?array
+{
+    if (!isset($files['name'][$key])) {
+        return null;
+    }
+
+    return [
+        'name' => $files['name'][$key] ?? '',
+        'type' => $files['type'][$key] ?? '',
+        'tmp_name' => $files['tmp_name'][$key] ?? '',
+        'error' => $files['error'][$key] ?? UPLOAD_ERR_NO_FILE,
+        'size' => $files['size'][$key] ?? 0,
+    ];
+}
+
 function validateRequiredFields(array $fields, array $data): array
 {
     $errors = [];
@@ -355,6 +370,9 @@ function renderFieldInput(array $field, array $data): string
     $type = $field['type'] ?? 'text';
     $label = htmlspecialchars((string) ($field['label'] ?? $name), ENT_QUOTES, 'UTF-8');
     $value = isset($data[$name]) ? (string) $data[$name] : '';
+    $safeId = preg_replace('/[^A-Za-z0-9_-]/', '_', (string) $name);
+    $previewId = 'file-preview-' . $safeId;
+    $clearId = 'file-clear-' . $safeId;
 
     $html = '<label class="form-label">' . $label . '</label>';
     switch ($type) {
@@ -382,6 +400,14 @@ function renderFieldInput(array $field, array $data): string
                 $html .= '<option value="' . htmlspecialchars($optionValue, ENT_QUOTES, 'UTF-8') . '"' . $selected . '>' . htmlspecialchars($optionLabel, ENT_QUOTES, 'UTF-8') . '</option>';
             }
             $html .= '</select>';
+            break;
+        case 'file':
+            $html .= '<input class="form-control custom-file-input" type="file" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" data-file-preview-container="#' . $previewId . '" data-file-preview-show-info="true" data-file-btn-clear="#' . $clearId . '">';
+            $html .= '<div id="' . $previewId . '" class="mt-2"></div>';
+            $html .= '<button class="btn btn-sm btn-outline-secondary mt-2" type="button" id="' . $clearId . '">Очистить</button>';
+            if ($value !== '') {
+                $html .= '<div class="form-text">Текущий файл: <a href="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener">' . htmlspecialchars(basename($value), ENT_QUOTES, 'UTF-8') . '</a></div>';
+            }
             break;
         default:
             $html .= '<input class="form-control" type="text" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '">';
@@ -490,6 +516,52 @@ function layoutKeyIsValid(string $layoutKey): bool
     }
 
     return true;
+}
+
+function saveUploadedFile(array $file, string $targetDir, string $publicPrefix, ?string &$error = null): ?string
+{
+    if (empty($file) || !isset($file['error']) || $file['error'] === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        $error = 'Ошибка загрузки файла.';
+        return null;
+    }
+
+    if (!is_uploaded_file($file['tmp_name'] ?? '')) {
+        $error = 'Невозможно прочитать загруженный файл.';
+        return null;
+    }
+
+    $filename = basename((string) ($file['name'] ?? ''));
+    $filename = preg_replace('/[^A-Za-z0-9._-]/', '_', $filename);
+    if ($filename === '') {
+        $filename = 'file';
+    }
+
+    if (!is_dir($targetDir)) {
+        mkdir($targetDir, 0770, true);
+        @chmod($targetDir, 0770);
+    }
+
+    $finalName = $filename;
+    $fullPath = rtrim($targetDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $finalName;
+    if (is_file($fullPath)) {
+        $ext = pathinfo($filename, PATHINFO_EXTENSION);
+        $base = pathinfo($filename, PATHINFO_FILENAME);
+        $suffix = date('YmdHis') . '_' . bin2hex(random_bytes(3));
+        $finalName = $base . '_' . $suffix . ($ext !== '' ? '.' . $ext : '');
+        $fullPath = rtrim($targetDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $finalName;
+    }
+
+    if (!move_uploaded_file($file['tmp_name'], $fullPath)) {
+        $error = 'Не удалось сохранить файл.';
+        return null;
+    }
+    @chmod($fullPath, 0660);
+
+    return rtrim($publicPrefix, '/') . '/' . $finalName;
 }
 
 function rmTree(string $path, string $allowedRoot): void

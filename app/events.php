@@ -33,6 +33,12 @@ core()->events()->on('object.unpublished', static function (array $payload): voi
 core()->events()->on('object.deleted', static function (array $payload): void {
 });
 
+core()->events()->on('object.restored', static function (array $payload): void {
+});
+
+core()->events()->on('object.purged', static function (array $payload): void {
+});
+
 core()->events()->on('component.created', static function (array $payload): void {
 });
 
