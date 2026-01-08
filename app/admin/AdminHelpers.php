@@ -524,6 +524,48 @@ function saveUploadedFile(array $file, string $targetDir, string $publicPrefix, 
         return null;
     }
 
+    $allowedExtensions = [
+        // Images
+        'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif',
+        // Archives
+        'zip', 'rar', '7z', 'tar', 'gz', 'tgz',
+        // Documents
+        'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'rtf', 'txt', 'csv', 'odt', 'ods', 'odp',
+    ];
+
+    $allowedMimeTypes = [
+        // Images
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+        'image/svg+xml',
+        'image/avif',
+        // Archives
+        'application/zip',
+        'application/x-zip-compressed',
+        'application/x-rar-compressed',
+        'application/vnd.rar',
+        'application/x-7z-compressed',
+        'application/x-tar',
+        'application/gzip',
+        'application/x-gzip',
+        // Documents
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'application/rtf',
+        'text/plain',
+        'text/csv',
+        'application/vnd.oasis.opendocument.text',
+        'application/vnd.oasis.opendocument.spreadsheet',
+        'application/vnd.oasis.opendocument.presentation',
+    ];
+
     if ($file['error'] !== UPLOAD_ERR_OK) {
         $error = 'Ошибка загрузки файла.';
         return null;
@@ -538,6 +580,23 @@ function saveUploadedFile(array $file, string $targetDir, string $publicPrefix, 
     $filename = preg_replace('/[^A-Za-z0-9._-]/', '_', $filename);
     if ($filename === '') {
         $filename = 'file';
+    }
+
+    $extension = strtolower((string) pathinfo($filename, PATHINFO_EXTENSION));
+    if ($extension === '' || !in_array($extension, $allowedExtensions, true)) {
+        $error = 'Недопустимый тип файла.';
+        return null;
+    }
+
+    $mimeType = null;
+    if (class_exists('finfo')) {
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $mimeType = $finfo->file($file['tmp_name']);
+    }
+
+    if ($mimeType !== null && !in_array($mimeType, $allowedMimeTypes, true)) {
+        $error = 'Недопустимый MIME-тип файла.';
+        return null;
     }
 
     if (!is_dir($targetDir)) {
