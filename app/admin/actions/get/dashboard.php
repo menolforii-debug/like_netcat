@@ -80,11 +80,16 @@ $renderVisualSettings = function (array $visualFields, array $resolvedVisual, ar
             echo '</select>';
         } elseif ($type === 'file') {
             $inputId = 'visual-file-' . $fieldId;
-            echo '<input class="form-control custom-file-input" id="' . htmlspecialchars($inputId, ENT_QUOTES, 'UTF-8') . '" type="file" name="visual_settings[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" data-visual-input' . $disabledAttr . ' data-file-preview-container="#' . htmlspecialchars($previewId, ENT_QUOTES, 'UTF-8') . '" data-file-preview-show-info="true" data-file-btn-clear="#' . htmlspecialchars($clearId, ENT_QUOTES, 'UTF-8') . '">';
+            $deleteId = 'visual-file-delete-' . $fieldId;
+            echo '<input class="form-control" id="' . htmlspecialchars($inputId, ENT_QUOTES, 'UTF-8') . '" type="file" name="visual_settings[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" data-visual-input' . $disabledAttr . ' data-file-preview-container="#' . htmlspecialchars($previewId, ENT_QUOTES, 'UTF-8') . '" data-file-preview-show-info="true" data-file-btn-clear="#' . htmlspecialchars($clearId, ENT_QUOTES, 'UTF-8') . '">';
             echo '<div id="' . htmlspecialchars($previewId, ENT_QUOTES, 'UTF-8') . '" class="mt-2"></div>';
             echo '<button class="btn btn-sm btn-outline-secondary mt-2" type="button" id="' . htmlspecialchars($clearId, ENT_QUOTES, 'UTF-8') . '">Очистить</button>';
             if ($value !== '') {
                 echo '<div class="form-text">Текущий файл: <a href="' . htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener">' . htmlspecialchars(basename((string) $value), ENT_QUOTES, 'UTF-8') . '</a></div>';
+                echo '<div class="form-check mt-2">';
+                echo '<input class="form-check-input" type="checkbox" name="visual_settings_delete[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" value="1" id="' . htmlspecialchars($deleteId, ENT_QUOTES, 'UTF-8') . '">';
+                echo '<label class="form-check-label" for="' . htmlspecialchars($deleteId, ENT_QUOTES, 'UTF-8') . '">Удалить файл</label>';
+                echo '</div>';
             }
         } elseif ($type === 'color') {
             $colorValue = $value !== '' ? $value : '#ffffff';
