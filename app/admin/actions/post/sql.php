@@ -5,14 +5,17 @@ if ($sql === '') {
     redirectTo(buildAdminUrl(['action' => 'sql', 'error' => 'Введите SQL запрос']));
 }
 
-if (!isset($_SESSION['sql_history']) || !is_array($_SESSION['sql_history'])) {
-    $_SESSION['sql_history'] = [];
+$createdAt = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('c');
+if (DB::hasTable('sql_history')) {
+    $stmt = DB::pdo()->prepare(
+        'INSERT INTO sql_history (user_id, sql, created_at) VALUES (:user_id, :sql, :created_at)'
+    );
+    $stmt->execute([
+        'user_id' => $user ? (int) $user['id'] : null,
+        'sql' => $sql,
+        'created_at' => $createdAt,
+    ]);
 }
-array_unshift($_SESSION['sql_history'], [
-    'sql' => $sql,
-    'created_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('c'),
-]);
-$_SESSION['sql_history'] = array_slice($_SESSION['sql_history'], 0, 15);
 
 try {
     $pdo = DB::pdo();
