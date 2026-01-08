@@ -41,7 +41,6 @@ $existingData = json_decode((string) $object['data_json'], true);
 if (!is_array($existingData)) {
     $existingData = [];
 }
-$uploadedFiles = isset($_POST['uploaded_files']) && is_array($_POST['uploaded_files']) ? $_POST['uploaded_files'] : [];
 foreach ($fields as $field) {
     if (($field['type'] ?? '') !== 'file') {
         continue;
@@ -68,11 +67,6 @@ foreach ($fields as $field) {
 
     if (isset($existingData[$name])) {
         $data[$name] = $existingData[$name];
-        continue;
-    }
-
-    if (isset($uploadedFiles[$name]) && is_string($uploadedFiles[$name]) && $uploadedFiles[$name] !== '') {
-        $data[$name] = $uploadedFiles[$name];
     }
 }
 try {

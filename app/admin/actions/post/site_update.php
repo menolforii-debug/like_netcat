@@ -61,9 +61,6 @@ if ($hasVisualInput) {
     $visualFields = $visualFieldRepo->listAll();
     $existingVisual = isset($extra['visual_settings']) && is_array($extra['visual_settings']) ? $extra['visual_settings'] : [];
     $visualFiles = isset($_FILES['visual_settings']) && is_array($_FILES['visual_settings']) ? $_FILES['visual_settings'] : null;
-    $uploadedVisual = isset($_POST['visual_settings_uploaded']) && is_array($_POST['visual_settings_uploaded'])
-        ? $_POST['visual_settings_uploaded']
-        : [];
     $layoutKey = isset($extra['layout']) && Layout::layoutExists((string) $extra['layout']) ? (string) $extra['layout'] : 'default';
     foreach ($visualFields as $field) {
         $name = (string) $field['name'];
@@ -102,9 +99,6 @@ if ($hasVisualInput) {
 
             if (isset($existingVisual[$name])) {
                 $visualSettings[$name] = $existingVisual[$name];
-            }
-            if (isset($uploadedVisual[$name]) && is_string($uploadedVisual[$name]) && $uploadedVisual[$name] !== '') {
-                $visualSettings[$name] = $uploadedVisual[$name];
             }
             continue;
         }

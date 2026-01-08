@@ -138,42 +138,6 @@ function handleAjaxResponse(payload) {
   }
 }
 
-// Обрабатываем ответ AJAX-загрузки и сохраняем путь в скрытое поле.
-function handleAdminFileUpload(data, input) {
-  let payload = data;
-  if (typeof data === 'string') {
-    try {
-      payload = JSON.parse(data);
-    } catch (e) {
-      payload = null;
-    }
-  }
-  if (!payload || !payload.stored_path || !input) return;
-
-  const hiddenSelector = input.getAttribute('data-upload-hidden');
-  if (hiddenSelector) {
-    const hidden = document.querySelector(hiddenSelector);
-    if (hidden) {
-      hidden.value = payload.stored_path;
-    }
-  }
-
-  const clearSelector = input.getAttribute('data-file-btn-clear');
-  if (clearSelector) {
-    const clearBtn = document.querySelector(clearSelector);
-    if (clearBtn && !clearBtn.dataset.fileUploadBound) {
-      clearBtn.dataset.fileUploadBound = 'true';
-      clearBtn.addEventListener('click', () => {
-        if (hiddenSelector) {
-          const hidden = document.querySelector(hiddenSelector);
-          if (hidden) hidden.value = '';
-        }
-        input.disabled = false;
-      });
-    }
-  }
-}
-
 function openAdminModal(url) {
   const modalEl = document.getElementById('adminModal');
   if (!modalEl) return;
@@ -210,21 +174,6 @@ document.addEventListener('click', (e) => {
   if (url) {
     openAdminModal(url);
   }
-});
-
-document.addEventListener('click', (e) => {
-  const trigger = e.target.closest('.js-file-upload-ajax');
-  if (!trigger) return;
-  e.preventDefault();
-  const inputSelector = trigger.getAttribute('data-file-input');
-  const input = inputSelector ? document.querySelector(inputSelector) : null;
-  if (!input) return;
-  const identifier = input.getAttribute('data-js-advanced-identifier');
-  if (!identifier || !window.jQuery || !window.jQuery.SOW || !window.jQuery.SOW.core) {
-    return;
-  }
-
-  window.jQuery.SOW.core.file_upload.file_upload__ajax_upload(identifier, '');
 });
 
 document.addEventListener('submit', (e) => {

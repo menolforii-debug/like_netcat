@@ -100,7 +100,6 @@ final class AdminRouter
             'object_unpublish',
             'object_restore',
             'object_purge',
-            'file_upload',
         ];
 
         // Разрешаем редактору только экраны и действия, связанные с объектами.

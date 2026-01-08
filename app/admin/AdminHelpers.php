@@ -403,29 +403,9 @@ function renderFieldInput(array $field, array $data, array $uploadContext = []):
             break;
         case 'file':
             $inputId = 'file-input-' . $safeId;
-            $hiddenId = 'file-hidden-' . $safeId;
-            $submitId = 'file-submit-' . $safeId;
-            $ajaxAttrs = '';
-            if (!empty($uploadContext)) {
-                $params = [
-                    'context' => $uploadContext['context'] ?? '',
-                    'infoblock_id' => $uploadContext['infoblock_id'] ?? '',
-                    'field_name' => $name,
-                    'csrf_token' => csrfToken(),
-                ];
-                $ajaxAttrs = ' data-file-ajax-upload-url="/admin.php?action=file_upload"'
-                    . ' data-file-ajax-upload-params="' . htmlspecialchars(http_build_query($params), ENT_QUOTES, 'UTF-8') . '"'
-                    . ' data-file-ajax-callback-function="handleAdminFileUpload"'
-                    . ' data-upload-hidden="#' . $hiddenId . '"'
-                    . ' data-file-btn-submit="#' . $submitId . '"';
-            }
-            $html .= '<input type="hidden" name="uploaded_files[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" id="' . $hiddenId . '" value="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '">';
-            $html .= '<input class="form-control custom-file-input" id="' . $inputId . '" type="file" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" data-file-preview-container="#' . $previewId . '" data-file-preview-show-info="true" data-file-btn-clear="#' . $clearId . '"' . $ajaxAttrs . '>';
+            $html .= '<input class="form-control custom-file-input" id="' . $inputId . '" type="file" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" data-file-preview-container="#' . $previewId . '" data-file-preview-show-info="true" data-file-btn-clear="#' . $clearId . '">';
             $html .= '<div id="' . $previewId . '" class="mt-2"></div>';
-            $html .= '<div class="d-flex gap-2 mt-2">';
-            $html .= '<button class="btn btn-sm btn-outline-secondary" type="button" id="' . $clearId . '">Очистить</button>';
-            $html .= '<button class="btn btn-sm btn-primary js-file-upload-ajax hide" type="button" id="' . $submitId . '" data-file-input="#' . $inputId . '">Загрузить</button>';
-            $html .= '</div>';
+            $html .= '<button class="btn btn-sm btn-outline-secondary mt-2" type="button" id="' . $clearId . '">Очистить</button>';
             if ($value !== '') {
                 $html .= '<div class="form-text">Текущий файл: <a href="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener">' . htmlspecialchars(basename($value), ENT_QUOTES, 'UTF-8') . '</a></div>';
             }

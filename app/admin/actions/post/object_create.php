@@ -44,7 +44,6 @@ if ($component === null) {
 
 $fields = parseComponentFields($component);
 $data = extractFormData($fields);
-$uploadedFiles = isset($_POST['uploaded_files']) && is_array($_POST['uploaded_files']) ? $_POST['uploaded_files'] : [];
 foreach ($fields as $field) {
     if (($field['type'] ?? '') !== 'file') {
         continue;
@@ -68,11 +67,6 @@ foreach ($fields as $field) {
     }
     if ($storedPath !== null) {
         $data[$name] = $storedPath;
-        continue;
-    }
-
-    if (isset($uploadedFiles[$name]) && is_string($uploadedFiles[$name]) && $uploadedFiles[$name] !== '') {
-        $data[$name] = $uploadedFiles[$name];
     }
 }
 try {
