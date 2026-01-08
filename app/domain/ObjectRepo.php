@@ -2,11 +2,19 @@
 
 final class ObjectRepo
 {
-    public function listForInfoblock($infoblockId, bool $includeDeleted = false): array
+    public function listForInfoblock($infoblockId, bool $includeDeleted = false, ?string $status = null): array
     {
         $where = 'infoblock_id = :infoblock_id';
         if (!$includeDeleted) {
             $where .= ' AND is_deleted = 0';
+        }
+        if ($status !== null && $status !== '') {
+            $where .= ' AND status = :status';
+        }
+
+        $params = ['infoblock_id' => $infoblockId];
+        if ($status !== null && $status !== '') {
+            $params['status'] = $status;
         }
 
         return DB::fetchAll(
@@ -14,7 +22,7 @@ final class ObjectRepo
             FROM objects
             WHERE ' . $where . '
             ORDER BY id ASC',
-            ['infoblock_id' => $infoblockId]
+            $params
         );
     }
 
