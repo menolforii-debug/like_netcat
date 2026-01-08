@@ -11,13 +11,6 @@ if ($id > 0 && $field === null) {
     exit;
 }
 
-$optionsText = '';
-if ($field && !empty($field['options']) && is_array($field['options'])) {
-    foreach ($field['options'] as $optKey => $optLabel) {
-        $optionsText .= $optKey . ':' . $optLabel . "\n";
-    }
-}
-
 $title = $field ? 'Редактировать поле' : 'Новое поле';
 echo '<span data-modal-title="' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '"></span>';
 echo '<form method="post" action="/admin.php?action=' . ($field ? 'visual_field_update' : 'visual_field_create') . '">';
@@ -31,13 +24,12 @@ echo '<div class="col-md-6"><label class="form-label">Ключ</label><input cla
 echo '<div class="col-md-6"><label class="form-label">Название</label><input class="form-control" name="label" value="' . htmlspecialchars((string) ($field['label'] ?? ''), ENT_QUOTES, 'UTF-8') . '" required></div>';
 echo '<div class="col-md-6"><label class="form-label">Тип</label>';
 echo '<select class="form-select" name="type">';
-foreach (['text' => 'Текст', 'textarea' => 'Текст (многострочный)', 'number' => 'Число', 'checkbox' => 'Флаг', 'select' => 'Список', 'color' => 'Цвет'] as $typeKey => $typeLabel) {
+foreach (['text' => 'Текст', 'textarea' => 'Текст (многострочный)', 'number' => 'Число', 'checkbox' => 'Флаг', 'select' => 'Список', 'color' => 'Цвет', 'file' => 'Файл'] as $typeKey => $typeLabel) {
     $selected = ($field['type'] ?? 'text') === $typeKey ? ' selected' : '';
     echo '<option value="' . htmlspecialchars($typeKey, ENT_QUOTES, 'UTF-8') . '"' . $selected . '>' . htmlspecialchars($typeLabel, ENT_QUOTES, 'UTF-8') . '</option>';
 }
 echo '</select></div>';
 echo '<div class="col-md-3"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="' . (int) ($field['sort'] ?? 0) . '"></div>';
-echo '<div class="col-12"><label class="form-label">Опции (ключ:подпись)</label><textarea class="form-control font-monospace code-editor" name="options" rows="4">' . htmlspecialchars(trim($optionsText), ENT_QUOTES, 'UTF-8') . '</textarea></div>';
 echo '</div>';
 
 echo '<div class="d-flex justify-content-end gap-2 mt-3">';

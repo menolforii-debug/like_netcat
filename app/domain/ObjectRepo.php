@@ -118,6 +118,27 @@ final class ObjectRepo
         core()->events()->emit('object.deleted', ['id' => $id]);
     }
 
+    public function restore($id): void
+    {
+        $stmt = DB::pdo()->prepare(
+            'UPDATE objects SET is_deleted = 0, deleted_at = NULL, updated_at = :updated_at WHERE id = :id'
+        );
+        $stmt->execute([
+            'updated_at' => $this->now(),
+            'id' => $id,
+        ]);
+
+        core()->events()->emit('object.restored', ['id' => $id]);
+    }
+
+    public function purge($id): void
+    {
+        $stmt = DB::pdo()->prepare('DELETE FROM objects WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+
+        core()->events()->emit('object.purged', ['id' => $id]);
+    }
+
     private function now(): string
     {
         return (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('c');
