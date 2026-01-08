@@ -41,7 +41,7 @@ $renderVisualSettings = function (array $visualFields, array $resolvedVisual, ar
         $resolvedValue = $resolvedVisual[$name] ?? '';
         $value = $hasLocal ? $localVisual[$name] : $resolvedValue;
         $inheritChecked = $hasLocal ? '' : ' checked';
-        $disabledAttr = $hasLocal ? '' : ' disabled';
+        $disabledAttr = '';
         $fieldId = $scopeId . '-' . $name;
 
         echo '<div class="mb-3">';
