@@ -63,7 +63,7 @@ foreach ($fieldsInput as $row) {
     $fieldNames[$fieldName] = true;
     $label = isset($row['label']) ? trim((string) $row['label']) : $fieldName;
     $type = isset($row['type']) ? trim((string) $row['type']) : 'text';
-    $allowedTypes = ['text', 'textarea', 'number', 'date', 'checkbox', 'select'];
+    $allowedTypes = ['text', 'textarea', 'number', 'date', 'checkbox', 'select', 'file'];
     if (!in_array($type, $allowedTypes, true)) {
         $type = 'text';
     }
