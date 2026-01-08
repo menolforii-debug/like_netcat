@@ -43,6 +43,8 @@ $renderVisualSettings = function (array $visualFields, array $resolvedVisual, ar
         $inheritChecked = '';
         $disabledAttr = '';
         $fieldId = $scopeId . '-' . $name;
+        $previewId = 'file-preview-' . $fieldId;
+        $clearId = 'file-clear-' . $fieldId;
 
         echo '<div class="mb-3">';
         echo '<div class="d-flex justify-content-between align-items-center">';
@@ -77,7 +79,9 @@ $renderVisualSettings = function (array $visualFields, array $resolvedVisual, ar
             }
             echo '</select>';
         } elseif ($type === 'file') {
-            echo '<input class="form-control" type="file" name="visual_settings[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" data-visual-input' . $disabledAttr . ' data-file-preview-show-info="true">';
+            echo '<input class="form-control custom-file-input" type="file" name="visual_settings[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" data-visual-input' . $disabledAttr . ' data-file-preview-container="#' . htmlspecialchars($previewId, ENT_QUOTES, 'UTF-8') . '" data-file-preview-show-info="true" data-file-btn-clear="#' . htmlspecialchars($clearId, ENT_QUOTES, 'UTF-8') . '">';
+            echo '<div id="' . htmlspecialchars($previewId, ENT_QUOTES, 'UTF-8') . '" class="mt-2"></div>';
+            echo '<button class="btn btn-sm btn-outline-secondary mt-2" type="button" id="' . htmlspecialchars($clearId, ENT_QUOTES, 'UTF-8') . '">Очистить</button>';
             if ($value !== '') {
                 echo '<div class="form-text">Текущий файл: <a href="' . htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener">' . htmlspecialchars(basename((string) $value), ENT_QUOTES, 'UTF-8') . '</a></div>';
             }

@@ -370,6 +370,9 @@ function renderFieldInput(array $field, array $data): string
     $type = $field['type'] ?? 'text';
     $label = htmlspecialchars((string) ($field['label'] ?? $name), ENT_QUOTES, 'UTF-8');
     $value = isset($data[$name]) ? (string) $data[$name] : '';
+    $safeId = preg_replace('/[^A-Za-z0-9_-]/', '_', (string) $name);
+    $previewId = 'file-preview-' . $safeId;
+    $clearId = 'file-clear-' . $safeId;
 
     $html = '<label class="form-label">' . $label . '</label>';
     switch ($type) {
@@ -399,7 +402,9 @@ function renderFieldInput(array $field, array $data): string
             $html .= '</select>';
             break;
         case 'file':
-            $html .= '<input class="form-control" type="file" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" data-file-preview-show-info="true">';
+            $html .= '<input class="form-control custom-file-input" type="file" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" data-file-preview-container="#' . $previewId . '" data-file-preview-show-info="true" data-file-btn-clear="#' . $clearId . '">';
+            $html .= '<div id="' . $previewId . '" class="mt-2"></div>';
+            $html .= '<button class="btn btn-sm btn-outline-secondary mt-2" type="button" id="' . $clearId . '">Очистить</button>';
             if ($value !== '') {
                 $html .= '<div class="form-text">Текущий файл: <a href="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener">' . htmlspecialchars(basename($value), ENT_QUOTES, 'UTF-8') . '</a></div>';
             }
