@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS sections (
     title TEXT NOT NULL,
     sort INTEGER NOT NULL DEFAULT 0,
     extra_json TEXT NOT NULL DEFAULT '{}',
-    FOREIGN KEY(parent_id) REFERENCES sections(id)
+    FOREIGN KEY(parent_id) REFERENCES sections(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS components (
@@ -28,8 +28,8 @@ CREATE TABLE IF NOT EXISTS infoblocks (
     extra_json TEXT NOT NULL DEFAULT '{}',
     sort INTEGER NOT NULL DEFAULT 0,
     is_enabled INTEGER NOT NULL DEFAULT 1,
-    FOREIGN KEY(section_id) REFERENCES sections(id),
-    FOREIGN KEY(component_id) REFERENCES components(id)
+    FOREIGN KEY(section_id) REFERENCES sections(id) ON DELETE CASCADE,
+    FOREIGN KEY(component_id) REFERENCES components(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS objects (
@@ -45,9 +45,9 @@ CREATE TABLE IF NOT EXISTS objects (
     updated_at TEXT NOT NULL,
     is_deleted INTEGER NOT NULL DEFAULT 0,
     deleted_at TEXT NULL,
-    FOREIGN KEY(section_id) REFERENCES sections(id),
-    FOREIGN KEY(infoblock_id) REFERENCES infoblocks(id),
-    FOREIGN KEY(component_id) REFERENCES components(id)
+    FOREIGN KEY(section_id) REFERENCES sections(id) ON DELETE CASCADE,
+    FOREIGN KEY(infoblock_id) REFERENCES infoblocks(id) ON DELETE CASCADE,
+    FOREIGN KEY(component_id) REFERENCES components(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -67,5 +67,50 @@ CREATE TABLE IF NOT EXISTS admin_log (
     data_json TEXT NOT NULL DEFAULT '{}',
     ip TEXT NULL,
     user_agent TEXT NULL,
-    FOREIGN KEY(user_id) REFERENCES users(id)
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS component_views (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    component_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    list_tpl TEXT NOT NULL,
+    single_tpl TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE(component_id, name),
+    FOREIGN KEY(component_id) REFERENCES components(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS visual_fields (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    label TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'text',
+    options_json TEXT NOT NULL DEFAULT '[]',
+    sort INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sql_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NULL,
+    sql TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_sections_site_id ON sections(site_id);
+CREATE INDEX IF NOT EXISTS idx_sections_parent_id ON sections(parent_id);
+CREATE INDEX IF NOT EXISTS idx_infoblocks_site_id ON infoblocks(site_id);
+CREATE INDEX IF NOT EXISTS idx_infoblocks_section_id ON infoblocks(section_id);
+CREATE INDEX IF NOT EXISTS idx_infoblocks_component_id ON infoblocks(component_id);
+CREATE INDEX IF NOT EXISTS idx_objects_site_id ON objects(site_id);
+CREATE INDEX IF NOT EXISTS idx_objects_section_id ON objects(section_id);
+CREATE INDEX IF NOT EXISTS idx_objects_infoblock_id ON objects(infoblock_id);
+CREATE INDEX IF NOT EXISTS idx_objects_component_id ON objects(component_id);
+CREATE INDEX IF NOT EXISTS idx_objects_status ON objects(status);
+CREATE INDEX IF NOT EXISTS idx_admin_log_user_id ON admin_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_component_views_component_id ON component_views(component_id);
+CREATE INDEX IF NOT EXISTS idx_sql_history_user_id ON sql_history(user_id);
