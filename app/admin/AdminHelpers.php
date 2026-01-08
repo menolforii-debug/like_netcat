@@ -448,6 +448,20 @@ function deleteUploadedFile(string $publicPath): void
         return;
     }
 
+    // Разбираем абсолютные URL и приводим относительный путь к виду /files/...
+    $parsed = parse_url($path);
+    if (is_array($parsed) && isset($parsed['path'])) {
+        $path = (string) $parsed['path'];
+    }
+    if ($path !== '' && $path[0] !== '/') {
+        $path = '/' . ltrim($path, '/');
+    }
+    if (str_starts_with($path, '/files/') === false && str_starts_with($path, '/files/') !== true) {
+        if (str_starts_with($path, '/files/') === false && str_starts_with($path, '/files/') !== true) {
+            // Старые данные могли быть без ведущего слеша.
+            $path = '/files/' . ltrim($path, '/');
+        }
+    }
     if (!str_starts_with($path, '/files/')) {
         return;
     }
