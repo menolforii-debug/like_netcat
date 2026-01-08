@@ -2,7 +2,7 @@
 
 $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
 $sectionId = isset($_POST['section_id']) ? (int) $_POST['section_id'] : 0;
-$saveAs = isset($_POST['save_as']) ? (string) $_POST['save_as'] : '';
+$isEnabled = !empty($_POST['is_enabled']);
 
 $object = $objectRepo->findById($id);
 if ($object === null) {
@@ -90,7 +90,8 @@ try {
 
 $objectRepo->update($id, ['data' => $data]);
 
-if ($saveAs === 'publish') {
+$currentStatus = (string) ($object['status'] ?? 'draft');
+if ($isEnabled && $currentStatus !== 'published') {
     if (!Permission::canAction($user, $infoblock, 'publish')) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => 'Недостаточно прав для публикации']);
@@ -98,7 +99,7 @@ if ($saveAs === 'publish') {
         redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Недостаточно прав для публикации']));
     }
     $objectRepo->publish($id);
-} elseif ($saveAs === 'draft') {
+} elseif (!$isEnabled && $currentStatus === 'published') {
     if (!Permission::canAction($user, $infoblock, 'unpublish')) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => 'Недостаточно прав для снятия с публикации']);
