@@ -7,3 +7,4 @@
 # local backups
 /var/backups/
 *.bak
+public_html/files/*
