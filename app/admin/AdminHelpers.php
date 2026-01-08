@@ -364,7 +364,7 @@ function validateRequiredFields(array $fields, array $data): array
     return $errors;
 }
 
-function renderFieldInput(array $field, array $data): string
+function renderFieldInput(array $field, array $data, array $uploadContext = []): string
 {
     $name = $field['name'];
     $type = $field['type'] ?? 'text';
@@ -402,7 +402,8 @@ function renderFieldInput(array $field, array $data): string
             $html .= '</select>';
             break;
         case 'file':
-            $html .= '<input class="form-control custom-file-input" type="file" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" data-file-preview-container="#' . $previewId . '" data-file-preview-show-info="true" data-file-btn-clear="#' . $clearId . '">';
+            $inputId = 'file-input-' . $safeId;
+            $html .= '<input class="form-control custom-file-input" id="' . $inputId . '" type="file" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" data-file-preview-container="#' . $previewId . '" data-file-preview-show-info="true" data-file-btn-clear="#' . $clearId . '">';
             $html .= '<div id="' . $previewId . '" class="mt-2"></div>';
             $html .= '<button class="btn btn-sm btn-outline-secondary mt-2" type="button" id="' . $clearId . '">Очистить</button>';
             if ($value !== '') {

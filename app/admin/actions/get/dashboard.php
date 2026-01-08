@@ -79,7 +79,8 @@ $renderVisualSettings = function (array $visualFields, array $resolvedVisual, ar
             }
             echo '</select>';
         } elseif ($type === 'file') {
-            echo '<input class="form-control custom-file-input" type="file" name="visual_settings[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" data-visual-input' . $disabledAttr . ' data-file-preview-container="#' . htmlspecialchars($previewId, ENT_QUOTES, 'UTF-8') . '" data-file-preview-show-info="true" data-file-btn-clear="#' . htmlspecialchars($clearId, ENT_QUOTES, 'UTF-8') . '">';
+            $inputId = 'visual-file-' . $fieldId;
+            echo '<input class="form-control custom-file-input" id="' . htmlspecialchars($inputId, ENT_QUOTES, 'UTF-8') . '" type="file" name="visual_settings[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" data-visual-input' . $disabledAttr . ' data-file-preview-container="#' . htmlspecialchars($previewId, ENT_QUOTES, 'UTF-8') . '" data-file-preview-show-info="true" data-file-btn-clear="#' . htmlspecialchars($clearId, ENT_QUOTES, 'UTF-8') . '">';
             echo '<div id="' . htmlspecialchars($previewId, ENT_QUOTES, 'UTF-8') . '" class="mt-2"></div>';
             echo '<button class="btn btn-sm btn-outline-secondary mt-2" type="button" id="' . htmlspecialchars($clearId, ENT_QUOTES, 'UTF-8') . '">Очистить</button>';
             if ($value !== '') {

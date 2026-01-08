@@ -64,7 +64,10 @@ if ($object) {
 }
 echo '<input type="hidden" name="section_id" value="' . (int) $sectionId . '">';
 foreach ($fields as $field) {
-    echo renderFieldInput($field, $data);
+    echo renderFieldInput($field, $data, [
+        'context' => 'component',
+        'infoblock_id' => (int) $infoblock['id'],
+    ]);
 }
 echo '<div class="d-flex gap-2">';
 echo '<button class="btn btn-primary" type="submit" name="save_as" value="draft">Сохранить черновик</button>';
