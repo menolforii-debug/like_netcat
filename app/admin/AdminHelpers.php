@@ -445,10 +445,12 @@ function deleteUploadedFile(string $publicPath): void
 {
     $path = trim($publicPath);
     if ($path === '') {
+        error_log('deleteUploadedFile: empty path');
         return;
     }
 
     // Разбираем абсолютные URL и приводим относительный путь к виду /files/...
+    error_log('deleteUploadedFile: original=' . $path);
     $parsed = parse_url($path);
     if (is_array($parsed) && isset($parsed['path'])) {
         $path = (string) $parsed['path'];
@@ -463,18 +465,22 @@ function deleteUploadedFile(string $publicPath): void
         }
     }
     if (!str_starts_with($path, '/files/')) {
+        error_log('deleteUploadedFile: not in /files/ path=' . $path);
         return;
     }
+    error_log('deleteUploadedFile: normalized=' . $path);
 
     // Поднимаемся из app/admin в корень проекта, чтобы удалить файл из public_html.
     $root = dirname(__DIR__, 3);
     $fullPath = $root . '/public_html' . $path;
     if (!file_exists($fullPath)) {
+        error_log('deleteUploadedFile: not found fullPath=' . $fullPath);
         return;
     }
 
     // Удаляем только внутри public_html/files.
     rmTree($fullPath, $root . '/public_html/files');
+    error_log('deleteUploadedFile: deleted fullPath=' . $fullPath);
 }
 
 function parseMirrorLines(string $value): array
