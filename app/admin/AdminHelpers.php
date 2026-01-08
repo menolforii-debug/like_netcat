@@ -534,10 +534,23 @@ function saveUploadedFile(array $file, string $targetDir, string $publicPrefix, 
         return null;
     }
 
-    $filename = basename((string) ($file['name'] ?? ''));
-    $filename = preg_replace('/[^A-Za-z0-9._-]/', '_', $filename);
+    $filename = sanitizeUploadedFilename((string) ($file['name'] ?? ''));
     if ($filename === '') {
         $filename = 'file';
+    }
+
+    $extension = strtolower((string) pathinfo($filename, PATHINFO_EXTENSION));
+    $allowedExtensions = allowedUploadExtensions();
+    if ($extension === '' || !in_array($extension, $allowedExtensions, true)) {
+        $error = 'Недопустимый тип файла.';
+        return null;
+    }
+
+    $mimeType = detectUploadedMimeType($file['tmp_name']);
+    $allowedMimeTypes = allowedUploadMimeTypes();
+    if ($mimeType !== null && !in_array($mimeType, $allowedMimeTypes, true)) {
+        $error = 'Недопустимый MIME-тип файла.';
+        return null;
     }
 
     if (!is_dir($targetDir)) {
@@ -562,6 +575,72 @@ function saveUploadedFile(array $file, string $targetDir, string $publicPrefix, 
     @chmod($fullPath, 0660);
 
     return rtrim($publicPrefix, '/') . '/' . $finalName;
+}
+
+function sanitizeUploadedFilename(string $filename): string
+{
+    $filename = basename($filename);
+    $filename = preg_replace('/[^A-Za-z0-9._-]/', '_', $filename);
+    return $filename ?? '';
+}
+
+function detectUploadedMimeType(string $path): ?string
+{
+    if (!class_exists('finfo')) {
+        return null;
+    }
+
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $result = $finfo->file($path);
+    return is_string($result) ? $result : null;
+}
+
+function allowedUploadExtensions(): array
+{
+    return [
+        // Изображения
+        'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif',
+        // Архивы
+        'zip', 'rar', '7z', 'tar', 'gz', 'tgz',
+        // Документы
+        'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'rtf', 'txt', 'csv', 'odt', 'ods', 'odp',
+    ];
+}
+
+function allowedUploadMimeTypes(): array
+{
+    return [
+        // Изображения
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+        'image/svg+xml',
+        'image/avif',
+        // Архивы
+        'application/zip',
+        'application/x-zip-compressed',
+        'application/x-rar-compressed',
+        'application/vnd.rar',
+        'application/x-7z-compressed',
+        'application/x-tar',
+        'application/gzip',
+        'application/x-gzip',
+        // Документы
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'application/rtf',
+        'text/plain',
+        'text/csv',
+        'application/vnd.oasis.opendocument.text',
+        'application/vnd.oasis.opendocument.spreadsheet',
+        'application/vnd.oasis.opendocument.presentation',
+    ];
 }
 
 function rmTree(string $path, string $allowedRoot): void
