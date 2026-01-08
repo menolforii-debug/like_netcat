@@ -13,7 +13,6 @@ if ($field === null) {
 $label = isset($_POST['label']) ? trim((string) $_POST['label']) : '';
 $type = isset($_POST['type']) ? trim((string) $_POST['type']) : 'text';
 $sort = isset($_POST['sort']) ? (int) $_POST['sort'] : 0;
-$optionsRaw = isset($_POST['options']) ? (string) $_POST['options'] : '';
 
 if ($label === '') {
     redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual', 'error' => 'Название поля обязательно']));
@@ -24,7 +23,10 @@ if (!in_array($type, $allowedTypes, true)) {
     $type = 'text';
 }
 
-$options = $type === 'select' ? parseVisualFieldOptions($optionsRaw) : [];
+$options = [];
+if ($type === 'select') {
+    $options = isset($field['options']) && is_array($field['options']) ? $field['options'] : [];
+}
 $visualFieldRepo->update($id, $label, $type, $options, $sort);
 
 redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual', 'notice' => 'Поле обновлено']));

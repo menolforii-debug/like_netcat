@@ -11,13 +11,6 @@ if ($id > 0 && $field === null) {
     exit;
 }
 
-$optionsText = '';
-if ($field && !empty($field['options']) && is_array($field['options'])) {
-    foreach ($field['options'] as $optKey => $optLabel) {
-        $optionsText .= $optKey . ':' . $optLabel . "\n";
-    }
-}
-
 $title = $field ? 'Редактировать поле' : 'Новое поле';
 echo '<span data-modal-title="' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '"></span>';
 echo '<form method="post" action="/admin.php?action=' . ($field ? 'visual_field_update' : 'visual_field_create') . '">';
@@ -37,7 +30,6 @@ foreach (['text' => 'Текст', 'textarea' => 'Текст (многостро�
 }
 echo '</select></div>';
 echo '<div class="col-md-3"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="' . (int) ($field['sort'] ?? 0) . '"></div>';
-echo '<div class="col-12"><label class="form-label">Опции (ключ:подпись)</label><textarea class="form-control font-monospace code-editor" name="options" rows="4">' . htmlspecialchars(trim($optionsText), ENT_QUOTES, 'UTF-8') . '</textarea></div>';
 echo '</div>';
 
 echo '<div class="d-flex justify-content-end gap-2 mt-3">';

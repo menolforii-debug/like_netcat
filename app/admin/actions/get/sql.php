@@ -27,6 +27,23 @@ echo '</form>';
 echo '</div>';
 echo '</div>';
 
+$history = $_SESSION['sql_history'] ?? [];
+if (is_array($history) && !empty($history)) {
+    echo '<div class="card shadow-sm mb-4">';
+    echo '<div class="card-body">';
+    echo '<h2 class="h6 mb-3">Последние запросы</h2>';
+    echo '<ol class="mb-0 ps-3">';
+    foreach ($history as $item) {
+        $sqlText = is_array($item) && isset($item['sql']) ? (string) $item['sql'] : '';
+        $createdAt = is_array($item) && isset($item['created_at']) ? (string) $item['created_at'] : '';
+        $label = $createdAt !== '' ? $createdAt . ' — ' . $sqlText : $sqlText;
+        echo '<li><code>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</code></li>';
+    }
+    echo '</ol>';
+    echo '</div>';
+    echo '</div>';
+}
+
 if ($sqlError) {
     echo '<div class="alert alert-danger">' . htmlspecialchars((string) $sqlError, ENT_QUOTES, 'UTF-8') . '</div>';
 }
