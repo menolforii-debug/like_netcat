@@ -449,7 +449,8 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                                 echo '<td>' . htmlspecialchars($statusBadge, ENT_QUOTES, 'UTF-8') . '</td>';
                                 echo '<td class="d-flex flex-wrap gap-2">';
                                 if ($canEdit && !$isDeleted) {
-                                    echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'object_form', 'section_id' => $selected['id'], 'id' => $object['id']]), ENT_QUOTES, 'UTF-8') . '">Редактировать</a>';
+                                    $editUrl = buildAdminUrl(['action' => 'object_form', 'section_id' => $selected['id'], 'id' => $object['id']]);
+                                    echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars($editUrl, ENT_QUOTES, 'UTF-8') . '">Редактировать</button>';
                                 }
                                 if (!$isDeleted && $status === 'draft') {
                                     if ($canPublish) {

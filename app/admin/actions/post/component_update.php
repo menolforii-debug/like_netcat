@@ -136,4 +136,6 @@ if (isAjaxRequest()) {
         'focus' => ['component_id' => $componentId],
     ]);
 }
-redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => 'general', 'notice' => 'Компонент обновлен']));
+$returnTab = isset($_POST['return_tab']) ? (string) $_POST['return_tab'] : '';
+$tab = $returnTab !== '' ? $returnTab : 'general';
+redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => $tab, 'notice' => 'Компонент обновлен']));
