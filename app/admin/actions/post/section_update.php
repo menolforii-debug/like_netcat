@@ -121,7 +121,8 @@ if ($hasVisualInput) {
                 if ($file !== null) {
                     $error = null;
                     $fieldId = (int) ($field['id'] ?? 0);
-                    $targetDir = dirname(__DIR__, 3) . '/public_html/files/layouts/' . $layoutKey . '/' . $fieldId;
+                    // Сохраняем файлы в public_html, поднимаемся из app/admin/actions/post в корень проекта.
+                    $targetDir = dirname(__DIR__, 4) . '/public_html/files/layouts/' . $layoutKey . '/' . $fieldId;
                     $publicPrefix = '/files/layouts/' . $layoutKey . '/' . $fieldId;
                     $storedPath = saveUploadedFile($file, $targetDir, $publicPrefix, $error);
                     if ($error !== null) {
