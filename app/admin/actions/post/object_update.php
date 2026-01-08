@@ -37,12 +37,13 @@ if ($component === null) {
 
 $fields = parseComponentFields($component);
 $data = extractFormData($fields);
-$errors = validateRequiredFields($fields, $data);
-if (!empty($errors)) {
+try {
+    $data = (new FieldValidator())->validate($component, $data);
+} catch (InvalidArgumentException $e) {
     if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => implode(' ', $errors)]);
+        jsonResponse(['ok' => false, 'error' => $e->getMessage()]);
     }
-    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => implode(' ', $errors)]));
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => $e->getMessage()]));
 }
 
 $objectRepo->update($id, ['data' => $data]);
