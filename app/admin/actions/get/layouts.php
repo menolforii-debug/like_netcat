@@ -151,12 +151,6 @@ if ($tab === 'visual') {
         echo '<div class="alert alert-light border">Поля пока не созданы.</div>';
     } else {
         foreach ($visualFields as $field) {
-            $optionsText = '';
-            if (!empty($field['options']) && is_array($field['options'])) {
-                foreach ($field['options'] as $optKey => $optLabel) {
-                    $optionsText .= $optKey . ':' . $optLabel . "\n";
-                }
-            }
             echo '<div class="border rounded p-3 mb-3">';
             echo '<div class="d-flex align-items-start justify-content-between gap-3">';
             echo '<div>';
@@ -164,9 +158,6 @@ if ($tab === 'visual') {
             echo '<div class="text-muted small">Ключ: ' . htmlspecialchars((string) $field['name'], ENT_QUOTES, 'UTF-8') . '</div>';
             echo '<div class="text-muted small">Тип: ' . htmlspecialchars((string) $field['type'], ENT_QUOTES, 'UTF-8') . '</div>';
             echo '<div class="text-muted small">Сортировка: ' . (int) ($field['sort'] ?? 0) . '</div>';
-            if (trim($optionsText) !== '') {
-                echo '<div class="text-muted small mt-2"><pre class="mb-0">' . htmlspecialchars(trim($optionsText), ENT_QUOTES, 'UTF-8') . '</pre></div>';
-            }
             echo '</div>';
             echo '<div class="d-flex gap-2">';
             echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars(buildAdminUrl(['action' => 'visual_field_form', 'id' => (int) $field['id']]), ENT_QUOTES, 'UTF-8') . '">Редактировать</button>';

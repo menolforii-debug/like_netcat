@@ -5,6 +5,15 @@ if ($sql === '') {
     redirectTo(buildAdminUrl(['action' => 'sql', 'error' => 'Введите SQL запрос']));
 }
 
+if (!isset($_SESSION['sql_history']) || !is_array($_SESSION['sql_history'])) {
+    $_SESSION['sql_history'] = [];
+}
+array_unshift($_SESSION['sql_history'], [
+    'sql' => $sql,
+    'created_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('c'),
+]);
+$_SESSION['sql_history'] = array_slice($_SESSION['sql_history'], 0, 15);
+
 try {
     $pdo = DB::pdo();
     $lower = ltrim(strtolower($sql));
