@@ -55,7 +55,45 @@ final class Permission
 
         $permissions = $extra['permissions'] ?? null;
         if (is_array($permissions)) {
-            return $permissions;
+            $allowedActions = [
+                'view',
+                'create',
+                'edit',
+                'publish',
+                'unpublish',
+                'archive',
+                'delete',
+                'restore',
+                'purge',
+            ];
+            $normalized = [];
+            foreach ($permissions as $role => $actions) {
+                if (!is_array($actions)) {
+                    continue;
+                }
+                // Оставляем только строки и допустимые значения, чтобы не принять мусорные данные.
+                $filtered = [];
+                foreach ($actions as $action) {
+                    if (!is_string($action)) {
+                        continue;
+                    }
+                    $action = trim($action);
+                    if ($action === '*') {
+                        $filtered = ['*'];
+                        break;
+                    }
+                    if (in_array($action, $allowedActions, true)) {
+                        $filtered[] = $action;
+                    }
+                }
+                if ($filtered !== []) {
+                    $normalized[(string) $role] = array_values(array_unique($filtered));
+                }
+            }
+
+            if ($normalized !== []) {
+                return $normalized;
+            }
         }
 
         return [
