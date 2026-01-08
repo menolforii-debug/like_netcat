@@ -364,7 +364,7 @@ function validateRequiredFields(array $fields, array $data): array
     return $errors;
 }
 
-function renderFieldInput(array $field, array $data): string
+function renderFieldInput(array $field, array $data, array $uploadContext = []): string
 {
     $name = $field['name'];
     $type = $field['type'] ?? 'text';
@@ -402,11 +402,17 @@ function renderFieldInput(array $field, array $data): string
             $html .= '</select>';
             break;
         case 'file':
-            $html .= '<input class="form-control custom-file-input" type="file" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" data-file-preview-container="#' . $previewId . '" data-file-preview-show-info="true" data-file-btn-clear="#' . $clearId . '">';
+            $inputId = 'file-input-' . $safeId;
+            $deleteId = 'file-delete-' . $safeId;
+            $html .= '<input class="form-control" id="' . $inputId . '" type="file" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" data-file-preview-container="#' . $previewId . '" data-file-preview-show-info="true" data-file-btn-clear="#' . $clearId . '">';
             $html .= '<div id="' . $previewId . '" class="mt-2"></div>';
             $html .= '<button class="btn btn-sm btn-outline-secondary mt-2" type="button" id="' . $clearId . '">Очистить</button>';
             if ($value !== '') {
                 $html .= '<div class="form-text">Текущий файл: <a href="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener">' . htmlspecialchars(basename($value), ENT_QUOTES, 'UTF-8') . '</a></div>';
+                $html .= '<div class="form-check mt-2">';
+                $html .= '<input class="form-check-input" type="checkbox" name="delete_files[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" value="1" id="' . $deleteId . '">';
+                $html .= '<label class="form-check-label" for="' . $deleteId . '">Удалить файл</label>';
+                $html .= '</div>';
             }
             break;
         default:
@@ -433,6 +439,48 @@ function ensurePreviewToken(): string
     }
 
     return (string) $_SESSION['preview_token'];
+}
+
+function deleteUploadedFile(string $publicPath): void
+{
+    $path = trim($publicPath);
+    if ($path === '') {
+        error_log('deleteUploadedFile: empty path');
+        return;
+    }
+
+    // Разбираем абсолютные URL и приводим относительный путь к виду /files/...
+    error_log('deleteUploadedFile: original=' . $path);
+    $parsed = parse_url($path);
+    if (is_array($parsed) && isset($parsed['path'])) {
+        $path = (string) $parsed['path'];
+    }
+    if ($path !== '' && $path[0] !== '/') {
+        $path = '/' . ltrim($path, '/');
+    }
+    if (str_starts_with($path, '/files/') === false && str_starts_with($path, '/files/') !== true) {
+        if (str_starts_with($path, '/files/') === false && str_starts_with($path, '/files/') !== true) {
+            // Старые данные могли быть без ведущего слеша.
+            $path = '/files/' . ltrim($path, '/');
+        }
+    }
+    if (!str_starts_with($path, '/files/')) {
+        error_log('deleteUploadedFile: not in /files/ path=' . $path);
+        return;
+    }
+    error_log('deleteUploadedFile: normalized=' . $path);
+
+    // Поднимаемся из app/admin в корень проекта, чтобы удалить файл из public_html.
+    $root = dirname(__DIR__, 2);
+    $fullPath = $root . '/public_html' . $path;
+    if (!file_exists($fullPath)) {
+        error_log('deleteUploadedFile: not found fullPath=' . $fullPath);
+        return;
+    }
+
+    // Удаляем только внутри public_html/files.
+    rmTree($fullPath, $root . '/public_html/files');
+    error_log('deleteUploadedFile: deleted fullPath=' . $fullPath);
 }
 
 function parseMirrorLines(string $value): array
@@ -534,10 +582,23 @@ function saveUploadedFile(array $file, string $targetDir, string $publicPrefix, 
         return null;
     }
 
-    $filename = basename((string) ($file['name'] ?? ''));
-    $filename = preg_replace('/[^A-Za-z0-9._-]/', '_', $filename);
+    $filename = sanitizeUploadedFilename((string) ($file['name'] ?? ''));
     if ($filename === '') {
         $filename = 'file';
+    }
+
+    $extension = strtolower((string) pathinfo($filename, PATHINFO_EXTENSION));
+    $allowedExtensions = allowedUploadExtensions();
+    if ($extension === '' || !in_array($extension, $allowedExtensions, true)) {
+        $error = 'Недопустимый тип файла.';
+        return null;
+    }
+
+    $mimeType = detectUploadedMimeType($file['tmp_name']);
+    $allowedMimeTypes = allowedUploadMimeTypes();
+    if ($mimeType !== null && !in_array($mimeType, $allowedMimeTypes, true)) {
+        $error = 'Недопустимый MIME-тип файла.';
+        return null;
     }
 
     if (!is_dir($targetDir)) {
@@ -562,6 +623,72 @@ function saveUploadedFile(array $file, string $targetDir, string $publicPrefix, 
     @chmod($fullPath, 0660);
 
     return rtrim($publicPrefix, '/') . '/' . $finalName;
+}
+
+function sanitizeUploadedFilename(string $filename): string
+{
+    $filename = basename($filename);
+    $filename = preg_replace('/[^A-Za-z0-9._-]/', '_', $filename);
+    return $filename ?? '';
+}
+
+function detectUploadedMimeType(string $path): ?string
+{
+    if (!class_exists('finfo')) {
+        return null;
+    }
+
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $result = $finfo->file($path);
+    return is_string($result) ? $result : null;
+}
+
+function allowedUploadExtensions(): array
+{
+    return [
+        // Изображения
+        'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif',
+        // Архивы
+        'zip', 'rar', '7z', 'tar', 'gz', 'tgz',
+        // Документы
+        'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'rtf', 'txt', 'csv', 'odt', 'ods', 'odp',
+    ];
+}
+
+function allowedUploadMimeTypes(): array
+{
+    return [
+        // Изображения
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+        'image/svg+xml',
+        'image/avif',
+        // Архивы
+        'application/zip',
+        'application/x-zip-compressed',
+        'application/x-rar-compressed',
+        'application/vnd.rar',
+        'application/x-7z-compressed',
+        'application/x-tar',
+        'application/gzip',
+        'application/x-gzip',
+        // Документы
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'application/rtf',
+        'text/plain',
+        'text/csv',
+        'application/vnd.oasis.opendocument.text',
+        'application/vnd.oasis.opendocument.spreadsheet',
+        'application/vnd.oasis.opendocument.presentation',
+    ];
 }
 
 function rmTree(string $path, string $allowedRoot): void
