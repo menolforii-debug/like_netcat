@@ -119,9 +119,10 @@ if ($hasVisualInput) {
 
         $type = (string) ($field['type'] ?? 'text');
         if ($type === 'file') {
-            if (!empty($deleteVisual[$name]) && isset($existingVisual[$name])) {
+            $deleteRequested = !empty($deleteVisual[$name]) && isset($existingVisual[$name]);
+            if ($deleteRequested) {
                 deleteUploadedFile((string) $existingVisual[$name]);
-                continue;
+                unset($existingVisual[$name]);
             }
             if ($visualFiles !== null) {
                 $file = extractNestedUpload($visualFiles, $name);
@@ -199,6 +200,8 @@ if ($user) {
 }
 
 $noticeMessage = $isSystemRoot ? 'Системный раздел обновлен (english_name фиксирован)' : 'Раздел обновлен';
+$returnTab = isset($_POST['return_tab']) ? (string) $_POST['return_tab'] : '';
+$returnDesignTab = isset($_POST['return_design_tab']) ? (string) $_POST['return_design_tab'] : '';
 if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
@@ -207,4 +210,11 @@ if (isAjaxRequest()) {
         'focus' => ['section_id' => $id],
     ]);
 }
-redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'notice' => $noticeMessage]));
+$params = ['section_id' => $id, 'tab' => 'section', 'notice' => $noticeMessage];
+if ($returnTab !== '') {
+    $params['tab'] = $returnTab;
+}
+if ($returnDesignTab !== '') {
+    $params['design_tab'] = $returnDesignTab;
+}
+redirectTo(buildAdminUrl($params));

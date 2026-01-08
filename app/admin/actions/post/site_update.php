@@ -78,9 +78,10 @@ if ($hasVisualInput) {
 
         $type = (string) ($field['type'] ?? 'text');
         if ($type === 'file') {
-            if (!empty($deleteVisual[$name]) && isset($existingVisual[$name])) {
+            $deleteRequested = !empty($deleteVisual[$name]) && isset($existingVisual[$name]);
+            if ($deleteRequested) {
                 deleteUploadedFile((string) $existingVisual[$name]);
-                continue;
+                unset($existingVisual[$name]);
             }
             if ($visualFiles !== null) {
                 $file = extractNestedUpload($visualFiles, $name);
@@ -162,4 +163,13 @@ if (isAjaxRequest()) {
         'focus' => ['section_id' => $id],
     ]);
 }
-redirectTo(buildAdminUrl(['section_id' => $id, 'notice' => 'Сайт обновлен']));
+$returnSiteTab = isset($_POST['return_site_tab']) ? (string) $_POST['return_site_tab'] : '';
+$returnDesignTab = isset($_POST['return_design_tab']) ? (string) $_POST['return_design_tab'] : '';
+$params = ['section_id' => $id, 'notice' => 'Сайт обновлен'];
+if ($returnSiteTab !== '') {
+    $params['site_tab'] = $returnSiteTab;
+}
+if ($returnDesignTab !== '') {
+    $params['design_tab'] = $returnDesignTab;
+}
+redirectTo(buildAdminUrl($params));

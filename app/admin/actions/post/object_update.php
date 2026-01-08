@@ -48,10 +48,10 @@ foreach ($fields as $field) {
     }
 
     $name = (string) $field['name'];
-    if (!empty($deleteFiles[$name]) && isset($existingData[$name])) {
+    $deleteRequested = !empty($deleteFiles[$name]) && isset($existingData[$name]);
+    if ($deleteRequested) {
         deleteUploadedFile((string) $existingData[$name]);
-        $data[$name] = '';
-        continue;
+        unset($existingData[$name]);
     }
 
     if (isset($_FILES[$name])) {
