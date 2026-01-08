@@ -2,7 +2,7 @@
 
 $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
 $sectionId = isset($_POST['section_id']) ? (int) $_POST['section_id'] : 0;
-$saveAs = isset($_POST['save_as']) ? (string) $_POST['save_as'] : '';
+$isEnabled = !empty($_POST['is_enabled']);
 
 $object = $objectRepo->findById($id);
 if ($object === null) {
@@ -41,15 +41,23 @@ $existingData = json_decode((string) $object['data_json'], true);
 if (!is_array($existingData)) {
     $existingData = [];
 }
+$deleteFiles = isset($_POST['delete_files']) && is_array($_POST['delete_files']) ? $_POST['delete_files'] : [];
 foreach ($fields as $field) {
     if (($field['type'] ?? '') !== 'file') {
         continue;
     }
 
     $name = (string) $field['name'];
+    $deleteRequested = !empty($deleteFiles[$name]) && isset($existingData[$name]);
+    if ($deleteRequested) {
+        deleteUploadedFile((string) $existingData[$name]);
+        unset($existingData[$name]);
+    }
+
     if (isset($_FILES[$name])) {
         $error = null;
-        $targetDir = dirname(__DIR__, 3) . '/public_html/files/component/' . (int) $object['infoblock_id'];
+        // Сохраняем файлы в public_html, поднимаемся из app/admin/actions/post в корень проекта.
+        $targetDir = dirname(__DIR__, 4) . '/public_html/files/component/' . (int) $object['infoblock_id'];
         $publicPrefix = '/files/component/' . (int) $object['infoblock_id'];
         $storedPath = saveUploadedFile($_FILES[$name], $targetDir, $publicPrefix, $error);
         if ($error !== null) {
@@ -59,6 +67,9 @@ foreach ($fields as $field) {
             redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => $error]));
         }
         if ($storedPath !== null) {
+            if (isset($existingData[$name]) && $existingData[$name] !== $storedPath) {
+                deleteUploadedFile((string) $existingData[$name]);
+            }
             $data[$name] = $storedPath;
             continue;
         }
@@ -79,7 +90,8 @@ try {
 
 $objectRepo->update($id, ['data' => $data]);
 
-if ($saveAs === 'publish') {
+$currentStatus = (string) ($object['status'] ?? 'draft');
+if ($isEnabled && $currentStatus !== 'published') {
     if (!Permission::canAction($user, $infoblock, 'publish')) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => 'Недостаточно прав для публикации']);
@@ -87,7 +99,7 @@ if ($saveAs === 'publish') {
         redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Недостаточно прав для публикации']));
     }
     $objectRepo->publish($id);
-} elseif ($saveAs === 'draft') {
+} elseif (!$isEnabled && $currentStatus === 'published') {
     if (!Permission::canAction($user, $infoblock, 'unpublish')) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => 'Недостаточно прав для снятия с публикации']);

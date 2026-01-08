@@ -34,11 +34,13 @@ if ($component === null) {
 
 $fields = parseComponentFields($component);
 $data = [];
+$status = 'draft';
 if ($object !== null) {
     $data = json_decode((string) $object['data_json'], true);
     if (!is_array($data)) {
         $data = [];
     }
+    $status = (string) ($object['status'] ?? 'draft');
 }
 
 $isAjax = isAjaxRequest();
@@ -64,11 +66,23 @@ if ($object) {
 }
 echo '<input type="hidden" name="section_id" value="' . (int) $sectionId . '">';
 foreach ($fields as $field) {
-    echo renderFieldInput($field, $data);
+    echo renderFieldInput($field, $data, [
+        'context' => 'component',
+        'infoblock_id' => (int) $infoblock['id'],
+    ]);
 }
+$isEnabled = $status === 'published';
+echo '<div class="form-check mb-3">';
+echo '<input class="form-check-input" type="checkbox" name="is_enabled" value="1" id="object-enabled"' . ($isEnabled ? ' checked' : '') . '>';
+echo '<label class="form-check-label" for="object-enabled">Включено</label>';
+echo '</div>';
 echo '<div class="d-flex gap-2">';
-echo '<button class="btn btn-primary" type="submit" name="save_as" value="draft">Сохранить черновик</button>';
-echo '<button class="btn btn-success" type="submit" name="save_as" value="publish">Опубликовать</button>';
+echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
+if ($isAjax) {
+    echo '<button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Отмена</button>';
+} else {
+    echo '<a class="btn btn-outline-secondary" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']), ENT_QUOTES, 'UTF-8') . '">Отмена</a>';
+}
 echo '</div>';
 echo '</form>';
 

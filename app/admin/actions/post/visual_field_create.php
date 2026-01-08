@@ -17,8 +17,9 @@ if (!preg_match('/^[A-Za-z0-9_-]+$/', $name)) {
     redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual', 'error' => 'Ключ поля должен быть URL-безопасным']));
 }
 
-$allowedTypes = ['text', 'textarea', 'number', 'checkbox', 'select', 'color'];
+$allowedTypes = ['text', 'textarea', 'number', 'checkbox', 'select', 'color', 'file'];
 if (!in_array($type, $allowedTypes, true)) {
+    // Если тип неизвестен, сохраняем безопасный дефолт.
     $type = 'text';
 }
 

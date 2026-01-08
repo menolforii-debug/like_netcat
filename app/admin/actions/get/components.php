@@ -296,6 +296,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
         echo '<form method="post" action="/admin.php?action=component_update">';
         echo csrfTokenField();
         echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
+        echo '<input type="hidden" name="return_tab" value="general">';
         echo '<input type="hidden" name="keyword" value="' . htmlspecialchars((string) $selectedComponent['keyword'], ENT_QUOTES, 'UTF-8') . '">';
         echo '<div class="mb-3"><label class="form-label">Ключ</label><input class="form-control" value="' . htmlspecialchars((string) $selectedComponent['keyword'], ENT_QUOTES, 'UTF-8') . '" disabled></div>';
         echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" name="name" value="' . htmlspecialchars((string) $selectedComponent['name'], ENT_QUOTES, 'UTF-8') . '" required></div>';
@@ -329,6 +330,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
         echo '<form method="post" action="/admin.php?action=component_update">';
         echo csrfTokenField();
         echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
+        echo '<input type="hidden" name="return_tab" value="fields">';
         echo '<input type="hidden" name="keyword" value="' . htmlspecialchars((string) $selectedComponent['keyword'], ENT_QUOTES, 'UTF-8') . '">';
         echo '<input type="hidden" name="name" value="' . htmlspecialchars((string) $selectedComponent['name'], ENT_QUOTES, 'UTF-8') . '">';
 

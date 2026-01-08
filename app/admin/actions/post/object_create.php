@@ -2,7 +2,7 @@
 
 $infoblockId = isset($_POST['infoblock_id']) ? (int) $_POST['infoblock_id'] : 0;
 $sectionId = isset($_POST['section_id']) ? (int) $_POST['section_id'] : 0;
-$saveAs = isset($_POST['save_as']) ? (string) $_POST['save_as'] : 'draft';
+$isEnabled = !empty($_POST['is_enabled']);
 
 $infoblock = null;
 $infoblocks = $infoblockRepo->listForSection($sectionId);
@@ -27,7 +27,7 @@ if (!Permission::canAction($user, $infoblock, 'create')) {
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Недостаточно прав']));
 }
 
-if ($saveAs === 'publish' && !Permission::canAction($user, $infoblock, 'publish')) {
+if ($isEnabled && !Permission::canAction($user, $infoblock, 'publish')) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Недостаточно прав для публикации']);
     }
@@ -55,7 +55,8 @@ foreach ($fields as $field) {
     }
 
     $error = null;
-    $targetDir = dirname(__DIR__, 3) . '/public_html/files/component/' . (int) $infoblock['id'];
+    // Сохраняем файлы в public_html, поднимаемся из app/admin/actions/post в корень проекта.
+    $targetDir = dirname(__DIR__, 4) . '/public_html/files/component/' . (int) $infoblock['id'];
     $publicPrefix = '/files/component/' . (int) $infoblock['id'];
     $storedPath = saveUploadedFile($_FILES[$name], $targetDir, $publicPrefix, $error);
     if ($error !== null) {
@@ -77,7 +78,7 @@ try {
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => $e->getMessage()]));
 }
 
-$status = $saveAs === 'publish' ? 'published' : 'draft';
+$status = $isEnabled ? 'published' : 'draft';
 $objectId = $objectRepo->create([
     'site_id' => $infoblock['site_id'],
     'section_id' => $infoblock['section_id'],
