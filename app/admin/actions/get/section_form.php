@@ -52,6 +52,10 @@ if ($currentLayout !== '' && !in_array($currentLayout, $layouts, true)) {
 }
 
 $isSystemRoot = $section && in_array($section['english_name'] ?? '', ['index', '404'], true);
+$components = [];
+if ($id <= 0) {
+    $components = $componentRepo->listAll();
+}
 
 echo '<span data-modal-title="' . ($id > 0 ? 'Редактировать раздел' : 'Новый раздел') . '"></span>';
 echo '<form method="post" action="/admin.php?action=' . ($id > 0 ? 'section_update' : 'section_create') . '" data-ajax="true">';
@@ -89,6 +93,14 @@ foreach ($layouts as $layout) {
     echo '<option value="' . htmlspecialchars($layout, ENT_QUOTES, 'UTF-8') . '"' . $selectedAttr . '>' . htmlspecialchars($layout, ENT_QUOTES, 'UTF-8') . '</option>';
 }
 echo '</select></div>';
+if ($id <= 0) {
+    echo '<div class="mb-3"><label class="form-label">Компонент</label><select class="form-select" name="component_id">';
+    echo '<option value="">Без компонента</option>';
+    foreach ($components as $component) {
+        echo '<option value="' . (int) $component['id'] . '">' . htmlspecialchars((string) $component['name'], ENT_QUOTES, 'UTF-8') . '</option>';
+    }
+    echo '</select></div>';
+}
 echo '<div class="d-flex justify-content-end gap-2">';
 echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
 echo '</div>';

@@ -73,7 +73,7 @@ foreach ($fieldsInput as $row) {
     $fieldNames[$fieldName] = true;
     $label = isset($row['label']) ? trim((string) $row['label']) : $fieldName;
     $type = isset($row['type']) ? trim((string) $row['type']) : 'text';
-    $allowedTypes = ['text', 'textarea', 'number', 'date', 'checkbox', 'select'];
+    $allowedTypes = ['text', 'textarea', 'number', 'date', 'checkbox', 'select', 'file'];
     if (!in_array($type, $allowedTypes, true)) {
         $type = 'text';
     }
@@ -136,4 +136,6 @@ if (isAjaxRequest()) {
         'focus' => ['component_id' => $componentId],
     ]);
 }
-redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => 'general', 'notice' => 'Компонент обновлен']));
+$returnTab = isset($_POST['return_tab']) ? (string) $_POST['return_tab'] : '';
+$tab = $returnTab !== '' ? $returnTab : 'general';
+redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => $tab, 'notice' => 'Компонент обновлен']));

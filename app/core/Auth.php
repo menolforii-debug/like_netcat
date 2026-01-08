@@ -8,6 +8,16 @@ final class Auth
     public static function start(): void
     {
         if (session_status() === PHP_SESSION_NONE) {
+            $params = session_get_cookie_params();
+            session_set_cookie_params([
+                'lifetime' => $params['lifetime'] ?? 0,
+                'path' => $params['path'] ?? '/',
+                'domain' => $params['domain'] ?? '',
+                'secure' => $params['secure'] ?? (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+                'httponly' => true,
+                'samesite' => $params['samesite'] ?? 'Lax',
+            ]);
+            ini_set('session.use_strict_mode', '1');
             session_start();
         }
     }
@@ -41,6 +51,24 @@ final class Auth
     public static function logout(): void
     {
         unset($_SESSION['user_id']);
+
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $_SESSION = [];
+            $params = session_get_cookie_params();
+            setcookie(
+                session_name(),
+                '',
+                [
+                    'expires' => time() - 42000,
+                    'path' => $params['path'] ?? '/',
+                    'domain' => $params['domain'] ?? '',
+                    'secure' => $params['secure'] ?? false,
+                    'httponly' => true,
+                    'samesite' => $params['samesite'] ?? 'Lax',
+                ]
+            );
+            session_destroy();
+        }
     }
 
     public static function user(): ?array
