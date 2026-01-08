@@ -49,7 +49,8 @@ foreach ($fields as $field) {
     $name = (string) $field['name'];
     if (isset($_FILES[$name])) {
         $error = null;
-        $targetDir = dirname(__DIR__, 3) . '/public_html/files/component/' . (int) $object['infoblock_id'];
+        // Сохраняем файлы в public_html, поднимаемся из app/admin/actions/post в корень проекта.
+        $targetDir = dirname(__DIR__, 4) . '/public_html/files/component/' . (int) $object['infoblock_id'];
         $publicPrefix = '/files/component/' . (int) $object['infoblock_id'];
         $storedPath = saveUploadedFile($_FILES[$name], $targetDir, $publicPrefix, $error);
         if ($error !== null) {
