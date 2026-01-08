@@ -452,7 +452,8 @@ function deleteUploadedFile(string $publicPath): void
         return;
     }
 
-    $root = dirname(__DIR__, 2);
+    // Поднимаемся из app/admin в корень проекта, чтобы удалить файл из public_html.
+    $root = dirname(__DIR__, 3);
     $fullPath = $root . '/public_html' . $path;
     if (!file_exists($fullPath)) {
         return;
