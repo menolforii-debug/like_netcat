@@ -5,6 +5,8 @@
 $title = (string) ($ctx['title'] ?? '');
 $meta = $ctx['meta'] ?? [];
 $site = $ctx['site'] ?? [];
+
+
 ?>
 <!doctype html>
 <html lang="ru">
