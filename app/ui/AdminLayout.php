@@ -143,8 +143,9 @@ final class AdminLayout
         echo '</div>';
         echo '</div>';
 
-        echo "<script src=\"/assets/sow/js/vendor_bundle.min.js\"></script>\n";
+       
         echo "<script src=\"/assets/sow/js/core.min.js\"></script>\n";
+         echo "<script src=\"/assets/sow/js/vendor_bundle.min.js\"></script>\n";
         echo "<script src=\"/assets/admin.js\"></script>\n";
 
         // CodeMirror core
