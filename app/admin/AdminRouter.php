@@ -102,6 +102,8 @@ final class AdminRouter
             'object_delete',
             'object_publish',
             'object_unpublish',
+            'object_restore',
+            'object_purge',
         ];
 
         if (!in_array($action, $editorActions, true)) {

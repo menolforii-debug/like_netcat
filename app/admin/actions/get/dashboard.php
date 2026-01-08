@@ -40,9 +40,11 @@ $renderVisualSettings = function (array $visualFields, array $resolvedVisual, ar
         $hasLocal = array_key_exists($name, $localVisual);
         $resolvedValue = $resolvedVisual[$name] ?? '';
         $value = $hasLocal ? $localVisual[$name] : $resolvedValue;
-        $inheritChecked = $hasLocal ? '' : ' checked';
-        $disabledAttr = $hasLocal ? '' : ' disabled';
+        $inheritChecked = '';
+        $disabledAttr = '';
         $fieldId = $scopeId . '-' . $name;
+        $previewId = 'file-preview-' . $fieldId;
+        $clearId = 'file-clear-' . $fieldId;
 
         echo '<div class="mb-3">';
         echo '<div class="d-flex justify-content-between align-items-center">';
@@ -76,6 +78,13 @@ $renderVisualSettings = function (array $visualFields, array $resolvedVisual, ar
                 echo '<option value="' . htmlspecialchars($optKey, ENT_QUOTES, 'UTF-8') . '"' . $selected . '>' . htmlspecialchars($optLabel, ENT_QUOTES, 'UTF-8') . '</option>';
             }
             echo '</select>';
+        } elseif ($type === 'file') {
+            echo '<input class="form-control custom-file-input" type="file" name="visual_settings[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" data-visual-input' . $disabledAttr . ' data-file-preview-container="#' . htmlspecialchars($previewId, ENT_QUOTES, 'UTF-8') . '" data-file-preview-show-info="true" data-file-btn-clear="#' . htmlspecialchars($clearId, ENT_QUOTES, 'UTF-8') . '">';
+            echo '<div id="' . htmlspecialchars($previewId, ENT_QUOTES, 'UTF-8') . '" class="mt-2"></div>';
+            echo '<button class="btn btn-sm btn-outline-secondary mt-2" type="button" id="' . htmlspecialchars($clearId, ENT_QUOTES, 'UTF-8') . '">Очистить</button>';
+            if ($value !== '') {
+                echo '<div class="form-text">Текущий файл: <a href="' . htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener">' . htmlspecialchars(basename((string) $value), ENT_QUOTES, 'UTF-8') . '</a></div>';
+            }
         } elseif ($type === 'color') {
             $colorValue = $value !== '' ? $value : '#ffffff';
             echo '<input class="form-control form-control-color" type="color" name="visual_settings[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" value="' . htmlspecialchars((string) $colorValue, ENT_QUOTES, 'UTF-8') . '" data-visual-input' . $disabledAttr . '>';
@@ -142,7 +151,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
         echo '</ul>';
 
         if ($isAdmin) {
-            echo '<form method="post" action="/admin.php?action=site_update">';
+            echo '<form method="post" action="/admin.php?action=site_update" enctype="multipart/form-data">';
             echo csrfTokenField();
             echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
             if ($siteTab !== 'settings') {
@@ -242,7 +251,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
             }
             if ($isAdmin) {
                 $isSystemRoot = in_array($selected['english_name'], ['index', '404'], true);
-                echo '<form method="post" action="/admin.php?action=section_update">';
+                echo '<form method="post" action="/admin.php?action=section_update" enctype="multipart/form-data">';
                 echo csrfTokenField();
                 echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
                 echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" type="text" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '" required></div>';
@@ -306,7 +315,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                 $layoutNote = ' (по умолчанию)';
             }
             if ($isAdmin) {
-                echo '<form method="post" action="/admin.php?action=section_update">';
+                echo '<form method="post" action="/admin.php?action=section_update" enctype="multipart/form-data">';
                 echo csrfTokenField();
                 echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
                 echo '<input type="hidden" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '">';
@@ -362,7 +371,8 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
             echo '<li class="nav-item"><a class="nav-link' . ($infoblockTab === 'content' ? ' active' : '') . '" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $selectedId, 'tab' => 'infoblocks', 'infoblock_tab' => 'content']), ENT_QUOTES, 'UTF-8') . '">Контент</a></li>';
             echo '</ul>';
 
-            if ($infoblockTab === 'content') {
+                if ($infoblockTab === 'content') {
+                $showDeleted = !empty($_GET['show_deleted']);
                 $previewToken = ensurePreviewToken();
                 $sectionPath = buildSectionPathFromId($sectionRepo, (int) $selected['id']);
 
@@ -373,12 +383,14 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                     foreach ($infoblocks as $infoblock) {
                         $component = $componentMap[(int) $infoblock['component_id']] ?? null;
                         $componentName = $component ? (string) $component['name'] : 'Неизвестно';
-                        $objects = $objectRepo->listForInfoblock((int) $infoblock['id']);
+                        $objects = $objectRepo->listForInfoblock((int) $infoblock['id'], $showDeleted);
                         $canCreate = Permission::canAction($currentUser, $infoblock, 'create');
                         $canEdit = Permission::canAction($currentUser, $infoblock, 'edit');
                         $canDelete = Permission::canAction($currentUser, $infoblock, 'delete');
                         $canPublish = Permission::canAction($currentUser, $infoblock, 'publish');
                         $canUnpublish = Permission::canAction($currentUser, $infoblock, 'unpublish');
+                        $canRestore = Permission::canAction($currentUser, $infoblock, 'restore');
+                        $canPurge = Permission::canAction($currentUser, $infoblock, 'purge');
 
                         echo '<div class="border rounded p-3 mb-4">';
                         echo '<div class="d-flex justify-content-between align-items-center mb-3">';
@@ -387,6 +399,14 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                             $createUrl = buildAdminUrl(['action' => 'object_form', 'section_id' => $selected['id'], 'infoblock_id' => $infoblock['id']]);
                             echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars($createUrl, ENT_QUOTES, 'UTF-8') . '">Добавить объект</button>';
                         }
+                        $toggleLabel = $showDeleted ? 'Скрыть удаленные' : 'Показать удаленные';
+                        $toggleParams = [
+                            'section_id' => $selectedId,
+                            'tab' => 'infoblocks',
+                            'infoblock_tab' => 'content',
+                            'show_deleted' => $showDeleted ? null : 1,
+                        ];
+                        echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars(buildAdminUrl($toggleParams), ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($toggleLabel, ENT_QUOTES, 'UTF-8') . '</a>';
                         echo '</div>';
 
                         if (empty($objects)) {
@@ -402,6 +422,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                                 }
                                 $title = isset($data['title']) ? (string) $data['title'] : 'Без заголовка';
                                 $status = (string) ($object['status'] ?? 'draft');
+                                $isDeleted = !empty($object['is_deleted']);
                                 $statusLabel = match ($status) {
                                     'published' => 'Опубликован',
                                     'draft' => 'Черновик',
@@ -412,12 +433,13 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                                 echo '<tr>';
                                 echo '<td>' . (int) $object['id'] . '</td>';
                                 echo '<td>' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</td>';
-                                echo '<td>' . htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8') . '</td>';
+                                $statusBadge = $isDeleted ? 'Удален' : $statusLabel;
+                                echo '<td>' . htmlspecialchars($statusBadge, ENT_QUOTES, 'UTF-8') . '</td>';
                                 echo '<td class="d-flex flex-wrap gap-2">';
-                                if ($canEdit) {
+                                if ($canEdit && !$isDeleted) {
                                     echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'object_form', 'section_id' => $selected['id'], 'id' => $object['id']]), ENT_QUOTES, 'UTF-8') . '">Редактировать</a>';
                                 }
-                                if ($status === 'draft') {
+                                if (!$isDeleted && $status === 'draft') {
                                     if ($canPublish) {
                                         echo '<form method="post" action="/admin.php?action=object_publish">';
                                         echo csrfTokenField();
@@ -426,7 +448,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                                         echo '<button class="btn btn-sm btn-success" type="submit">Опубликовать</button>';
                                         echo '</form>';
                                     }
-                                } else {
+                                } elseif (!$isDeleted) {
                                     if ($canUnpublish) {
                                         echo '<form method="post" action="/admin.php?action=object_unpublish">';
                                         echo csrfTokenField();
@@ -436,16 +458,34 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                                         echo '</form>';
                                     }
                                 }
-                                if (Permission::canView($currentUser, $infoblock)) {
+                                if (!$isDeleted && Permission::canView($currentUser, $infoblock)) {
                                     echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars($previewUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank">Предпросмотр</a>';
                                 }
-                                if ($canDelete) {
+                                if ($canDelete && !$isDeleted) {
                                     echo '<form method="post" action="/admin.php?action=object_delete" onsubmit="return confirm(\"Удалить объект?\")">';
                                     echo csrfTokenField();
                                     echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
                                     echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
                                     echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>';
                                     echo '</form>';
+                                }
+                                if ($isDeleted) {
+                                    if ($canRestore) {
+                                        echo '<form method="post" action="/admin.php?action=object_restore">';
+                                        echo csrfTokenField();
+                                        echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
+                                        echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
+                                        echo '<button class="btn btn-sm btn-outline-success" type="submit">Восстановить</button>';
+                                        echo '</form>';
+                                    }
+                                    if ($canPurge) {
+                                        echo '<form method="post" action="/admin.php?action=object_purge" onsubmit="return confirm(\"Удалить объект окончательно?\")">';
+                                        echo csrfTokenField();
+                                        echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
+                                        echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
+                                        echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить навсегда</button>';
+                                        echo '</form>';
+                                    }
                                 }
                                 echo '</td>';
                                 echo '</tr>';

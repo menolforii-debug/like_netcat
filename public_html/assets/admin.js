@@ -66,6 +66,16 @@ function initInfoblockViewSelects(scope) {
   });
 }
 
+function reinitSow(scope) {
+  const root = scope || document;
+  if (window.jQuery && window.jQuery.SOW && window.jQuery.SOW.core && window.jQuery.SOW.core.file_upload) {
+    window.jQuery.SOW.core.file_upload.init('input[type="file"].custom-file-input, input[type="file"].form-control', root);
+  }
+  if (window.jQuery && window.jQuery.SOW && typeof window.jQuery.SOW.reinit === 'function') {
+    window.jQuery.SOW.reinit(root);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('textarea.code-editor').forEach((textarea) => {
     textarea.addEventListener('keydown', (event) => {
@@ -82,6 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initVisualInheritToggles(document);
   initInfoblockViewSelects(document);
+  reinitSow(document);
 });
 
 function showAdminToast(type, message) {
@@ -107,6 +118,7 @@ function refreshAdminBlocks(selectors) {
         target.innerHTML = html;
         initVisualInheritToggles(target);
         initInfoblockViewSelects(target);
+        reinitSow(target);
       });
   });
 }
@@ -158,6 +170,7 @@ function openAdminModal(url) {
       }
       initInfoblockViewSelects(modalBody || document);
       initVisualInheritToggles(modalBody || document);
+      reinitSow(modalBody || document);
     })
     .catch(() => {
       if (modalBody) modalBody.innerHTML = '<div class="text-danger">Не удалось загрузить форму.</div>';
