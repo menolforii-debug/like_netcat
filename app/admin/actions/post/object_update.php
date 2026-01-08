@@ -41,6 +41,7 @@ $existingData = json_decode((string) $object['data_json'], true);
 if (!is_array($existingData)) {
     $existingData = [];
 }
+$uploadedFiles = isset($_POST['uploaded_files']) && is_array($_POST['uploaded_files']) ? $_POST['uploaded_files'] : [];
 foreach ($fields as $field) {
     if (($field['type'] ?? '') !== 'file') {
         continue;
@@ -49,7 +50,8 @@ foreach ($fields as $field) {
     $name = (string) $field['name'];
     if (isset($_FILES[$name])) {
         $error = null;
-        $targetDir = dirname(__DIR__, 3) . '/public_html/files/component/' . (int) $object['infoblock_id'];
+        // Сохраняем файлы в public_html, поднимаемся из app/admin/actions/post в корень проекта.
+        $targetDir = dirname(__DIR__, 4) . '/public_html/files/component/' . (int) $object['infoblock_id'];
         $publicPrefix = '/files/component/' . (int) $object['infoblock_id'];
         $storedPath = saveUploadedFile($_FILES[$name], $targetDir, $publicPrefix, $error);
         if ($error !== null) {
@@ -66,6 +68,11 @@ foreach ($fields as $field) {
 
     if (isset($existingData[$name])) {
         $data[$name] = $existingData[$name];
+        continue;
+    }
+
+    if (isset($uploadedFiles[$name]) && is_string($uploadedFiles[$name]) && $uploadedFiles[$name] !== '') {
+        $data[$name] = $uploadedFiles[$name];
     }
 }
 try {

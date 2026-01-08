@@ -364,7 +364,7 @@ function validateRequiredFields(array $fields, array $data): array
     return $errors;
 }
 
-function renderFieldInput(array $field, array $data): string
+function renderFieldInput(array $field, array $data, array $uploadContext = []): string
 {
     $name = $field['name'];
     $type = $field['type'] ?? 'text';
@@ -402,9 +402,30 @@ function renderFieldInput(array $field, array $data): string
             $html .= '</select>';
             break;
         case 'file':
-            $html .= '<input class="form-control custom-file-input" type="file" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" data-file-preview-container="#' . $previewId . '" data-file-preview-show-info="true" data-file-btn-clear="#' . $clearId . '">';
+            $inputId = 'file-input-' . $safeId;
+            $hiddenId = 'file-hidden-' . $safeId;
+            $submitId = 'file-submit-' . $safeId;
+            $ajaxAttrs = '';
+            if (!empty($uploadContext)) {
+                $params = [
+                    'context' => $uploadContext['context'] ?? '',
+                    'infoblock_id' => $uploadContext['infoblock_id'] ?? '',
+                    'field_name' => $name,
+                    'csrf_token' => csrfToken(),
+                ];
+                $ajaxAttrs = ' data-file-ajax-upload-url="/admin.php?action=file_upload"'
+                    . ' data-file-ajax-upload-params="' . htmlspecialchars(http_build_query($params), ENT_QUOTES, 'UTF-8') . '"'
+                    . ' data-file-ajax-callback-function="handleAdminFileUpload"'
+                    . ' data-upload-hidden="#' . $hiddenId . '"'
+                    . ' data-file-btn-submit="#' . $submitId . '"';
+            }
+            $html .= '<input type="hidden" name="uploaded_files[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" id="' . $hiddenId . '" value="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '">';
+            $html .= '<input class="form-control custom-file-input" id="' . $inputId . '" type="file" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" data-file-preview-container="#' . $previewId . '" data-file-preview-show-info="true" data-file-btn-clear="#' . $clearId . '"' . $ajaxAttrs . '>';
             $html .= '<div id="' . $previewId . '" class="mt-2"></div>';
-            $html .= '<button class="btn btn-sm btn-outline-secondary mt-2" type="button" id="' . $clearId . '">Очистить</button>';
+            $html .= '<div class="d-flex gap-2 mt-2">';
+            $html .= '<button class="btn btn-sm btn-outline-secondary" type="button" id="' . $clearId . '">Очистить</button>';
+            $html .= '<button class="btn btn-sm btn-primary js-file-upload-ajax hide" type="button" id="' . $submitId . '" data-file-input="#' . $inputId . '">Загрузить</button>';
+            $html .= '</div>';
             if ($value !== '') {
                 $html .= '<div class="form-text">Текущий файл: <a href="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener">' . htmlspecialchars(basename($value), ENT_QUOTES, 'UTF-8') . '</a></div>';
             }
@@ -534,10 +555,23 @@ function saveUploadedFile(array $file, string $targetDir, string $publicPrefix, 
         return null;
     }
 
-    $filename = basename((string) ($file['name'] ?? ''));
-    $filename = preg_replace('/[^A-Za-z0-9._-]/', '_', $filename);
+    $filename = sanitizeUploadedFilename((string) ($file['name'] ?? ''));
     if ($filename === '') {
         $filename = 'file';
+    }
+
+    $extension = strtolower((string) pathinfo($filename, PATHINFO_EXTENSION));
+    $allowedExtensions = allowedUploadExtensions();
+    if ($extension === '' || !in_array($extension, $allowedExtensions, true)) {
+        $error = 'Недопустимый тип файла.';
+        return null;
+    }
+
+    $mimeType = detectUploadedMimeType($file['tmp_name']);
+    $allowedMimeTypes = allowedUploadMimeTypes();
+    if ($mimeType !== null && !in_array($mimeType, $allowedMimeTypes, true)) {
+        $error = 'Недопустимый MIME-тип файла.';
+        return null;
     }
 
     if (!is_dir($targetDir)) {
@@ -562,6 +596,72 @@ function saveUploadedFile(array $file, string $targetDir, string $publicPrefix, 
     @chmod($fullPath, 0660);
 
     return rtrim($publicPrefix, '/') . '/' . $finalName;
+}
+
+function sanitizeUploadedFilename(string $filename): string
+{
+    $filename = basename($filename);
+    $filename = preg_replace('/[^A-Za-z0-9._-]/', '_', $filename);
+    return $filename ?? '';
+}
+
+function detectUploadedMimeType(string $path): ?string
+{
+    if (!class_exists('finfo')) {
+        return null;
+    }
+
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $result = $finfo->file($path);
+    return is_string($result) ? $result : null;
+}
+
+function allowedUploadExtensions(): array
+{
+    return [
+        // Изображения
+        'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif',
+        // Архивы
+        'zip', 'rar', '7z', 'tar', 'gz', 'tgz',
+        // Документы
+        'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'rtf', 'txt', 'csv', 'odt', 'ods', 'odp',
+    ];
+}
+
+function allowedUploadMimeTypes(): array
+{
+    return [
+        // Изображения
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+        'image/svg+xml',
+        'image/avif',
+        // Архивы
+        'application/zip',
+        'application/x-zip-compressed',
+        'application/x-rar-compressed',
+        'application/vnd.rar',
+        'application/x-7z-compressed',
+        'application/x-tar',
+        'application/gzip',
+        'application/x-gzip',
+        // Документы
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'application/rtf',
+        'text/plain',
+        'text/csv',
+        'application/vnd.oasis.opendocument.text',
+        'application/vnd.oasis.opendocument.spreadsheet',
+        'application/vnd.oasis.opendocument.presentation',
+    ];
 }
 
 function rmTree(string $path, string $allowedRoot): void

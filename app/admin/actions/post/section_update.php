@@ -95,6 +95,9 @@ if ($hasVisualInput) {
     $visualFields = $visualFieldRepo->listAll();
     $existingVisual = isset($extra['visual_settings']) && is_array($extra['visual_settings']) ? $extra['visual_settings'] : [];
     $visualFiles = isset($_FILES['visual_settings']) && is_array($_FILES['visual_settings']) ? $_FILES['visual_settings'] : null;
+    $uploadedVisual = isset($_POST['visual_settings_uploaded']) && is_array($_POST['visual_settings_uploaded'])
+        ? $_POST['visual_settings_uploaded']
+        : [];
     $site = $sectionRepo->findById($siteId);
     $siteExtra = $site !== null ? decodeExtra($site) : [];
     $layoutKey = 'default';
@@ -121,7 +124,8 @@ if ($hasVisualInput) {
                 if ($file !== null) {
                     $error = null;
                     $fieldId = (int) ($field['id'] ?? 0);
-                    $targetDir = dirname(__DIR__, 3) . '/public_html/files/layouts/' . $layoutKey . '/' . $fieldId;
+                    // Сохраняем файлы в public_html, поднимаемся из app/admin/actions/post в корень проекта.
+                    $targetDir = dirname(__DIR__, 4) . '/public_html/files/layouts/' . $layoutKey . '/' . $fieldId;
                     $publicPrefix = '/files/layouts/' . $layoutKey . '/' . $fieldId;
                     $storedPath = saveUploadedFile($file, $targetDir, $publicPrefix, $error);
                     if ($error !== null) {
@@ -139,6 +143,9 @@ if ($hasVisualInput) {
 
             if (isset($existingVisual[$name])) {
                 $visualSettings[$name] = $existingVisual[$name];
+            }
+            if (isset($uploadedVisual[$name]) && is_string($uploadedVisual[$name]) && $uploadedVisual[$name] !== '') {
+                $visualSettings[$name] = $uploadedVisual[$name];
             }
             continue;
         }

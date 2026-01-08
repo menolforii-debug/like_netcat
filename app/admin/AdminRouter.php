@@ -80,10 +80,6 @@ final class AdminRouter
 
     private static function requirePermission(string $action, bool $isPost, ?array $user): void
     {
-        if (!$isPost) {
-            return;
-        }
-
         if ($action === 'login' || $action === 'logout') {
             return;
         }
@@ -96,7 +92,7 @@ final class AdminRouter
             return;
         }
 
-        $editorActions = [
+        $editorPostActions = [
             'object_create',
             'object_update',
             'object_delete',
@@ -104,9 +100,18 @@ final class AdminRouter
             'object_unpublish',
             'object_restore',
             'object_purge',
+            'file_upload',
         ];
 
-        if (!in_array($action, $editorActions, true)) {
+        // Разрешаем редактору только экраны и действия, связанные с объектами.
+        $editorGetActions = [
+            'dashboard',
+            'object_form',
+        ];
+
+        $allowed = $isPost ? $editorPostActions : $editorGetActions;
+
+        if (!in_array($action, $allowed, true)) {
             self::renderError(403, 'Недостаточно прав');
             exit;
         }

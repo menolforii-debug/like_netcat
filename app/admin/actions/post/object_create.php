@@ -44,6 +44,7 @@ if ($component === null) {
 
 $fields = parseComponentFields($component);
 $data = extractFormData($fields);
+$uploadedFiles = isset($_POST['uploaded_files']) && is_array($_POST['uploaded_files']) ? $_POST['uploaded_files'] : [];
 foreach ($fields as $field) {
     if (($field['type'] ?? '') !== 'file') {
         continue;
@@ -55,7 +56,8 @@ foreach ($fields as $field) {
     }
 
     $error = null;
-    $targetDir = dirname(__DIR__, 3) . '/public_html/files/component/' . (int) $infoblock['id'];
+    // Сохраняем файлы в public_html, поднимаемся из app/admin/actions/post в корень проекта.
+    $targetDir = dirname(__DIR__, 4) . '/public_html/files/component/' . (int) $infoblock['id'];
     $publicPrefix = '/files/component/' . (int) $infoblock['id'];
     $storedPath = saveUploadedFile($_FILES[$name], $targetDir, $publicPrefix, $error);
     if ($error !== null) {
@@ -66,6 +68,11 @@ foreach ($fields as $field) {
     }
     if ($storedPath !== null) {
         $data[$name] = $storedPath;
+        continue;
+    }
+
+    if (isset($uploadedFiles[$name]) && is_string($uploadedFiles[$name]) && $uploadedFiles[$name] !== '') {
+        $data[$name] = $uploadedFiles[$name];
     }
 }
 try {

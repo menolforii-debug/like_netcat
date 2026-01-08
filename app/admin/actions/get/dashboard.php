@@ -24,7 +24,7 @@ $currentUser = $user ?? Auth::user();
 $isAdmin = Auth::isAdmin();
 $visualFields = $visualFieldRepo->listAll();
 
-$renderVisualSettings = function (array $visualFields, array $resolvedVisual, array $localVisual, string $scopeId): void {
+$renderVisualSettings = function (array $visualFields, array $resolvedVisual, array $localVisual, string $scopeId, string $layoutKey, string $csrfToken): void {
     if (empty($visualFields)) {
         echo '<div class="text-muted">Визуальные настройки не определены.</div>';
         return;
@@ -43,6 +43,7 @@ $renderVisualSettings = function (array $visualFields, array $resolvedVisual, ar
         $inheritChecked = '';
         $disabledAttr = '';
         $fieldId = $scopeId . '-' . $name;
+        $fieldIdNumeric = (int) ($field['id'] ?? 0);
         $previewId = 'file-preview-' . $fieldId;
         $clearId = 'file-clear-' . $fieldId;
 
@@ -79,9 +80,23 @@ $renderVisualSettings = function (array $visualFields, array $resolvedVisual, ar
             }
             echo '</select>';
         } elseif ($type === 'file') {
-            echo '<input class="form-control custom-file-input" type="file" name="visual_settings[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" data-visual-input' . $disabledAttr . ' data-file-preview-container="#' . htmlspecialchars($previewId, ENT_QUOTES, 'UTF-8') . '" data-file-preview-show-info="true" data-file-btn-clear="#' . htmlspecialchars($clearId, ENT_QUOTES, 'UTF-8') . '">';
+            $inputId = 'visual-file-' . $fieldId;
+            $hiddenId = 'visual-file-hidden-' . $fieldId;
+            $submitId = 'visual-file-submit-' . $fieldId;
+            $params = [
+                'context' => 'layout',
+                'layout_key' => $layoutKey,
+                'field_id' => $fieldIdNumeric,
+                'field_name' => $name,
+                'csrf_token' => $csrfToken,
+            ];
+            echo '<input type="hidden" name="visual_settings_uploaded[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" id="' . htmlspecialchars($hiddenId, ENT_QUOTES, 'UTF-8') . '" value="' . $valueEscaped . '">';
+            echo '<input class="form-control custom-file-input" id="' . htmlspecialchars($inputId, ENT_QUOTES, 'UTF-8') . '" type="file" name="visual_settings[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" data-visual-input' . $disabledAttr . ' data-file-preview-container="#' . htmlspecialchars($previewId, ENT_QUOTES, 'UTF-8') . '" data-file-preview-show-info="true" data-file-btn-clear="#' . htmlspecialchars($clearId, ENT_QUOTES, 'UTF-8') . '" data-file-btn-submit="#' . htmlspecialchars($submitId, ENT_QUOTES, 'UTF-8') . '" data-file-ajax-upload-url="/admin.php?action=file_upload" data-file-ajax-upload-params="' . htmlspecialchars(http_build_query($params), ENT_QUOTES, 'UTF-8') . '" data-file-ajax-callback-function="handleAdminFileUpload" data-upload-hidden="#' . htmlspecialchars($hiddenId, ENT_QUOTES, 'UTF-8') . '">';
             echo '<div id="' . htmlspecialchars($previewId, ENT_QUOTES, 'UTF-8') . '" class="mt-2"></div>';
-            echo '<button class="btn btn-sm btn-outline-secondary mt-2" type="button" id="' . htmlspecialchars($clearId, ENT_QUOTES, 'UTF-8') . '">Очистить</button>';
+            echo '<div class="d-flex gap-2 mt-2">';
+            echo '<button class="btn btn-sm btn-outline-secondary" type="button" id="' . htmlspecialchars($clearId, ENT_QUOTES, 'UTF-8') . '">Очистить</button>';
+            echo '<button class="btn btn-sm btn-primary js-file-upload-ajax hide" type="button" id="' . htmlspecialchars($submitId, ENT_QUOTES, 'UTF-8') . '" data-file-input="#' . htmlspecialchars($inputId, ENT_QUOTES, 'UTF-8') . '">Загрузить</button>';
+            echo '</div>';
             if ($value !== '') {
                 echo '<div class="form-text">Текущий файл: <a href="' . htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener">' . htmlspecialchars(basename((string) $value), ENT_QUOTES, 'UTF-8') . '</a></div>';
             }
@@ -189,7 +204,8 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                     echo '<input type="hidden" name="layout" value="' . htmlspecialchars($currentLayout, ENT_QUOTES, 'UTF-8') . '">';
                     $localVisual = isset($extra['visual_settings']) && is_array($extra['visual_settings']) ? $extra['visual_settings'] : [];
                     $resolvedVisual = $sectionRepo->resolveVisualSettings((int) $selected['id']);
-                    $renderVisualSettings($visualFields, $resolvedVisual, $localVisual, 'site-' . (int) $selected['id']);
+                    $layoutKey = isset($extra['layout']) && Layout::layoutExists((string) $extra['layout']) ? (string) $extra['layout'] : 'default';
+                    $renderVisualSettings($visualFields, $resolvedVisual, $localVisual, 'site-' . (int) $selected['id'], $layoutKey, csrfToken());
                 }
             }
 
@@ -334,7 +350,13 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                     echo '<input type="hidden" name="layout" value="' . htmlspecialchars((string) ($extra['layout'] ?? ''), ENT_QUOTES, 'UTF-8') . '">';
                     $localVisual = isset($extra['visual_settings']) && is_array($extra['visual_settings']) ? $extra['visual_settings'] : [];
                     $resolvedVisual = $sectionRepo->resolveVisualSettings((int) $selected['id']);
-                    $renderVisualSettings($visualFields, $resolvedVisual, $localVisual, 'section-' . (int) $selected['id']);
+                    $layoutKey = 'default';
+                    if (isset($extra['layout']) && Layout::layoutExists((string) $extra['layout'])) {
+                        $layoutKey = (string) $extra['layout'];
+                    } elseif (isset($siteExtra['layout']) && Layout::layoutExists((string) $siteExtra['layout'])) {
+                        $layoutKey = (string) $siteExtra['layout'];
+                    }
+                    $renderVisualSettings($visualFields, $resolvedVisual, $localVisual, 'section-' . (int) $selected['id'], $layoutKey, csrfToken());
                 }
                 echo '<div class="d-flex justify-content-end gap-2 mt-3">';
                 echo '<button class="btn btn-primary" type="submit">Сохранить</button>';

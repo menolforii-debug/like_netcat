@@ -18,8 +18,9 @@ if ($label === '') {
     redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual', 'error' => 'Название поля обязательно']));
 }
 
-$allowedTypes = ['text', 'textarea', 'number', 'checkbox', 'select', 'color'];
+$allowedTypes = ['text', 'textarea', 'number', 'checkbox', 'select', 'color', 'file'];
 if (!in_array($type, $allowedTypes, true)) {
+    // Если тип неизвестен, сохраняем безопасный дефолт.
     $type = 'text';
 }
 
