@@ -40,7 +40,7 @@ $renderVisualSettings = function (array $visualFields, array $resolvedVisual, ar
         $hasLocal = array_key_exists($name, $localVisual);
         $resolvedValue = $resolvedVisual[$name] ?? '';
         $value = $hasLocal ? $localVisual[$name] : $resolvedValue;
-        $inheritChecked = $hasLocal ? '' : ' checked';
+        $inheritChecked = '';
         $disabledAttr = '';
         $fieldId = $scopeId . '-' . $name;
 
