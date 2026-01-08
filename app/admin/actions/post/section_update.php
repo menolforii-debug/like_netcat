@@ -17,6 +17,12 @@ $layout = isset($_POST['layout']) ? trim((string) $_POST['layout']) : '';
 $visualSettingsInput = isset($_POST['visual_settings']) && is_array($_POST['visual_settings']) ? $_POST['visual_settings'] : [];
 $visualInherit = isset($_POST['visual_inherit']) && is_array($_POST['visual_inherit']) ? $_POST['visual_inherit'] : [];
 $hasVisualInput = array_key_exists('visual_settings', $_POST) || array_key_exists('visual_inherit', $_POST);
+if (!$hasVisualInput && isset($_FILES['visual_settings']) && is_array($_FILES['visual_settings'])) {
+    $names = $_FILES['visual_settings']['name'] ?? [];
+    if (is_array($names) && array_filter($names)) {
+        $hasVisualInput = true;
+    }
+}
 $isSystemRoot = in_array($section['english_name'], ['index', '404'], true);
 if ($isSystemRoot) {
     $englishName = (string) $section['english_name'];
@@ -87,17 +93,57 @@ if ($layout !== '' && Layout::layoutExists($layout)) {
 if ($hasVisualInput) {
     $visualSettings = [];
     $visualFields = $visualFieldRepo->listAll();
+    $existingVisual = isset($extra['visual_settings']) && is_array($extra['visual_settings']) ? $extra['visual_settings'] : [];
+    $visualFiles = isset($_FILES['visual_settings']) && is_array($_FILES['visual_settings']) ? $_FILES['visual_settings'] : null;
+    $site = $sectionRepo->findById($siteId);
+    $siteExtra = $site !== null ? decodeExtra($site) : [];
+    $layoutKey = 'default';
+    if (isset($extra['layout']) && Layout::layoutExists((string) $extra['layout'])) {
+        $layoutKey = (string) $extra['layout'];
+    } elseif (isset($siteExtra['layout']) && Layout::layoutExists((string) $siteExtra['layout'])) {
+        $layoutKey = (string) $siteExtra['layout'];
+    }
     foreach ($visualFields as $field) {
         $name = (string) $field['name'];
         if (isset($visualInherit[$name])) {
             continue;
         }
         if (!array_key_exists($name, $visualSettingsInput)) {
+            if (($field['type'] ?? '') !== 'file') {
+                continue;
+            }
+        }
+
+        $type = (string) ($field['type'] ?? 'text');
+        if ($type === 'file') {
+            if ($visualFiles !== null) {
+                $file = extractNestedUpload($visualFiles, $name);
+                if ($file !== null) {
+                    $error = null;
+                    $fieldId = (int) ($field['id'] ?? 0);
+                    $targetDir = dirname(__DIR__, 3) . '/public_html/files/layouts/' . $layoutKey . '/' . $fieldId;
+                    $publicPrefix = '/files/layouts/' . $layoutKey . '/' . $fieldId;
+                    $storedPath = saveUploadedFile($file, $targetDir, $publicPrefix, $error);
+                    if ($error !== null) {
+                        if (isAjaxRequest()) {
+                            jsonResponse(['ok' => false, 'error' => $error]);
+                        }
+                        redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => $error]));
+                    }
+                    if ($storedPath !== null) {
+                        $visualSettings[$name] = $storedPath;
+                        continue;
+                    }
+                }
+            }
+
+            if (isset($existingVisual[$name])) {
+                $visualSettings[$name] = $existingVisual[$name];
+            }
             continue;
         }
 
         $value = $visualSettingsInput[$name];
-        $type = (string) ($field['type'] ?? 'text');
         if ($type === 'checkbox') {
             $visualSettings[$name] = !empty($value) ? '1' : '0';
             continue;

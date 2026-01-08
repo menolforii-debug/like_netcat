@@ -55,7 +55,7 @@ if (!$isAjax) {
     echo '<span data-modal-title="' . ($object ? 'Редактировать объект' : 'Новый объект') . '"></span>';
 }
 
-echo '<form method="post" action="/admin.php?action=' . ($object ? 'object_update' : 'object_create') . '"' . ($isAjax ? ' data-ajax="true"' : '') . '>';
+echo '<form method="post" action="/admin.php?action=' . ($object ? 'object_update' : 'object_create') . '" enctype="multipart/form-data"' . ($isAjax ? ' data-ajax="true"' : '') . '>';
 echo csrfTokenField();
 if ($object) {
     echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';

@@ -24,7 +24,7 @@ echo '<div class="col-md-6"><label class="form-label">Ключ</label><input cla
 echo '<div class="col-md-6"><label class="form-label">Название</label><input class="form-control" name="label" value="' . htmlspecialchars((string) ($field['label'] ?? ''), ENT_QUOTES, 'UTF-8') . '" required></div>';
 echo '<div class="col-md-6"><label class="form-label">Тип</label>';
 echo '<select class="form-select" name="type">';
-foreach (['text' => 'Текст', 'textarea' => 'Текст (многострочный)', 'number' => 'Число', 'checkbox' => 'Флаг', 'select' => 'Список', 'color' => 'Цвет'] as $typeKey => $typeLabel) {
+foreach (['text' => 'Текст', 'textarea' => 'Текст (многострочный)', 'number' => 'Число', 'checkbox' => 'Флаг', 'select' => 'Список', 'color' => 'Цвет', 'file' => 'Файл'] as $typeKey => $typeLabel) {
     $selected = ($field['type'] ?? 'text') === $typeKey ? ' selected' : '';
     echo '<option value="' . htmlspecialchars($typeKey, ENT_QUOTES, 'UTF-8') . '"' . $selected . '>' . htmlspecialchars($typeLabel, ENT_QUOTES, 'UTF-8') . '</option>';
 }

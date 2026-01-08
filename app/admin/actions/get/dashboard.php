@@ -76,6 +76,11 @@ $renderVisualSettings = function (array $visualFields, array $resolvedVisual, ar
                 echo '<option value="' . htmlspecialchars($optKey, ENT_QUOTES, 'UTF-8') . '"' . $selected . '>' . htmlspecialchars($optLabel, ENT_QUOTES, 'UTF-8') . '</option>';
             }
             echo '</select>';
+        } elseif ($type === 'file') {
+            echo '<input class="form-control" type="file" name="visual_settings[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" data-visual-input' . $disabledAttr . ' data-file-preview-show-info="true">';
+            if ($value !== '') {
+                echo '<div class="form-text">Текущий файл: <a href="' . htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener">' . htmlspecialchars(basename((string) $value), ENT_QUOTES, 'UTF-8') . '</a></div>';
+            }
         } elseif ($type === 'color') {
             $colorValue = $value !== '' ? $value : '#ffffff';
             echo '<input class="form-control form-control-color" type="color" name="visual_settings[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" value="' . htmlspecialchars((string) $colorValue, ENT_QUOTES, 'UTF-8') . '" data-visual-input' . $disabledAttr . '>';
@@ -142,7 +147,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
         echo '</ul>';
 
         if ($isAdmin) {
-            echo '<form method="post" action="/admin.php?action=site_update">';
+            echo '<form method="post" action="/admin.php?action=site_update" enctype="multipart/form-data">';
             echo csrfTokenField();
             echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
             if ($siteTab !== 'settings') {
@@ -242,7 +247,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
             }
             if ($isAdmin) {
                 $isSystemRoot = in_array($selected['english_name'], ['index', '404'], true);
-                echo '<form method="post" action="/admin.php?action=section_update">';
+                echo '<form method="post" action="/admin.php?action=section_update" enctype="multipart/form-data">';
                 echo csrfTokenField();
                 echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
                 echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" type="text" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '" required></div>';
@@ -306,7 +311,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                 $layoutNote = ' (по умолчанию)';
             }
             if ($isAdmin) {
-                echo '<form method="post" action="/admin.php?action=section_update">';
+                echo '<form method="post" action="/admin.php?action=section_update" enctype="multipart/form-data">';
                 echo csrfTokenField();
                 echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
                 echo '<input type="hidden" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '">';

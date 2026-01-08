@@ -37,6 +37,37 @@ if ($component === null) {
 
 $fields = parseComponentFields($component);
 $data = extractFormData($fields);
+$existingData = json_decode((string) $object['data_json'], true);
+if (!is_array($existingData)) {
+    $existingData = [];
+}
+foreach ($fields as $field) {
+    if (($field['type'] ?? '') !== 'file') {
+        continue;
+    }
+
+    $name = (string) $field['name'];
+    if (isset($_FILES[$name])) {
+        $error = null;
+        $targetDir = dirname(__DIR__, 3) . '/public_html/files/component/' . (int) $object['infoblock_id'];
+        $publicPrefix = '/files/component/' . (int) $object['infoblock_id'];
+        $storedPath = saveUploadedFile($_FILES[$name], $targetDir, $publicPrefix, $error);
+        if ($error !== null) {
+            if (isAjaxRequest()) {
+                jsonResponse(['ok' => false, 'error' => $error]);
+            }
+            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => $error]));
+        }
+        if ($storedPath !== null) {
+            $data[$name] = $storedPath;
+            continue;
+        }
+    }
+
+    if (isset($existingData[$name])) {
+        $data[$name] = $existingData[$name];
+    }
+}
 try {
     $data = (new FieldValidator())->validate($component, $data);
 } catch (InvalidArgumentException $e) {
