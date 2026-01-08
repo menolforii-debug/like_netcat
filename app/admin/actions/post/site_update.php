@@ -22,7 +22,9 @@ $offlineHtml = isset($_POST['site_offline_html']) ? (string) $_POST['site_offlin
 $layout = isset($_POST['layout']) ? trim((string) $_POST['layout']) : '';
 $visualSettingsInput = isset($_POST['visual_settings']) && is_array($_POST['visual_settings']) ? $_POST['visual_settings'] : [];
 $visualInherit = isset($_POST['visual_inherit']) && is_array($_POST['visual_inherit']) ? $_POST['visual_inherit'] : [];
-$hasVisualInput = array_key_exists('visual_settings', $_POST) || array_key_exists('visual_inherit', $_POST);
+$hasVisualInput = array_key_exists('visual_settings', $_POST)
+    || array_key_exists('visual_inherit', $_POST)
+    || array_key_exists('visual_settings_delete', $_POST);
 if (!$hasVisualInput && isset($_FILES['visual_settings']) && is_array($_FILES['visual_settings'])) {
     $names = $_FILES['visual_settings']['name'] ?? [];
     if (is_array($names) && array_filter($names)) {
