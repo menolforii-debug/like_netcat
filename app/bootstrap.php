@@ -22,6 +22,7 @@ require $root . '/app/domain/VisualFieldRepo.php';
 require $root . '/app/render/Renderer.php';
 require $root . '/app/ui/Layout.php';
 require $root . '/app/ui/AdminLayout.php';
+require $root . '/app/ui/SectionList.php';
 require $root . '/app/ui/SectionTree.php';
 
 Auth::start();

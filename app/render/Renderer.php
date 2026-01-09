@@ -41,6 +41,7 @@ final class Renderer
         foreach ($children as $index => $child) {
             $children[$index]['path'] = $this->joinPath($sectionPath, $child['english_name'] ?? '');
         }
+        $section['children'] = $children;
 
         $infoblockRepo = new InfoblockRepo();
         $componentRepo = new ComponentRepo();
@@ -116,6 +117,7 @@ final class Renderer
             'meta' => $seo,
             'site' => $site,
             'section' => $section,
+            'children' => $children,
             'visual' => $visualSettings,
             'infoblocks_html' => $core['infoblocks_html'] ?? '',
         ]);
