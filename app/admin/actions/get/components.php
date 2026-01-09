@@ -248,7 +248,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
 
     if ($selectedComponent === null) {
         if ($errorMessage !== '') {
-            echo '<div class="alert alert-danger mb-3">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
+            echo '<div class="mb-3 text-danger">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
         }
         echo '<div class="text-muted"> </div>';
         echo '</div></div>';
@@ -272,7 +272,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
 
         if ($isNewView) {
             if ($errorMessage !== '') {
-                echo '<div class="alert alert-danger mb-3">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
+                echo '<div class="mb-3 text-danger">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
             }
             echo '<form method="post" action="/admin.php?action=component_view_create">';
             echo csrfTokenField();
@@ -288,7 +288,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
             echo '<div class="text-muted">Шаблон не найден.</div>';
         } else {
             if ($errorMessage !== '') {
-                echo '<div class="alert alert-danger mb-3">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
+                echo '<div class="mb-3 text-danger">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
             }
             echo '<form method="post" action="/admin.php?action=component_view_update">';
             echo csrfTokenField();
