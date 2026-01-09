@@ -87,6 +87,9 @@ final class Renderer
             // Берем только опубликованные объекты сразу из БД, чтобы не гонять лишние данные.
             $viewRow = $viewRepo->findByName((int) ($component['id'] ?? 0), (string) $infoblock['view_template']);
             $queryOverride = $this->decodeQueryOverride($viewRow);
+            if ($queryOverride !== null) {
+                $queryOverride['component_id'] = (int) ($component['id'] ?? 0);
+            }
             if ($queryOverride !== null && ($queryOverride['mode'] ?? 'extend') === 'replace' && !empty($queryOverride['sql'])) {
                 $objects = $objectRepo->listBySql($queryOverride['sql'], $queryOverride['params'] ?? []);
             } elseif ($queryOverride !== null) {
@@ -197,6 +200,11 @@ final class Renderer
         $where = isset($decoded['where']) ? (array) $decoded['where'] : [];
         $order = isset($decoded['order']) && is_string($decoded['order']) ? trim($decoded['order']) : '';
         $limit = isset($decoded['limit']) && is_numeric($decoded['limit']) ? (int) $decoded['limit'] : null;
+        $ignoreSub = !empty($decoded['ignore_sub']);
+        $systemTpl = isset($viewRow['system_tpl']) ? (string) $viewRow['system_tpl'] : '';
+        if ($systemTpl !== '' && preg_match('/\\$ignore_sub\\s*=\\s*(\\d+)/', $systemTpl, $matches) === 1) {
+            $ignoreSub = ((int) $matches[1]) === 1;
+        }
 
         return [
             'mode' => $mode,
@@ -205,6 +213,7 @@ final class Renderer
             'where' => $where,
             'order' => $order,
             'limit' => $limit,
+            'ignore_sub' => $ignoreSub,
         ];
     }
 

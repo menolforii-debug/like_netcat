@@ -637,9 +637,6 @@ function renderComponentViewTemplate(string $listTpl, string $singleTpl, string 
 {
     $content = "<?php\n";
     $content .= "/** GENERATED FILE. Do not edit manually. */\n";
-    if (trim($systemTpl) !== '') {
-        $content .= rtrim($systemTpl) . "\n";
-    }
     $content .= "if (!isset(\$isSingle)) { \$isSingle = false; }\n";
     $content .= "if (\$isSingle && isset(\$object) && is_array(\$object)) {\n";
     $content .= "?>\n";
@@ -652,8 +649,6 @@ function renderComponentViewTemplate(string $listTpl, string $singleTpl, string 
     $content .= "}\n";
 
     if (trim($systemTpl) !== '') {
-        $content .= "?>\n";
-        $content .= "<?php\n";
         $content .= rtrim($systemTpl) . "\n";
         $content .= "?>\n";
     }

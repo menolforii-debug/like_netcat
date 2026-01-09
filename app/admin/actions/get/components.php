@@ -22,22 +22,8 @@ function renderTextareaValue($value): string
 function defaultSystemTemplate(): string
 {
     return "// Системные настройки шаблона компонента.\n"
-        . "// Пример: игнорировать выборку по разделу (закомментировано).\n"
-        . "// \$objects = DB::fetchAll(\n"
-        . "//     'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at\n"
-        . "//     FROM objects\n"
-        . "//     WHERE component_id = :component_id AND is_deleted = 0 AND status = :status\n"
-        . "//     ORDER BY id ASC',\n"
-        . "//     ['component_id' => (int) (\$component['id'] ?? 0), 'status' => 'published']\n"
-        . "// );\n"
-        . "// \$objects = array_map(static function (\$object) {\n"
-        . "//     \$data = json_decode((string) \$object['data_json'], true);\n"
-        . "//     if (!is_array(\$data)) {\n"
-        . "//         \$data = [];\n"
-        . "//     }\n"
-        . "//     \$object['data'] = \$data;\n"
-        . "//     return \$object;\n"
-        . "// }, \$objects);\n";
+        . "// Если \$ignore_sub = 1, выборка объектов игнорирует текущий раздел.\n"
+        . "\$ignore_sub = 0;\n";
 }
 
 function defaultQueryJson(): string
@@ -52,6 +38,7 @@ function defaultQueryJson(): string
         'params' => [
             'status' => 'published',
         ],
+        'ignore_sub' => 0,
     ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
 }
 
@@ -287,7 +274,6 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
             echo csrfTokenField();
             echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
             echo '<div class="mb-3"><label class="form-label">Название шаблона</label><input class="form-control" name="view_name" required></div>';
-            echo '<div class="mb-3"><label class="form-label">Системные настройки</label><textarea class="form-control font-monospace code-editor" name="system_tpl" rows="10">' . renderTextareaValue(defaultSystemTemplate()) . '</textarea></div>';
             echo '<div class="mb-3"><label class="form-label">Шаблон списка</label><textarea class="form-control font-monospace code-editor" name="list_tpl" rows="10"></textarea></div>';
             echo '<div class="mb-3"><label class="form-label">Шаблон объекта</label><textarea class="form-control font-monospace code-editor" name="single_tpl" rows="10"></textarea></div>';
             echo '<div class="mb-3"><label class="form-label">Настройки запроса (JSON)</label><textarea class="form-control font-monospace code-editor" name="query_json" rows="10">' . renderTextareaValue(defaultQueryJson()) . '</textarea></div>';
@@ -302,7 +288,6 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
             echo '<input type="hidden" name="view_id" value="' . (int) $viewRow['id'] . '">';
             echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
             echo '<div class="mb-3"><label class="form-label">Название шаблона</label><input class="form-control" name="view_name" value="' . htmlspecialchars((string) $viewRow['name'], ENT_QUOTES, 'UTF-8') . '" readonly></div>';
-            echo '<div class="mb-3"><label class="form-label">Системные настройки</label><textarea class="form-control font-monospace code-editor" name="system_tpl" rows="10">' . renderTextareaValue($viewRow['system_tpl'] ?? '') . '</textarea></div>';
             echo '<div class="mb-3"><label class="form-label">Шаблон списка</label><textarea class="form-control font-monospace code-editor" name="list_tpl" rows="10">' . renderTextareaValue($viewRow['list_tpl'] ?? '') . '</textarea></div>';
             echo '<div class="mb-3"><label class="form-label">Шаблон объекта</label><textarea class="form-control font-monospace code-editor" name="single_tpl" rows="10">' . renderTextareaValue($viewRow['single_tpl'] ?? '') . '</textarea></div>';
             echo '<div class="mb-3"><label class="form-label">Настройки запроса (JSON)</label><textarea class="form-control font-monospace code-editor" name="query_json" rows="10">' . renderTextareaValue($viewRow['query_json'] ?? '') . '</textarea></div>';
