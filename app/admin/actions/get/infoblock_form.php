@@ -65,10 +65,8 @@ echo '<div class="col-md-4"><label class="form-label">Сортировка</labe
 $checked = !empty($infoblock['is_enabled']) || $infoblock === null ? ' checked' : '';
 echo '<div class="col-md-4"><label class="form-label">Включен</label><div class="form-check mt-2"><input class="form-check-input" type="checkbox" name="is_enabled" value="1"' . $checked . '></div></div>';
 echo '<div class="col-12"><label class="form-label">Настройки (JSON)</label><textarea class="form-control font-monospace" name="settings_json" rows="4">' . htmlspecialchars(json_encode($settings, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), ENT_QUOTES, 'UTF-8') . '</textarea></div>';
-echo '<div class="col-md-6"><label class="form-label">HTML до</label><textarea class="form-control" name="before_html" rows="2">' . htmlspecialchars((string) ($extra['before_html'] ?? ''), ENT_QUOTES, 'UTF-8') . '</textarea></div>';
-echo '<div class="col-md-6"><label class="form-label">HTML после</label><textarea class="form-control" name="after_html" rows="2">' . htmlspecialchars((string) ($extra['after_html'] ?? ''), ENT_QUOTES, 'UTF-8') . '</textarea></div>';
-echo '<div class="col-md-6"><label class="form-label">Картинка до</label><input class="form-control" type="text" name="before_image" value="' . htmlspecialchars((string) ($extra['before_image'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
-echo '<div class="col-md-6"><label class="form-label">Картинка после</label><input class="form-control" type="text" name="after_image" value="' . htmlspecialchars((string) ($extra['after_image'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
+echo '<div class="col-md-6"><label class="form-label">HTML до</label><textarea class="form-control font-monospace code-editor" name="before_html" rows="2">' . htmlspecialchars((string) ($extra['before_html'] ?? ''), ENT_QUOTES, 'UTF-8') . '</textarea></div>';
+echo '<div class="col-md-6"><label class="form-label">HTML после</label><textarea class="form-control font-monospace code-editor" name="after_html" rows="2">' . htmlspecialchars((string) ($extra['after_html'] ?? ''), ENT_QUOTES, 'UTF-8') . '</textarea></div>';
 echo '</div>';
 echo '<div class="d-flex justify-content-end gap-2 mt-3">';
 echo '<button class="btn btn-primary" type="submit">Сохранить</button>';

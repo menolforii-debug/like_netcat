@@ -34,6 +34,7 @@ $children = $ctx['children'] ?? [];
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarMain">
+                    <?php Layout::renderMainMenu($ctx, 2); ?>
                     <ul class="navbar-nav ms-auto">
                         <li class="nav-item"><a class="nav-link" href="/admin.php">Админ</a></li>
                     </ul>

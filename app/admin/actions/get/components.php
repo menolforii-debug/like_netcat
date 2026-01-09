@@ -11,12 +11,33 @@ $tab = isset($_GET['tab']) ? (string) $_GET['tab'] : 'general';
 if (!in_array($tab, ['general', 'fields'], true)) {
     $tab = 'general';
 }
+$errorMessage = isset($_GET['error']) ? trim((string) $_GET['error']) : '';
 
 function renderTextareaValue($value): string
 {
     $s = (string) $value;
     $s = preg_replace('~</textarea~i', '&lt;/textarea', $s);
     return $s ?? '';
+}
+
+function defaultSystemTemplate(): string
+{
+    return "<?php\n?>";
+}
+
+function defaultQueryJson(): string
+{
+    return "// Пример настроек запроса (JSON)\n"
+        . "// {\n"
+        . "//   \"mode\": \"extend\",\n"
+        . "//   \"where\": [\"status = :status\"],\n"
+        . "//   \"order\": \"created_at DESC\",\n"
+        . "//   \"limit\": 20,\n"
+        . "//   \"params\": {\n"
+        . "//     \"status\": \"published\"\n"
+        . "//   },\n"
+        . "//   \"ignore_sub\": 0\n"
+        . "// }\n";
 }
 
 $selectedComponent = null;
@@ -226,6 +247,9 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
     echo '<div class="card-body">';
 
     if ($selectedComponent === null) {
+        if ($errorMessage !== '') {
+            echo '<div class="mb-3 text-danger">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
+        }
         echo '<div class="text-muted"> </div>';
         echo '</div></div>';
         AdminLayout::closeContent();
@@ -247,17 +271,25 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
         echo '</ul>';
 
         if ($isNewView) {
+            if ($errorMessage !== '') {
+                echo '<div class="mb-3 text-danger">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
+            }
             echo '<form method="post" action="/admin.php?action=component_view_create">';
             echo csrfTokenField();
             echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
             echo '<div class="mb-3"><label class="form-label">Название шаблона</label><input class="form-control" name="view_name" required></div>';
             echo '<div class="mb-3"><label class="form-label">Шаблон списка</label><textarea class="form-control font-monospace code-editor" name="list_tpl" rows="10"></textarea></div>';
             echo '<div class="mb-3"><label class="form-label">Шаблон объекта</label><textarea class="form-control font-monospace code-editor" name="single_tpl" rows="10"></textarea></div>';
+            echo '<div class="mb-3"><label class="form-label">Настройки запроса (JSON)</label><textarea class="form-control font-monospace code-editor" name="query_json" rows="10">' . renderTextareaValue(defaultQueryJson()) . '</textarea></div>';
+            echo '<div class="mb-3"><label class="form-label">Системные настройки</label><textarea class="form-control font-monospace code-editor" name="system_tpl" rows="10">' . renderTextareaValue(defaultSystemTemplate()) . '</textarea></div>';
             echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
             echo '</form>';
         } elseif ($viewRow === null) {
             echo '<div class="text-muted">Шаблон не найден.</div>';
         } else {
+            if ($errorMessage !== '') {
+                echo '<div class="mb-3 text-danger">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
+            }
             echo '<form method="post" action="/admin.php?action=component_view_update">';
             echo csrfTokenField();
             echo '<input type="hidden" name="view_id" value="' . (int) $viewRow['id'] . '">';
@@ -265,6 +297,8 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
             echo '<div class="mb-3"><label class="form-label">Название шаблона</label><input class="form-control" name="view_name" value="' . htmlspecialchars((string) $viewRow['name'], ENT_QUOTES, 'UTF-8') . '" readonly></div>';
             echo '<div class="mb-3"><label class="form-label">Шаблон списка</label><textarea class="form-control font-monospace code-editor" name="list_tpl" rows="10">' . renderTextareaValue($viewRow['list_tpl'] ?? '') . '</textarea></div>';
             echo '<div class="mb-3"><label class="form-label">Шаблон объекта</label><textarea class="form-control font-monospace code-editor" name="single_tpl" rows="10">' . renderTextareaValue($viewRow['single_tpl'] ?? '') . '</textarea></div>';
+            echo '<div class="mb-3"><label class="form-label">Настройки запроса (JSON)</label><textarea class="form-control font-monospace code-editor" name="query_json" rows="10">' . renderTextareaValue($viewRow['query_json'] ?? '') . '</textarea></div>';
+            echo '<div class="mb-3"><label class="form-label">Системные настройки</label><textarea class="form-control font-monospace code-editor" name="system_tpl" rows="10">' . renderTextareaValue($viewRow['system_tpl'] ?? '') . '</textarea></div>';
             echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
             echo '</form>';
             echo '<form class="mt-2" method="post" action="/admin.php?action=component_view_delete" onsubmit="return confirm(\'Удалить шаблон?\')">';
