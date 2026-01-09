@@ -21,25 +21,22 @@ function renderTextareaValue($value): string
 
 function defaultSystemTemplate(): string
 {
-    return "// Системные настройки шаблона компонента.\n"
-        . "// Если \$ignore_sub = 1, выборка объектов игнорирует текущий раздел.\n"
-        . "\$ignore_sub = 0;\n";
+    return "<?\n?>";
 }
 
 function defaultQueryJson(): string
 {
-    return json_encode([
-        'mode' => 'extend',
-        'where' => [
-            'status = :status',
-        ],
-        'order' => 'created_at DESC',
-        'limit' => 20,
-        'params' => [
-            'status' => 'published',
-        ],
-        'ignore_sub' => 0,
-    ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    return "// Пример настроек запроса (JSON)\n"
+        . "// {\n"
+        . "//   \"mode\": \"extend\",\n"
+        . "//   \"where\": [\"status = :status\"],\n"
+        . "//   \"order\": \"created_at DESC\",\n"
+        . "//   \"limit\": 20,\n"
+        . "//   \"params\": {\n"
+        . "//     \"status\": \"published\"\n"
+        . "//   },\n"
+        . "//   \"ignore_sub\": 0\n"
+        . "// }\n";
 }
 
 $selectedComponent = null;
