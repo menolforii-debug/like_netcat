@@ -69,9 +69,7 @@ if ($hasVisualInput) {
     $layoutKey = isset($extra['layout']) && Layout::layoutExists((string) $extra['layout']) ? (string) $extra['layout'] : 'default';
     foreach ($visualFields as $field) {
         $name = (string) $field['name'];
-        if (isset($visualInherit[$name])) {
-            continue;
-        }
+        $isInherited = isset($visualInherit[$name]);
         if (!array_key_exists($name, $visualSettingsInput)) {
             if (($field['type'] ?? '') !== 'file') {
                 continue;
@@ -80,6 +78,9 @@ if ($hasVisualInput) {
 
         $type = (string) ($field['type'] ?? 'text');
         if ($type === 'file') {
+            if ($isInherited) {
+                continue;
+            }
             $deleteRequested = !empty($deleteVisual[$name]) && isset($existingVisual[$name]);
             if ($deleteRequested) {
                 deleteUploadedFile((string) $existingVisual[$name]);
@@ -118,6 +119,9 @@ if ($hasVisualInput) {
 
         $value = $visualSettingsInput[$name];
         if ($type === 'checkbox') {
+            if ($isInherited) {
+                continue;
+            }
             $visualSettings[$name] = !empty($value) ? '1' : '0';
             continue;
         }
