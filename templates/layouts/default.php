@@ -5,6 +5,8 @@
 $title = (string) ($ctx['title'] ?? '');
 $meta = $ctx['meta'] ?? [];
 $site = $ctx['site'] ?? [];
+$section = $ctx['section'] ?? [];
+$children = $ctx['children'] ?? [];
 
 
 ?>
@@ -39,6 +41,9 @@ $site = $ctx['site'] ?? [];
             </div>
         </nav>
         <main class="container py-4">
+            <?php if (!empty($section)) : ?>
+                <?php Layout::renderSectionHeader($section, $children); ?>
+            <?php endif; ?>
             <?php $body(); ?>
         </main>
     </div>

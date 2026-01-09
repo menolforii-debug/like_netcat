@@ -58,6 +58,31 @@ final class Layout
         echo '</nav>';
     }
 
+    public static function renderSectionHeader(array $section, array $children = []): void
+    {
+        $title = isset($section['title']) ? (string) $section['title'] : '';
+        echo '<div class="card shadow-sm mb-4">';
+        echo '<div class="card-header bg-white">';
+        echo '<h1 class="h4 mb-0">' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</h1>';
+        echo '</div>';
+        echo '<div class="card-body">';
+        if (!empty($children)) {
+            echo '<div class="list-group list-group-flush">';
+            foreach ($children as $child) {
+                $path = isset($child['path']) ? (string) $child['path'] : '/';
+                $childTitle = isset($child['title']) ? (string) $child['title'] : '';
+                echo '<a class="list-group-item list-group-item-action" href="' . htmlspecialchars($path, ENT_QUOTES, 'UTF-8') . '">';
+                echo htmlspecialchars($childTitle, ENT_QUOTES, 'UTF-8');
+                echo '</a>';
+            }
+            echo '</div>';
+        } else {
+            echo '<div class="text-muted">Разделов нет.</div>';
+        }
+        echo '</div>';
+        echo '</div>';
+    }
+
     public static function render(string $layoutKey, array $ctx, callable $body): void
     {
         $layoutKey = trim($layoutKey) !== '' ? $layoutKey : 'default';
