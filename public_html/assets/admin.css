@@ -127,6 +127,15 @@ body {
 .visual-inherit-switch .form-check-input {
   margin-left: 0;
   margin-top: 0;
+  flex-shrink: 0;
+  opacity: 1;
+  position: static;
+}
+
+.visual-inherit-switch .form-check-input[type="checkbox"] {
+  appearance: auto;
+  -webkit-appearance: auto;
+  background-color: #fff;
 }
 
 /* ===========================
