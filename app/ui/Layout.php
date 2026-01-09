@@ -83,6 +83,56 @@ final class Layout
         echo '</div>';
     }
 
+    public static function renderMainMenu(array $ctx, int $maxDepth = 2): void
+    {
+        $site = $ctx['site'] ?? [];
+        $section = $ctx['section'] ?? [];
+        $siteId = (int) ($site['id'] ?? 0);
+        if ($siteId <= 0) {
+            return;
+        }
+
+        $currentId = (int) ($section['id'] ?? 0);
+        $repo = new SectionRepo();
+        $items = self::buildMenuItems($repo, $siteId, $siteId, $currentId, 1, $maxDepth);
+        if ($items === []) {
+            return;
+        }
+
+        echo '<ul class="navbar-nav">';
+        foreach ($items as $item) {
+            if (!empty($item['children'])) {
+                echo '<li class="nav-item dropdown">';
+                echo '<a href="#" class="nav-link dropdown-toggle' . (!empty($item['active']) ? ' active' : '') . '" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">';
+                echo htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8');
+                echo '</a>';
+                echo '<div class="dropdown-menu dropdown-menu-hover dropdown-menu-clean dropdown-fadeindown rounded-xl">';
+                echo '<ul class="list-unstyled m-0 p-0">';
+                foreach ($item['children'] as $child) {
+                    echo '<li class="dropdown-item">';
+                    if (!empty($child['active'])) {
+                        echo '<span class="dropdown-link active">' . htmlspecialchars($child['name'], ENT_QUOTES, 'UTF-8') . '</span>';
+                    } else {
+                        echo '<a href="' . htmlspecialchars($child['url'], ENT_QUOTES, 'UTF-8') . '" class="dropdown-link">' . htmlspecialchars($child['name'], ENT_QUOTES, 'UTF-8') . '</a>';
+                    }
+                    echo '</li>';
+                }
+                echo '</ul>';
+                echo '</div>';
+                echo '</li>';
+            } else {
+                echo '<li class="nav-item dropdown">';
+                if (!empty($item['active'])) {
+                    echo '<span class="nav-link active">' . htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') . '</span>';
+                } else {
+                    echo '<a href="' . htmlspecialchars($item['url'], ENT_QUOTES, 'UTF-8') . '" class="nav-link">' . htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') . '</a>';
+                }
+                echo '</li>';
+            }
+        }
+        echo '</ul>';
+    }
+
     public static function render(string $layoutKey, array $ctx, callable $body): void
     {
         $layoutKey = trim($layoutKey) !== '' ? $layoutKey : 'default';
@@ -137,6 +187,38 @@ final class Layout
     private static function layoutNavPath(string $layoutKey): string
     {
         return dirname(__DIR__, 2) . '/templates/layouts/' . $layoutKey . '.nav.php';
+    }
+
+    private static function buildMenuItems(SectionRepo $repo, int $siteId, int $parentId, int $currentId, int $depth, int $maxDepth): array
+    {
+        if ($depth > $maxDepth) {
+            return [];
+        }
+
+        $children = $repo->listChildren($parentId);
+        $items = [];
+        foreach ($children as $child) {
+            $englishName = (string) ($child['english_name'] ?? '');
+            if ($englishName === '404') {
+                continue;
+            }
+
+            $itemId = (int) ($child['id'] ?? 0);
+            $name = (string) ($child['title'] ?? $englishName);
+            if ($name === '') {
+                continue;
+            }
+
+            $items[] = [
+                'id' => $itemId,
+                'name' => $name,
+                'url' => $repo->buildPath($itemId),
+                'active' => $itemId === $currentId || ($currentId > 0 && $repo->isDescendant($currentId, $itemId)),
+                'children' => $depth < $maxDepth ? self::buildMenuItems($repo, $siteId, $itemId, $currentId, $depth + 1, $maxDepth) : [],
+            ];
+        }
+
+        return $items;
     }
 
     public static function sowAssetsAvailable(): bool
