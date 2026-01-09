@@ -19,6 +19,7 @@ require $root . '/app/domain/InfoblockRepo.php';
 require $root . '/app/domain/ObjectRepo.php';
 require $root . '/app/domain/UserRepo.php';
 require $root . '/app/domain/VisualFieldRepo.php';
+require $root . '/app/MigrationRunner.php';
 require $root . '/app/render/Renderer.php';
 require $root . '/app/ui/Layout.php';
 require $root . '/app/ui/AdminLayout.php';
@@ -37,7 +38,7 @@ DB::connect($varDir . '/app.sqlite');
 $scriptName = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
 $runMigrations = PHP_SAPI === 'cli' || $scriptName === 'admin.php';
 if ($runMigrations) {
-    runMigrations(DB::pdo(), $root . '/migrations');
+    MigrationRunner::run(DB::pdo(), $root . '/migrations');
 }
 
 $core = new Core(DB::pdo(), new EventBus());
@@ -51,87 +52,6 @@ ensureDefaultVisualFields();
 function core(): Core
 {
     return $GLOBALS['core'];
-}
-
-function runMigrations(PDO $pdo, $migrationsDir): void
-{
-    static $hasRun = false;
-    if ($hasRun) {
-        return;
-    }
-    $hasRun = true;
-
-    if (DB::pdo() !== $pdo) {
-        throw new RuntimeException('runMigrations must be called after DB::connect().');
-    }
-
-    $files = glob(rtrim($migrationsDir, '/') . '/*.sql');
-    if ($files === false) {
-        return;
-    }
-
-    sort($files);
-
-    if ($files === []) {
-        return;
-    }
-
-    $pdo->exec('CREATE TABLE IF NOT EXISTS migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL)');
-
-    $applied = $pdo->query('SELECT name FROM migrations');
-    $appliedNames = $applied ? $applied->fetchAll(PDO::FETCH_COLUMN, 0) : [];
-    $appliedLookup = array_fill_keys($appliedNames, true);
-
-    $pendingFiles = [];
-    foreach ($files as $file) {
-        $name = basename($file);
-        if (!isset($appliedLookup[$name])) {
-            $pendingFiles[] = $file;
-        }
-    }
-
-    if ($pendingFiles === []) {
-        return;
-    }
-
-    try {
-        foreach ($pendingFiles as $file) {
-            $name = basename($file);
-            $sql = file_get_contents($file);
-            if ($sql === false) {
-                continue;
-            }
-
-            $manageTransaction = !$pdo->inTransaction() && !migrationManagesTransaction($sql);
-            if ($manageTransaction) {
-                $pdo->beginTransaction();
-            }
-
-            $pdo->exec($sql);
-            $stmt = $pdo->prepare('INSERT INTO migrations (name, applied_at) VALUES (:name, :applied_at)');
-            $stmt->execute([
-                'name' => $name,
-                'applied_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('c'),
-            ]);
-
-            if ($manageTransaction) {
-                $pdo->commit();
-            }
-        }
-    } catch (Throwable $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
-        throw $e;
-    }
-}
-
-function migrationApplied(PDO $pdo, $name): bool
-{
-    $stmt = $pdo->prepare('SELECT 1 FROM migrations WHERE name = :name');
-    $stmt->execute(['name' => $name]);
-
-    return (bool) $stmt->fetchColumn();
 }
 
 function usersCount(): int
@@ -275,9 +195,4 @@ function ensureDefaultVisualFields(): void
     foreach ($defaults as $index => [$name, $label, $type]) {
         $repo->create($name, $label, $type, [], $index + 1);
     }
-}
-
-function migrationManagesTransaction(string $sql): bool
-{
-    return preg_match('/\bBEGIN\b|\bCOMMIT\b|\bROLLBACK\b|\bPRAGMA\s+foreign_keys\b/i', $sql) === 1;
 }

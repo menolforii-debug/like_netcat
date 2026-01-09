@@ -23,7 +23,7 @@
 
 ### Представления компонентов (`component_views`)
 
-- Хранят пары шаблонов `list_tpl` и `single_tpl`.
+- Хранят пары шаблонов `list_tpl` и `single_tpl`, а также `system_tpl` для системного кода и `query_json` для настроек SQL‑выборки.
 - При сохранении админка пишет файл `templates/component/<keyword>/<view>.php`.
 - При обновлении создаются бэкапы в `var/backups/templates/component/`.
 

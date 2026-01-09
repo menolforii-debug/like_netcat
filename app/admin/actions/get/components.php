@@ -19,6 +19,29 @@ function renderTextareaValue($value): string
     return $s ?? '';
 }
 
+function defaultSystemTemplate(): string
+{
+    return "// Системные настройки шаблона компонента.\n"
+        . "// Если \$ignore_sub = 1, выборка объектов игнорирует текущий раздел.\n"
+        . "\$ignore_sub = 0;\n";
+}
+
+function defaultQueryJson(): string
+{
+    return json_encode([
+        'mode' => 'extend',
+        'where' => [
+            'status = :status',
+        ],
+        'order' => 'created_at DESC',
+        'limit' => 20,
+        'params' => [
+            'status' => 'published',
+        ],
+        'ignore_sub' => 0,
+    ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+}
+
 $selectedComponent = null;
 foreach ($components as $component) {
     if ((int) $component['id'] === $componentId) {
@@ -253,6 +276,8 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
             echo '<div class="mb-3"><label class="form-label">Название шаблона</label><input class="form-control" name="view_name" required></div>';
             echo '<div class="mb-3"><label class="form-label">Шаблон списка</label><textarea class="form-control font-monospace code-editor" name="list_tpl" rows="10"></textarea></div>';
             echo '<div class="mb-3"><label class="form-label">Шаблон объекта</label><textarea class="form-control font-monospace code-editor" name="single_tpl" rows="10"></textarea></div>';
+            echo '<div class="mb-3"><label class="form-label">Настройки запроса (JSON)</label><textarea class="form-control font-monospace code-editor" name="query_json" rows="10">' . renderTextareaValue(defaultQueryJson()) . '</textarea></div>';
+            echo '<div class="mb-3"><label class="form-label">Системные настройки</label><textarea class="form-control font-monospace code-editor" name="system_tpl" rows="10">' . renderTextareaValue(defaultSystemTemplate()) . '</textarea></div>';
             echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
             echo '</form>';
         } elseif ($viewRow === null) {
@@ -265,6 +290,8 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
             echo '<div class="mb-3"><label class="form-label">Название шаблона</label><input class="form-control" name="view_name" value="' . htmlspecialchars((string) $viewRow['name'], ENT_QUOTES, 'UTF-8') . '" readonly></div>';
             echo '<div class="mb-3"><label class="form-label">Шаблон списка</label><textarea class="form-control font-monospace code-editor" name="list_tpl" rows="10">' . renderTextareaValue($viewRow['list_tpl'] ?? '') . '</textarea></div>';
             echo '<div class="mb-3"><label class="form-label">Шаблон объекта</label><textarea class="form-control font-monospace code-editor" name="single_tpl" rows="10">' . renderTextareaValue($viewRow['single_tpl'] ?? '') . '</textarea></div>';
+            echo '<div class="mb-3"><label class="form-label">Настройки запроса (JSON)</label><textarea class="form-control font-monospace code-editor" name="query_json" rows="10">' . renderTextareaValue($viewRow['query_json'] ?? '') . '</textarea></div>';
+            echo '<div class="mb-3"><label class="form-label">Системные настройки</label><textarea class="form-control font-monospace code-editor" name="system_tpl" rows="10">' . renderTextareaValue($viewRow['system_tpl'] ?? '') . '</textarea></div>';
             echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
             echo '</form>';
             echo '<form class="mt-2" method="post" action="/admin.php?action=component_view_delete" onsubmit="return confirm(\'Удалить шаблон?\')">';
