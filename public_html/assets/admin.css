@@ -117,6 +117,18 @@ body {
   opacity: .8;
 }
 
+.visual-inherit-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 0;
+}
+
+.visual-inherit-switch .form-check-input {
+  margin-left: 0;
+  margin-top: 0;
+}
+
 /* ===========================
    ComponentTree styles
    =========================== */

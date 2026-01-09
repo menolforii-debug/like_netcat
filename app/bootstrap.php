@@ -177,12 +177,6 @@ function ensureDefaultSite(string $host): void
         $repo->createSection($siteId, $siteId, '404', '404', 0, []);
     }
 
-    if ($rootIndex !== null) {
-        $children = $repo->listChildren((int) $rootIndex['id']);
-        if (empty($children)) {
-            $repo->createSection((int) $rootIndex['id'], $siteId, 'news', 'News', 0, []);
-        }
-    }
 }
 
 function ensureDefaultLayoutTemplates(string $root): void

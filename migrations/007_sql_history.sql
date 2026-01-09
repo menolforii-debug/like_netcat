@@ -1,7 +1,0 @@
-CREATE TABLE IF NOT EXISTS sql_history (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NULL,
-    sql TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
-);
