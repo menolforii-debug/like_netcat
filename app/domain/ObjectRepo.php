@@ -2,6 +2,8 @@
 
 final class ObjectRepo
 {
+    private ?string $lastSelectQuery = null;
+
     public function listForInfoblock($infoblockId, bool $includeDeleted = false, ?string $status = null): array
     {
         $where = 'infoblock_id = :infoblock_id';
@@ -17,13 +19,78 @@ final class ObjectRepo
             $params['status'] = $status;
         }
 
-        return DB::fetchAll(
-            'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
+        $sql = 'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
             FROM objects
             WHERE ' . $where . '
-            ORDER BY id ASC',
+            ORDER BY id ASC';
+        $this->lastSelectQuery = $this->interpolateQuery($sql, $params);
+
+        return DB::fetchAll(
+            $sql,
             $params
         );
+    }
+
+    public function listForInfoblockWithOverride($infoblockId, bool $includeDeleted, ?string $status, array $override): array
+    {
+        $where = [];
+        $params = [];
+        $ignoreSub = !empty($override['ignore_sub']);
+        if ($ignoreSub && !empty($override['component_id'])) {
+            $where[] = 'component_id = :component_id';
+            $params['component_id'] = (int) $override['component_id'];
+        } else {
+            $where[] = 'infoblock_id = :infoblock_id';
+            $params['infoblock_id'] = $infoblockId;
+        }
+        if (!$includeDeleted) {
+            $where[] = 'is_deleted = 0';
+        }
+        if ($status !== null && $status !== '') {
+            $where[] = 'status = :status';
+        }
+
+        if (!empty($override['where'])) {
+            foreach ((array) $override['where'] as $condition) {
+                if (is_string($condition) && trim($condition) !== '') {
+                    $where[] = $condition;
+                }
+            }
+        }
+
+        $order = '';
+        if (!empty($override['order']) && is_string($override['order'])) {
+            $order = ' ORDER BY ' . $override['order'];
+        }
+
+        $limit = '';
+        if (isset($override['limit']) && is_numeric($override['limit'])) {
+            $limitValue = (int) $override['limit'];
+            if ($limitValue > 0) {
+                $limit = ' LIMIT ' . $limitValue;
+            }
+        }
+
+        if ($status !== null && $status !== '') {
+            $params['status'] = $status;
+        }
+        if (!empty($override['params']) && is_array($override['params'])) {
+            $params = array_merge($params, $override['params']);
+        }
+
+        $sql = 'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
+            FROM objects
+            WHERE ' . implode(' AND ', $where) . $order . $limit;
+        $this->lastSelectQuery = $this->interpolateQuery($sql, $params);
+
+        return DB::fetchAll($sql, $params);
+    }
+
+    public function listBySql(string $sql, array $params = []): array
+    {
+        $this->lastSelectQuery = $this->interpolateQuery($sql, $params);
+
+        return DB::fetchAll($sql, $params);
     }
 
     public function findById($id): ?array
@@ -150,5 +217,44 @@ final class ObjectRepo
     private function now(): string
     {
         return (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('c');
+    }
+
+    private function interpolateQuery(string $sql, array $params): string
+    {
+        if ($params === []) {
+            return $sql;
+        }
+
+        return preg_replace_callback('/(:[a-zA-Z0-9_]+)/', function (array $matches) use ($params): string {
+            $key = substr($matches[0], 1);
+            if (!array_key_exists($key, $params)) {
+                return $matches[0];
+            }
+
+            return $this->formatQueryValue($params[$key]);
+        }, $sql) ?? $sql;
+    }
+
+    private function formatQueryValue($value): string
+    {
+        if ($value === null) {
+            return 'NULL';
+        }
+        if (is_bool($value)) {
+            return $value ? '1' : '0';
+        }
+        if (is_int($value) || is_float($value)) {
+            return (string) $value;
+        }
+        if (is_array($value)) {
+            $value = json_encode($value, JSON_UNESCAPED_UNICODE);
+        }
+
+        return DB::pdo()->quote((string) $value);
+    }
+
+    public function getLastSelectQuery(): ?string
+    {
+        return $this->lastSelectQuery;
     }
 }
