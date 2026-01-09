@@ -11,6 +11,7 @@ $tab = isset($_GET['tab']) ? (string) $_GET['tab'] : 'general';
 if (!in_array($tab, ['general', 'fields'], true)) {
     $tab = 'general';
 }
+$errorMessage = isset($_GET['error']) ? trim((string) $_GET['error']) : '';
 
 function renderTextareaValue($value): string
 {
@@ -26,7 +27,17 @@ function defaultSystemTemplate(): string
 
 function defaultQueryJson(): string
 {
-    return '';
+    return "// Пример настроек запроса (JSON)\n"
+        . "// {\n"
+        . "//   \"mode\": \"extend\",\n"
+        . "//   \"where\": [\"status = :status\"],\n"
+        . "//   \"order\": \"created_at DESC\",\n"
+        . "//   \"limit\": 20,\n"
+        . "//   \"params\": {\n"
+        . "//     \"status\": \"published\"\n"
+        . "//   },\n"
+        . "//   \"ignore_sub\": 0\n"
+        . "// }\n";
 }
 
 $selectedComponent = null;
@@ -236,6 +247,9 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
     echo '<div class="card-body">';
 
     if ($selectedComponent === null) {
+        if ($errorMessage !== '') {
+            echo '<div class="alert alert-danger mb-3">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
+        }
         echo '<div class="text-muted"> </div>';
         echo '</div></div>';
         AdminLayout::closeContent();
@@ -257,6 +271,9 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
         echo '</ul>';
 
         if ($isNewView) {
+            if ($errorMessage !== '') {
+                echo '<div class="alert alert-danger mb-3">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
+            }
             echo '<form method="post" action="/admin.php?action=component_view_create">';
             echo csrfTokenField();
             echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
@@ -270,6 +287,9 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
         } elseif ($viewRow === null) {
             echo '<div class="text-muted">Шаблон не найден.</div>';
         } else {
+            if ($errorMessage !== '') {
+                echo '<div class="alert alert-danger mb-3">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
+            }
             echo '<form method="post" action="/admin.php?action=component_view_update">';
             echo csrfTokenField();
             echo '<input type="hidden" name="view_id" value="' . (int) $viewRow['id'] . '">';
