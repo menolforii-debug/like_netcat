@@ -84,7 +84,45 @@ document.addEventListener('DOMContentLoaded', () => {
   initInfoblockViewSelects(document);
 });
 
+const ADMIN_TOAST_TTL = 5000;
+const ADMIN_TOAST_PREFIX = 'cms_toast:';
+
+function shouldShowAdminToast(type, message) {
+  const key = String(type) + '|' + String(message);
+  const now = Date.now();
+
+  try {
+    window.__CMS_TOASTS_SHOWN__ = window.__CMS_TOASTS_SHOWN__ || {};
+    if (window.__CMS_TOASTS_SHOWN__[key]) {
+      return false;
+    }
+  } catch (e) {}
+
+  try {
+    if (window.sessionStorage) {
+      const stored = window.sessionStorage.getItem(ADMIN_TOAST_PREFIX + key);
+      if (stored) {
+        const last = Number.parseInt(stored, 10);
+        if (!Number.isNaN(last) && now - last < ADMIN_TOAST_TTL) {
+          return false;
+        }
+      }
+      window.sessionStorage.setItem(ADMIN_TOAST_PREFIX + key, String(now));
+    }
+  } catch (e) {}
+
+  try {
+    window.__CMS_TOASTS_SHOWN__[key] = 1;
+  } catch (e) {}
+
+  return true;
+}
+
 function showAdminToast(type, message) {
+  if (!shouldShowAdminToast(type, message)) {
+    return;
+  }
+
   try {
     if (window.jQuery && window.jQuery.SOW && window.jQuery.SOW.core && window.jQuery.SOW.core.toast) {
       window.jQuery.SOW.core.toast.show(type, '', message, 'top-center', 3500, true);
