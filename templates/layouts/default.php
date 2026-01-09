@@ -1,6 +1,5 @@
 <?php
 /** @var array $ctx */
-/** @var callable $body */
 
 $title = (string) ($ctx['title'] ?? '');
 $meta = $ctx['meta'] ?? [];
@@ -40,7 +39,6 @@ $infoblocksHtml = (string) ($ctx['infoblocks_html'] ?? '');
             </div>
         </nav>
         <main class="container py-4">
-            <?php $body(); ?>
             <?= $infoblocksHtml ?>
         </main>
     </div>

@@ -58,7 +58,7 @@ final class Layout
         echo '</nav>';
     }
 
-    public static function render(string $layoutKey, array $ctx, callable $body): void
+    public static function render(string $layoutKey, array $ctx): void
     {
         $layoutKey = trim($layoutKey) !== '' ? $layoutKey : 'default';
         $layoutPath = self::layoutPath($layoutKey);
