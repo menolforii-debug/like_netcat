@@ -7,9 +7,21 @@ function initVisualInheritToggles(scope) {
     if (!target) return;
     const inputs = target.querySelectorAll('[data-visual-input]');
     const applyState = () => {
-      const disabled = checkbox.checked;
+      const inherited = checkbox.checked;
       inputs.forEach((input) => {
-        input.disabled = disabled;
+        const tag = input.tagName.toLowerCase();
+        const type = (input.getAttribute('type') || '').toLowerCase();
+        const canReadonly = tag === 'textarea' || (tag === 'input' && !['checkbox', 'file', 'radio'].includes(type));
+        if (canReadonly) {
+          if (inherited) {
+            input.setAttribute('readonly', 'readonly');
+          } else {
+            input.removeAttribute('readonly');
+          }
+          input.disabled = false;
+        } else {
+          input.disabled = inherited;
+        }
       });
     };
     checkbox.addEventListener('change', applyState);
