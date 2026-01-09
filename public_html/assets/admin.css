@@ -130,12 +130,16 @@ body {
   flex-shrink: 0;
   opacity: 1;
   position: static;
+  min-width: 2.5rem;
+  min-height: 1.25rem;
+  border: 1px solid #ced4da;
 }
 
 .visual-inherit-switch .form-check-input[type="checkbox"] {
   appearance: auto;
   -webkit-appearance: auto;
   background-color: #fff;
+  background-image: none;
 }
 
 /* ===========================
