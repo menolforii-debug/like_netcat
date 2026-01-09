@@ -50,10 +50,10 @@ if (is_file($templatePath)) {
 if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
-        'notice' => 'Шаблон удален',
+        'message' => 'Шаблон удален',
         'refresh' => ['#componentsSidebar', '#componentsContent'],
         'focus' => ['component_id' => $componentId],
     ]);
 }
 
-redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'notice' => 'Шаблон удален']));
+redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId]));

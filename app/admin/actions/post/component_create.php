@@ -131,9 +131,9 @@ if ($user) {
 if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
-        'notice' => 'Компонент создан',
+        'message' => 'Компонент создан',
         'refresh' => ['#componentsSidebar', '#componentsContent'],
         'focus' => ['component_id' => $componentId],
     ]);
 }
-redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => 'general', 'notice' => 'Компонент создан']));
+redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => 'general']));

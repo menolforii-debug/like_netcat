@@ -43,6 +43,6 @@ if (is_file($navPath)) {
 }
 
 if (isAjaxRequest()) {
-    jsonResponse(['ok' => true, 'notice' => 'Макет удален']);
+    jsonResponse(['ok' => true, 'message' => 'Макет удален']);
 }
-redirectTo(buildAdminUrl(['action' => 'layouts', 'notice' => 'Макет удален']));
+redirectTo(buildAdminUrl(['action' => 'layouts']));

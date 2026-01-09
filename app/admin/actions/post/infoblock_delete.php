@@ -29,9 +29,9 @@ if ($user) {
 if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
-        'notice' => 'Инфоблок удален',
+        'message' => 'Инфоблок удален',
         'refresh' => ['#sidebarTree', '#contentPane'],
     ]);
 }
 
-redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'notice' => 'Инфоблок удален']));
+redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks']));

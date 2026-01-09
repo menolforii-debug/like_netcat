@@ -160,14 +160,14 @@ if ($user) {
 if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
-        'notice' => 'Сайт обновлен',
+        'message' => 'Сайт обновлен',
         'refresh' => ['#sidebarTree', '#contentPane'],
         'focus' => ['section_id' => $id],
     ]);
 }
 $returnSiteTab = isset($_POST['return_site_tab']) ? (string) $_POST['return_site_tab'] : '';
 $returnDesignTab = isset($_POST['return_design_tab']) ? (string) $_POST['return_design_tab'] : '';
-$params = ['section_id' => $id, 'notice' => 'Сайт обновлен'];
+$params = ['section_id' => $id];
 if ($returnSiteTab !== '') {
     $params['site_tab'] = $returnSiteTab;
 }

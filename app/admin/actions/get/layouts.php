@@ -82,9 +82,47 @@ function defaultLayoutNavTemplate(): string
 PHP;
 }
 
+function renderVisualFieldsContent(array $visualFields): void
+{
+    echo '<div class="mb-4">';
+    echo '<div class="d-flex align-items-center justify-content-between mb-3">';
+    echo '<h2 class="h6 mb-0">Поля визуальных настроек</h2>';
+    echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars(buildAdminUrl(['action' => 'visual_field_form']), ENT_QUOTES, 'UTF-8') . '">Добавить поле</button>';
+    echo '</div>';
+    if (empty($visualFields)) {
+        echo '<div class="alert alert-light border">Поля пока не созданы.</div>';
+    } else {
+        foreach ($visualFields as $field) {
+            echo '<div class="border rounded p-3 mb-3">';
+            echo '<div class="d-flex align-items-start justify-content-between gap-3">';
+            echo '<div>';
+            echo '<div class="fw-semibold">' . htmlspecialchars((string) $field['label'], ENT_QUOTES, 'UTF-8') . '</div>';
+            echo '<div class="text-muted small">Ключ: ' . htmlspecialchars((string) $field['name'], ENT_QUOTES, 'UTF-8') . '</div>';
+            echo '<div class="text-muted small">Тип: ' . htmlspecialchars((string) $field['type'], ENT_QUOTES, 'UTF-8') . '</div>';
+            echo '<div class="text-muted small">Сортировка: ' . (int) ($field['sort'] ?? 0) . '</div>';
+            echo '</div>';
+            echo '<div class="d-flex gap-2">';
+            echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars(buildAdminUrl(['action' => 'visual_field_form', 'id' => (int) $field['id']]), ENT_QUOTES, 'UTF-8') . '">Редактировать</button>';
+            echo '<form method="post" action="/admin.php?action=visual_field_delete" onsubmit="return confirm(\'Удалить поле?\')">';
+            echo csrfTokenField();
+            echo '<input type="hidden" name="id" value="' . (int) $field['id'] . '">';
+            echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>';
+            echo '</form>';
+            echo '</div>';
+            echo '</div>';
+            echo '</div>';
+        }
+    }
+    echo '</div>';
+}
+
+if (isset($_GET['partial']) && (string) $_GET['partial'] === 'visual_fields') {
+    $visualFields = $visualFieldRepo->listAll();
+    renderVisualFieldsContent($visualFields);
+    exit;
+}
+
 AdminLayout::renderHeader('Макеты дизайна');
-renderAlert($notice, 'success');
-renderAlert($errorMessage, 'error');
 
 AdminLayout::openSidebar();
 
@@ -142,35 +180,14 @@ echo '</ul>';
 
 if ($tab === 'visual') {
     $visualFields = $visualFieldRepo->listAll();
-    echo '<div class="mb-4">';
-    echo '<div class="d-flex align-items-center justify-content-between mb-3">';
-    echo '<h2 class="h6 mb-0">Поля визуальных настроек</h2>';
-    echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars(buildAdminUrl(['action' => 'visual_field_form']), ENT_QUOTES, 'UTF-8') . '">Добавить поле</button>';
-    echo '</div>';
-    if (empty($visualFields)) {
-        echo '<div class="alert alert-light border">Поля пока не созданы.</div>';
-    } else {
-        foreach ($visualFields as $field) {
-            echo '<div class="border rounded p-3 mb-3">';
-            echo '<div class="d-flex align-items-start justify-content-between gap-3">';
-            echo '<div>';
-            echo '<div class="fw-semibold">' . htmlspecialchars((string) $field['label'], ENT_QUOTES, 'UTF-8') . '</div>';
-            echo '<div class="text-muted small">Ключ: ' . htmlspecialchars((string) $field['name'], ENT_QUOTES, 'UTF-8') . '</div>';
-            echo '<div class="text-muted small">Тип: ' . htmlspecialchars((string) $field['type'], ENT_QUOTES, 'UTF-8') . '</div>';
-            echo '<div class="text-muted small">Сортировка: ' . (int) ($field['sort'] ?? 0) . '</div>';
-            echo '</div>';
-            echo '<div class="d-flex gap-2">';
-            echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars(buildAdminUrl(['action' => 'visual_field_form', 'id' => (int) $field['id']]), ENT_QUOTES, 'UTF-8') . '">Редактировать</button>';
-            echo '<form method="post" action="/admin.php?action=visual_field_delete" onsubmit="return confirm(\'Удалить поле?\')">';
-            echo csrfTokenField();
-            echo '<input type="hidden" name="id" value="' . (int) $field['id'] . '">';
-            echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>';
-            echo '</form>';
-            echo '</div>';
-            echo '</div>';
-            echo '</div>';
-        }
-    }
+    $refreshUrl = buildAdminUrl([
+        'action' => 'layouts',
+        'layout' => $layoutKey !== '' ? $layoutKey : null,
+        'tab' => 'visual',
+        'partial' => 'visual_fields',
+    ]);
+    echo '<div id="visualFieldsBlock" data-refresh-url="' . htmlspecialchars($refreshUrl, ENT_QUOTES, 'UTF-8') . '">';
+    renderVisualFieldsContent($visualFields);
     echo '</div>';
 } else {
     if ($layoutKey === '_new') {

@@ -15,7 +15,7 @@ echo '<div class="col-12 col-md-6 col-lg-4">';
 echo '<div class="card shadow-sm">';
 echo '<div class="card-body">';
 echo '<h1 class="h4 mb-3 text-center">Вход в админку</h1>';
-renderAlert($error, 'error');
+echo '<div class="mb-3 text-danger">' . htmlspecialchars($error, ENT_QUOTES, 'UTF-8') . '</div>';
 echo '<form method="post" action="/admin.php?action=login">';
 echo '<div class="mb-3"><label class="form-label">Логин</label><input class="form-control" type="text" name="login" required></div>';
 echo '<div class="mb-3"><label class="form-label">Пароль</label><input class="form-control" type="password" name="pass" required></div>';

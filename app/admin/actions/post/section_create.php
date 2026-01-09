@@ -84,9 +84,9 @@ if ($user) {
 if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
-        'notice' => 'Раздел создан',
+        'message' => 'Раздел создан',
         'refresh' => ['#sidebarTree', '#contentPane'],
         'focus' => ['section_id' => $sectionId, 'tab' => 'section'],
     ]);
 }
-redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'section', 'notice' => 'Раздел создан']));
+redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'section']));

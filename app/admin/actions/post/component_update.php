@@ -131,11 +131,11 @@ if ($user) {
 if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
-        'notice' => 'Компонент обновлен',
+        'message' => 'Компонент обновлен',
         'refresh' => ['#componentsSidebar', '#componentsContent'],
         'focus' => ['component_id' => $componentId],
     ]);
 }
 $returnTab = isset($_POST['return_tab']) ? (string) $_POST['return_tab'] : '';
 $tab = $returnTab !== '' ? $returnTab : 'general';
-redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => $tab, 'notice' => 'Компонент обновлен']));
+redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => $tab]));

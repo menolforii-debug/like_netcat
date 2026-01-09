@@ -85,8 +85,8 @@ if ($user) {
 if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
-        'notice' => 'Компонент удален',
+        'message' => 'Компонент удален',
         'refresh' => ['#components_block'],
     ]);
 }
-redirectTo(buildAdminUrl(['action' => 'components', 'notice' => 'Компонент удален']));
+redirectTo(buildAdminUrl(['action' => 'components']));

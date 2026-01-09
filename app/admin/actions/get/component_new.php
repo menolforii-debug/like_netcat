@@ -5,8 +5,6 @@ if (!Auth::isAdmin()) {
 }
 
 AdminLayout::renderHeader('Новый компонент');
-renderAlert($notice, 'success');
-renderAlert($errorMessage, 'error');
 
 echo '<div class="card shadow-sm">';
 echo '<div class="card-body">';
