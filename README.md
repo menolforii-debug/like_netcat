@@ -1,8 +1,77 @@
 # cms.devel9.ru
 
-Codex-driven CMS inspired by NetCat ideology.
+Минималистичная CMS на PHP с SQLite, ориентированная на разделы, инфоблоки и компоненты.
+Проект состоит из публичной части (`public_html/index.php`) и отдельной админ‑панели (`public_html/admin.php`).
 
-Web root: `public_html`  
-CMS provides a separate admin panel at `public_html/admin.php`.
+## Назначение и поведение
 
-See `CODEX.md` for architectural rules.
+CMS хранит структуру сайта как дерево разделов, на разделах размещаются инфоблоки, а контент хранится в объектах с JSON‑данными.
+Фронтенд собирает страницу из шаблонов компонентов и обёртки‑макета, админка управляет сущностями, шаблонами и визуальными настройками.
+
+Ключевые факты из кода:
+
+- Публичный корень — только `public_html`.
+- База данных: SQLite (`var/app.sqlite`), миграции выполняются при запуске админки или CLI.
+- По домену определяется сайт, затем путь сопоставляется с `english_name` разделов.
+- По умолчанию создаются разделы `index` и `404`, а также базовые визуальные поля.
+- Контент публикуется через статус `published`, черновики не отображаются во фронтенде.
+
+Подробности см. в документации:
+
+- [docs/architecture.md](docs/architecture.md)
+- [docs/data-model.md](docs/data-model.md)
+- [docs/admin.md](docs/admin.md)
+
+## Быстрый старт (локально)
+
+Требования по коду: PHP 8+ с расширениями `pdo_sqlite` и `fileinfo`.
+
+```bash
+php -S 0.0.0.0:8000 -t public_html
+```
+
+Откройте `http://localhost:8000/admin.php`.
+Если таблица пользователей пуста, админка автоматически создаёт пользователя `admin`
+и показывает случайный пароль прямо на странице входа.
+
+## Структура проекта
+
+- `public_html/` — публичный корень (index/admin, assets, загруженные файлы).
+- `app/` — ядро, репозитории, рендер, админ‑действия, UI.
+- `templates/` — шаблоны компонентов и макетов.
+- `migrations/` — SQL‑миграции для SQLite.
+- `var/` — файл БД и резервные копии шаблонов.
+- `bin/cms` — CLI‑утилита для миграций, разделов, пользователей, компонентов.
+
+## CLI
+
+CLI не обязателен для работы сайта, но помогает управлять данными.
+Примеры команд (см. `bin/cms`):
+
+```bash
+php bin/cms migrate
+php bin/cms users:add --login=admin --pass=secret --role=admin
+php bin/cms sections:list
+php bin/cms sections:add --parent-id=1 --english-name=news --title="Новости"
+```
+
+## Хранение файлов
+
+- Файлы полей компонентов типа `file` сохраняются в `public_html/files/component/<infoblock_id>/`.
+- Файлы визуальных настроек макета — в `public_html/files/layouts/<layout>/<field_id>/`.
+- Разрешённые расширения и MIME‑типы перечислены в `app/admin/AdminHelpers.php`.
+
+## Роли и доступы
+
+- `admin` — полный доступ ко всем разделам админки.
+- `editor` — доступ только к объектам (создание/редактирование/публикация и т.д.).
+
+Дополнительно поддерживаются права на уровне инфоблока через `extra_json.permissions`.
+Если они не заданы, используются дефолты (гость — `view`, редактор — полный набор действий).
+
+## Шаблоны
+
+- Макеты: `templates/layouts/<layout>.php` + опциональный `templates/layouts/<layout>.nav.php`.
+- Компоненты: `templates/component/<keyword>/<view>.php`.
+- Шаблоны компонентов генерируются из пары `list_tpl`/`single_tpl`,
+  админка хранит их в БД и переписывает файлы на диске (с бэкапами в `var/backups`).
