@@ -84,16 +84,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initInfoblockViewSelects(document);
 });
 
-function showAdminToast(type, message) {
-  try {
-    if (window.jQuery && window.jQuery.SOW && window.jQuery.SOW.core && window.jQuery.SOW.core.toast) {
-      window.jQuery.SOW.core.toast.show(type, '', message, 'top-center', 3500, true);
-      return;
-    }
-  } catch (e) {}
-  alert(message);
-}
-
 function refreshAdminBlocks(selectors) {
   if (!Array.isArray(selectors)) return;
   selectors.forEach((selector) => {
@@ -133,8 +123,6 @@ function handleAjaxResponse(payload) {
       url.searchParams.set('component_id', payload.focus.component_id);
       window.history.replaceState({}, '', url);
     }
-  } else if (payload.error) {
-    showAdminToast('danger', payload.error);
   }
 }
 
@@ -226,9 +214,7 @@ function submitAjaxForm(form) {
         }
       }
     })
-    .catch(() => {
-      showAdminToast('danger', 'Ошибка запроса. Попробуйте еще раз.');
-    });
+    .catch(() => {});
 }
 
 // SectionTree: toggle expand/collapse by chevron (no navigation)

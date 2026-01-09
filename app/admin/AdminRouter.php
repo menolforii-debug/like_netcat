@@ -22,14 +22,13 @@ final class AdminRouter
 
         if ($isPost && $action !== 'login') {
             if (!isValidCsrfToken($_POST['csrf_token'] ?? null)) {
-                redirectTo(buildAdminUrl(['error' => 'Неверный CSRF-токен']));
+                self::renderError(400, 'Неверный CSRF-токен');
+                return;
             }
         }
 
         $user = Auth::user();
         self::requirePermission($action, $isPost, $user);
-        $notice = pullFlashMessage('success');
-        $errorMessage = pullFlashMessage('error');
         $selectedId = isset($_GET['section_id']) ? (int) $_GET['section_id'] : null;
         $tab = isset($_GET['tab']) ? (string) $_GET['tab'] : 'section';
 
@@ -74,7 +73,9 @@ final class AdminRouter
     {
         http_response_code($statusCode);
         AdminLayout::renderHeader('Ошибка');
-        renderAlert($message, 'error');
+        echo '<div class="container py-4">';
+        echo '<div class="text-danger fw-semibold">' . htmlspecialchars($message, ENT_QUOTES, 'UTF-8') . '</div>';
+        echo '</div>';
         AdminLayout::renderFooter();
     }
 

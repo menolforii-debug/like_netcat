@@ -33,11 +33,10 @@ if ($id > 0) {
         if (isAjaxRequest()) {
             jsonResponse([
                 'ok' => true,
-                'notice' => 'Узел удален',
                 'refresh' => ['#sidebarTree', '#contentPane'],
             ]);
         }
-        redirectTo(buildAdminUrl(['notice' => 'Узел удален']));
+        redirectTo(buildAdminUrl());
     } catch (Throwable $e) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => $e->getMessage()]);

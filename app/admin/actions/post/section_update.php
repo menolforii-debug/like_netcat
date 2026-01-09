@@ -201,18 +201,16 @@ if ($user) {
     ]);
 }
 
-$noticeMessage = $isSystemRoot ? 'Системный раздел обновлен (english_name фиксирован)' : 'Раздел обновлен';
 $returnTab = isset($_POST['return_tab']) ? (string) $_POST['return_tab'] : '';
 $returnDesignTab = isset($_POST['return_design_tab']) ? (string) $_POST['return_design_tab'] : '';
 if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
-        'notice' => $noticeMessage,
         'refresh' => ['#sidebarTree', '#contentPane'],
         'focus' => ['section_id' => $id],
     ]);
 }
-$params = ['section_id' => $id, 'tab' => 'section', 'notice' => $noticeMessage];
+$params = ['section_id' => $id, 'tab' => 'section'];
 if ($returnTab !== '') {
     $params['tab'] = $returnTab;
 }

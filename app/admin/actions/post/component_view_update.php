@@ -59,10 +59,9 @@ syncComponentViewsJson($componentId);
 if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
-        'notice' => 'Шаблон обновлен',
         'refresh' => ['#componentsSidebar', '#componentsContent'],
         'focus' => ['component_id' => $componentId],
     ]);
 }
 
-redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'view' => $viewName, 'notice' => 'Шаблон обновлен']));
+redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'view' => $viewName]));

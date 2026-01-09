@@ -30,4 +30,4 @@ if ($user) {
     ]);
 }
 
-redirectTo(buildAdminUrl(['action' => 'users_list', 'notice' => 'Пользователь создан']));
+redirectTo(buildAdminUrl(['action' => 'users_list']));

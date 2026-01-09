@@ -83,8 +83,6 @@ PHP;
 }
 
 AdminLayout::renderHeader('Макеты дизайна');
-renderAlert($notice, 'success');
-renderAlert($errorMessage, 'error');
 
 AdminLayout::openSidebar();
 

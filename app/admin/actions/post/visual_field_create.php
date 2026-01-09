@@ -30,4 +30,4 @@ if ($visualFieldRepo->findByName($name) !== null) {
 $options = [];
 $visualFieldRepo->create($name, $label, $type, $options, $sort);
 
-redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual', 'notice' => 'Поле создано']));
+redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual']));

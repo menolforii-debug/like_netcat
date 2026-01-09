@@ -422,8 +422,6 @@ if ($partial === 'block' || (isAjaxRequest() && $partial === '1')) {
 }
 
 AdminLayout::renderHeader('Компоненты');
-renderAlert($notice, 'success');
-renderAlert($errorMessage, 'error');
 
 renderComponentsBlock($ctx, true);
 

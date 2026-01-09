@@ -29,4 +29,4 @@ if ($user) {
     ]);
 }
 
-redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'seo', 'notice' => 'SEO обновлено']));
+redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'seo']));
