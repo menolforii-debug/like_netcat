@@ -21,6 +21,7 @@ CMS хранит структуру сайта как дерево раздел�
 - [docs/architecture.md](docs/architecture.md)
 - [docs/data-model.md](docs/data-model.md)
 - [docs/admin.md](docs/admin.md)
+- [docs/templates.md](docs/templates.md)
 
 ## Быстрый старт (локально)
 
