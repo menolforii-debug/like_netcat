@@ -131,6 +131,7 @@ if ($user) {
 if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
+        'message' => 'Компонент создан',
         'refresh' => ['#componentsSidebar', '#componentsContent'],
         'focus' => ['component_id' => $componentId],
     ]);

@@ -77,6 +77,7 @@ if ($user) {
 if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
+        'message' => 'Инфоблок создан',
         'refresh' => ['#sidebarTree', '#contentPane'],
     ]);
 }

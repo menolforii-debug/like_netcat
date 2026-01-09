@@ -59,6 +59,7 @@ syncComponentViewsJson($componentId);
 if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
+        'message' => 'Шаблон обновлен',
         'refresh' => ['#componentsSidebar', '#componentsContent'],
         'focus' => ['component_id' => $componentId],
     ]);

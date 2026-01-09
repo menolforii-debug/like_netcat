@@ -15,7 +15,9 @@ $parentId = isset($_POST['parent_id']) ? (int) $_POST['parent_id'] : 0;
 $sort = isset($_POST['sort']) ? (int) $_POST['sort'] : 0;
 $layout = isset($_POST['layout']) ? trim((string) $_POST['layout']) : '';
 $visualSettingsInput = isset($_POST['visual_settings']) && is_array($_POST['visual_settings']) ? $_POST['visual_settings'] : [];
+$visualInherit = isset($_POST['visual_inherit']) && is_array($_POST['visual_inherit']) ? $_POST['visual_inherit'] : [];
 $hasVisualInput = array_key_exists('visual_settings', $_POST)
+    || array_key_exists('visual_inherit', $_POST)
     || array_key_exists('visual_settings_delete', $_POST);
 if (!$hasVisualInput && isset($_FILES['visual_settings']) && is_array($_FILES['visual_settings'])) {
     $names = $_FILES['visual_settings']['name'] ?? [];
@@ -108,6 +110,9 @@ if ($hasVisualInput) {
     }
     foreach ($visualFields as $field) {
         $name = (string) $field['name'];
+        if (isset($visualInherit[$name])) {
+            continue;
+        }
         if (!array_key_exists($name, $visualSettingsInput)) {
             if (($field['type'] ?? '') !== 'file') {
                 continue;
@@ -201,6 +206,7 @@ $returnDesignTab = isset($_POST['return_design_tab']) ? (string) $_POST['return_
 if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
+        'message' => $isSystemRoot ? 'Системный раздел обновлен (english_name фиксирован)' : 'Раздел обновлен',
         'refresh' => ['#sidebarTree', '#contentPane'],
         'focus' => ['section_id' => $id],
     ]);

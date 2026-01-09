@@ -99,6 +99,7 @@ if ($user) {
 if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
+        'message' => 'Объект создан',
         'refresh' => ['#contentPane'],
     ]);
 }

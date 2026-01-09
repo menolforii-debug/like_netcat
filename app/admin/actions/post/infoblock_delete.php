@@ -29,6 +29,7 @@ if ($user) {
 if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
+        'message' => 'Инфоблок удален',
         'refresh' => ['#sidebarTree', '#contentPane'],
     ]);
 }

@@ -122,7 +122,10 @@ final class AdminLayout
         echo '<h5 class="modal-title">Загрузка...</h5>';
         echo '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>';
         echo '</div>';
-        echo '<div class="modal-body"><div class="text-muted">Загрузка...</div></div>';
+        echo '<div class="modal-body">';
+        echo '<div class="admin-modal-error d-none text-danger fw-semibold mb-3" role="alert"></div>';
+        echo '<div class="admin-modal-content"><div class="text-muted">Загрузка...</div></div>';
+        echo '</div>';
         echo '</div>';
         echo '</div>';
         echo '</div>';

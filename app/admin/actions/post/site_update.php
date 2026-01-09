@@ -21,7 +21,9 @@ $siteEnabled = isset($_POST['site_enabled']) ? true : false;
 $offlineHtml = isset($_POST['site_offline_html']) ? (string) $_POST['site_offline_html'] : '';
 $layout = isset($_POST['layout']) ? trim((string) $_POST['layout']) : '';
 $visualSettingsInput = isset($_POST['visual_settings']) && is_array($_POST['visual_settings']) ? $_POST['visual_settings'] : [];
+$visualInherit = isset($_POST['visual_inherit']) && is_array($_POST['visual_inherit']) ? $_POST['visual_inherit'] : [];
 $hasVisualInput = array_key_exists('visual_settings', $_POST)
+    || array_key_exists('visual_inherit', $_POST)
     || array_key_exists('visual_settings_delete', $_POST);
 if (!$hasVisualInput && isset($_FILES['visual_settings']) && is_array($_FILES['visual_settings'])) {
     $names = $_FILES['visual_settings']['name'] ?? [];
@@ -67,6 +69,9 @@ if ($hasVisualInput) {
     $layoutKey = isset($extra['layout']) && Layout::layoutExists((string) $extra['layout']) ? (string) $extra['layout'] : 'default';
     foreach ($visualFields as $field) {
         $name = (string) $field['name'];
+        if (isset($visualInherit[$name])) {
+            continue;
+        }
         if (!array_key_exists($name, $visualSettingsInput)) {
             if (($field['type'] ?? '') !== 'file') {
                 continue;
@@ -155,6 +160,7 @@ if ($user) {
 if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
+        'message' => 'Сайт обновлен',
         'refresh' => ['#sidebarTree', '#contentPane'],
         'focus' => ['section_id' => $id],
     ]);

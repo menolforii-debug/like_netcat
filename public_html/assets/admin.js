@@ -84,6 +84,118 @@ document.addEventListener('DOMContentLoaded', () => {
   initInfoblockViewSelects(document);
 });
 
+const ADMIN_SNACKBAR_DURATION = 3500;
+const ADMIN_SNACKBAR_ID = 'adminSnackbar';
+let adminSnackbarTimer = null;
+
+function ensureAdminSnackbarStyles() {
+  if (document.getElementById('adminSnackbarStyles')) return;
+  const style = document.createElement('style');
+  style.id = 'adminSnackbarStyles';
+  style.textContent = `
+    .admin-snackbar {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translate(-50%, -10px);
+      opacity: 0;
+      z-index: 1080;
+      padding: 12px 16px;
+      border-radius: 8px;
+      color: #fff;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+      transition: opacity 180ms ease, transform 180ms ease;
+      max-width: min(90vw, 480px);
+      text-align: center;
+      pointer-events: none;
+    }
+    .admin-snackbar.is-visible {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+    .admin-snackbar.is-success { background: #198754; }
+    .admin-snackbar.is-danger { background: #dc3545; }
+    .admin-snackbar.is-info { background: #0d6efd; }
+  `;
+  document.head.appendChild(style);
+}
+
+function getAdminSnackbar() {
+  let snackbar = document.getElementById(ADMIN_SNACKBAR_ID);
+  if (!snackbar) {
+    ensureAdminSnackbarStyles();
+    snackbar = document.createElement('div');
+    snackbar.id = ADMIN_SNACKBAR_ID;
+    snackbar.className = 'admin-snackbar';
+    document.body.appendChild(snackbar);
+  }
+  return snackbar;
+}
+
+function isAdminModalOpen() {
+  const modalEl = document.getElementById('adminModal');
+  return !!(modalEl && modalEl.classList.contains('show'));
+}
+
+function showGlobalSnackbar(type, message) {
+  if (!message) return;
+  if (isAdminModalOpen()) return;
+  const snackbar = getAdminSnackbar();
+  snackbar.textContent = message;
+  snackbar.classList.remove('is-success', 'is-danger', 'is-info', 'is-visible');
+  if (type === 'danger' || type === 'error') {
+    snackbar.classList.add('is-danger');
+  } else if (type === 'success') {
+    snackbar.classList.add('is-success');
+  } else {
+    snackbar.classList.add('is-info');
+  }
+  if (adminSnackbarTimer) {
+    clearTimeout(adminSnackbarTimer);
+  }
+  requestAnimationFrame(() => {
+    snackbar.classList.add('is-visible');
+    adminSnackbarTimer = setTimeout(() => {
+      snackbar.classList.remove('is-visible');
+    }, ADMIN_SNACKBAR_DURATION);
+  });
+}
+
+function getAdminModalParts() {
+  const modalEl = document.getElementById('adminModal');
+  if (!modalEl) return null;
+  const modalBody = modalEl.querySelector('.modal-body');
+  if (!modalBody) return null;
+  let errorEl = modalBody.querySelector('.admin-modal-error');
+  let contentEl = modalBody.querySelector('.admin-modal-content');
+  if (!errorEl || !contentEl) {
+    modalBody.innerHTML = '';
+    errorEl = document.createElement('div');
+    errorEl.className = 'admin-modal-error d-none text-danger fw-semibold mb-3';
+    errorEl.setAttribute('role', 'alert');
+    contentEl = document.createElement('div');
+    contentEl.className = 'admin-modal-content';
+    modalBody.appendChild(errorEl);
+    modalBody.appendChild(contentEl);
+  }
+  return { modalEl, modalBody, errorEl, contentEl };
+}
+
+function showModalError(message) {
+  const parts = getAdminModalParts();
+  if (!parts || !message) return;
+  parts.errorEl.textContent = message;
+  parts.errorEl.classList.remove('d-none');
+}
+
+function clearModalError() {
+  const parts = getAdminModalParts();
+  if (!parts) return;
+  parts.errorEl.textContent = '';
+  parts.errorEl.classList.add('d-none');
+}
+
 function refreshAdminBlocks(selectors) {
   if (!Array.isArray(selectors)) return;
   selectors.forEach((selector) => {
@@ -101,8 +213,18 @@ function refreshAdminBlocks(selectors) {
   });
 }
 
-function handleAjaxResponse(payload) {
+function handleAjaxResponse(payload, context) {
+  const isModalForm = context && context.isModalForm;
+  const modalEl = context && context.modalEl;
   if (!payload || typeof payload !== 'object') return;
+  if (payload.error) {
+    if (isModalForm) {
+      showModalError(payload.error);
+    } else {
+      showGlobalSnackbar('danger', payload.error);
+    }
+    return;
+  }
   if (payload.ok) {
     if (payload.refresh) {
       refreshAdminBlocks(payload.refresh);
@@ -123,32 +245,50 @@ function handleAjaxResponse(payload) {
       url.searchParams.set('component_id', payload.focus.component_id);
       window.history.replaceState({}, '', url);
     }
+    if (isModalForm && modalEl) {
+      const modalInstance = window.bootstrap ? window.bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+      if (payload.message && modalInstance) {
+        modalEl.addEventListener(
+          'hidden.bs.modal',
+          () => {
+            showGlobalSnackbar('success', payload.message);
+          },
+          { once: true }
+        );
+      }
+      if (modalInstance) {
+        modalInstance.hide();
+      }
+    } else if (payload.message) {
+      showGlobalSnackbar('success', payload.message);
+    }
   }
 }
 
 function openAdminModal(url) {
-  const modalEl = document.getElementById('adminModal');
-  if (!modalEl) return;
-  const modal = window.bootstrap ? window.bootstrap.Modal.getOrCreateInstance(modalEl) : null;
-  const modalBody = modalEl.querySelector('.modal-body');
-  const modalTitle = modalEl.querySelector('.modal-title');
-  if (modalBody) modalBody.innerHTML = '<div class="text-muted">Загрузка...</div>';
+  const parts = getAdminModalParts();
+  if (!parts) return;
+  const modal = window.bootstrap ? window.bootstrap.Modal.getOrCreateInstance(parts.modalEl) : null;
+  const modalTitle = parts.modalEl.querySelector('.modal-title');
+  clearModalError();
+  parts.contentEl.innerHTML = '<div class="text-muted">Загрузка...</div>';
   if (modalTitle) modalTitle.textContent = 'Загрузка...';
 
   fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
     .then((res) => res.text())
     .then((html) => {
-      if (modalBody) modalBody.innerHTML = html;
-      const title = modalBody ? modalBody.querySelector('[data-modal-title]') : null;
+      parts.contentEl.innerHTML = html;
+      const title = parts.contentEl.querySelector('[data-modal-title]');
       if (modalTitle && title) {
         modalTitle.textContent = title.getAttribute('data-modal-title') || 'Редактирование';
         title.remove();
       }
-      initInfoblockViewSelects(modalBody || document);
-      initVisualInheritToggles(modalBody || document);
+      initInfoblockViewSelects(parts.contentEl || document);
+      initVisualInheritToggles(parts.contentEl || document);
     })
     .catch(() => {
-      if (modalBody) modalBody.innerHTML = '<div class="text-danger">Не удалось загрузить форму.</div>';
+      showModalError('Не удалось загрузить форму.');
+      parts.contentEl.innerHTML = '';
     });
 
   if (modal) modal.show();
@@ -195,6 +335,11 @@ document.addEventListener('submit', (e) => {
 });
 
 function submitAjaxForm(form) {
+  const modalEl = document.getElementById('adminModal');
+  const isModalForm = !!(modalEl && modalEl.contains(form));
+  if (isModalForm) {
+    clearModalError();
+  }
   const action = form.getAttribute('action') || window.location.href;
   const method = (form.getAttribute('method') || 'POST').toUpperCase();
   const formData = new FormData(form);
@@ -205,16 +350,15 @@ function submitAjaxForm(form) {
   })
     .then((res) => res.json())
     .then((payload) => {
-      handleAjaxResponse(payload);
-      if (payload && payload.ok) {
-        const modalEl = document.getElementById('adminModal');
-        if (modalEl && modalEl.classList.contains('show')) {
-          const modalInstance = window.bootstrap ? window.bootstrap.Modal.getOrCreateInstance(modalEl) : null;
-          if (modalInstance) modalInstance.hide();
-        }
-      }
+      handleAjaxResponse(payload, { isModalForm, modalEl });
     })
-    .catch(() => {});
+    .catch(() => {
+      if (isModalForm) {
+        showModalError('Ошибка запроса. Попробуйте еще раз.');
+      } else {
+        showGlobalSnackbar('danger', 'Ошибка запроса. Попробуйте еще раз.');
+      }
+    });
 }
 
 // SectionTree: toggle expand/collapse by chevron (no navigation)

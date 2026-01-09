@@ -68,6 +68,7 @@ if ($user) {
 if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
+        'message' => 'Сайт создан',
         'refresh' => ['#sidebarTree', '#contentPane'],
         'focus' => ['section_id' => $siteId],
     ]);
