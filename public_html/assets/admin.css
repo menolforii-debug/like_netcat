@@ -38,6 +38,15 @@ body {
   justify-content: space-between;
   gap: 10px;
   padding: 4px 0;
+  width: 100%;
+}
+
+.section-tree,
+.section-tree-root,
+.section-tree-item {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .section-tree-link {
@@ -59,6 +68,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex: 0 0 auto;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
