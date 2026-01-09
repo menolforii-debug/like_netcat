@@ -43,6 +43,9 @@ HTML инфоблоков раздела).
 - доступны `$ctx` и `$body`,
 - можно объявлять helper‑функции или переменные для использования в основном макете.
 
+В `templates/layouts/default.nav.php` есть пример функции `renderSiteMenu($ctx, $maxDepth)`,
+которая строит меню по дереву разделов.
+
 ## Шаблоны компонентов (`templates/component/<keyword>/<view>.php`)
 
 Шаблоны компонентов подключаются в `Renderer::renderInfoblock()`.
