@@ -633,10 +633,13 @@ function normalizeComponentFieldsInput(array $fieldsInput): array
     return $normalized;
 }
 
-function renderComponentViewTemplate(string $listTpl, string $singleTpl): string
+function renderComponentViewTemplate(string $listTpl, string $singleTpl, string $systemTpl): string
 {
     $content = "<?php\n";
     $content .= "/** GENERATED FILE. Do not edit manually. */\n";
+    if (trim($systemTpl) !== '') {
+        $content .= rtrim($systemTpl) . "\n";
+    }
     $content .= "if (!isset(\$isSingle)) { \$isSingle = false; }\n";
     $content .= "if (\$isSingle && isset(\$object) && is_array(\$object)) {\n";
     $content .= "?>\n";
@@ -651,7 +654,7 @@ function renderComponentViewTemplate(string $listTpl, string $singleTpl): string
     return $content;
 }
 
-function writeComponentViewTemplate(string $componentKey, string $viewName, string $listTpl, string $singleTpl, ?string &$error = null): bool
+function writeComponentViewTemplate(string $componentKey, string $viewName, string $listTpl, string $singleTpl, string $systemTpl, ?string &$error = null): bool
 {
     $root = dirname(__DIR__, 2);
     $templatesDir = $root . '/templates/component/' . $componentKey;
@@ -662,7 +665,7 @@ function writeComponentViewTemplate(string $componentKey, string $viewName, stri
 
     $finalPath = $templatesDir . '/' . $viewName . '.php';
     $tmpPath = $finalPath . '.tmp';
-    $content = renderComponentViewTemplate($listTpl, $singleTpl);
+    $content = renderComponentViewTemplate($listTpl, $singleTpl, $systemTpl);
 
     if (file_put_contents($tmpPath, $content) === false) {
         $error = 'Не удалось сохранить шаблон.';
