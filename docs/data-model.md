@@ -31,7 +31,7 @@
 
 - Экземпляр компонента внутри раздела.
 - Содержит `view_template`, `settings_json` и `extra_json`.
-- `extra_json` поддерживает обёртки (`before_html`, `after_html`, `before_image`, `after_image`).
+- `extra_json` поддерживает обёртки (`before_html`, `after_html`).
 
 ### Объекты (`objects`)
 
