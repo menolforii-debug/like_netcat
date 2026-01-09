@@ -30,4 +30,4 @@ if ($type === 'select') {
 }
 $visualFieldRepo->update($id, $label, $type, $options, $sort);
 
-redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual', 'notice' => 'Поле обновлено']));
+redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual']));

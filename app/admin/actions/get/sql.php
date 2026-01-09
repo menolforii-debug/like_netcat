@@ -5,8 +5,6 @@ if (!Auth::isAdmin()) {
 }
 
 AdminLayout::renderHeader('SQL');
-renderAlert($notice, 'success');
-renderAlert($errorMessage, 'error');
 
 $sqlValue = '';
 $sqlResult = $_SESSION['sql_result'] ?? null;

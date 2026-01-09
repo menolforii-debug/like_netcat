@@ -9,4 +9,4 @@ if ($id > 0) {
     $visualFieldRepo->delete($id);
 }
 
-redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual', 'notice' => 'Поле удалено']));
+redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual']));

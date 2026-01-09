@@ -38,4 +38,4 @@ if ($user) {
     ]);
 }
 
-redirectTo(buildAdminUrl(['action' => 'users_list', 'notice' => 'Роль обновлена']));
+redirectTo(buildAdminUrl(['action' => 'users_list']));

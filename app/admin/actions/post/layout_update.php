@@ -40,6 +40,6 @@ if (!writeLayoutNavTemplate($layoutKey, $layoutNavTpl, $error)) {
 }
 
 if (isAjaxRequest()) {
-    jsonResponse(['ok' => true, 'notice' => 'Макет обновлен']);
+    jsonResponse(['ok' => true]);
 }
-redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey, 'notice' => 'Макет обновлен']));
+redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey]));

@@ -22,4 +22,4 @@ if ($id > 0) {
         AdminLog::log($user['id'], 'object_unpublish', 'object', $id, []);
     }
 }
-redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'notice' => 'Объект снят с публикации']));
+redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));

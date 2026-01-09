@@ -103,4 +103,4 @@ if (isAjaxRequest()) {
     ]);
 }
 
-redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'notice' => 'Объект создан']));
+redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));

@@ -58,8 +58,7 @@ if ($user) {
 if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
-        'notice' => 'Инфоблок обновлен',
         'refresh' => ['#sidebarTree', '#contentPane'],
     ]);
 }
-redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'notice' => 'Инфоблок обновлен']));
+redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks']));

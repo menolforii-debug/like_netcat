@@ -577,8 +577,6 @@ if ($partial === 'content') {
 }
 
 AdminLayout::renderHeader('Админка');
-renderAlert($notice, 'success');
-renderAlert($errorMessage, 'error');
 
 AdminLayout::openSidebar();
 echo '<div id="sidebarTree" data-refresh-url="' . htmlspecialchars(buildAdminUrl(['partial' => 'sidebar', 'section_id' => $selectedId]), ENT_QUOTES, 'UTF-8') . '">';

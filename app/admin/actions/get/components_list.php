@@ -70,8 +70,6 @@ if ($selectedComponent !== null) {
 }
 
 AdminLayout::renderHeader('Компоненты');
-renderAlert($notice, 'success');
-renderAlert($errorMessage, 'error');
 
 AdminLayout::openSidebar();
 echo '<div class="card shadow-sm">';

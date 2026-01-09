@@ -1,3 +1,22 @@
+function initVisualInheritToggles(scope) {
+  const root = scope || document;
+  root.querySelectorAll('.js-visual-inherit').forEach((checkbox) => {
+    const targetId = checkbox.getAttribute('data-target');
+    if (!targetId) return;
+    const target = root.getElementById ? root.getElementById(targetId) : document.getElementById(targetId);
+    if (!target) return;
+    const inputs = target.querySelectorAll('[data-visual-input]');
+    const applyState = () => {
+      const disabled = checkbox.checked;
+      inputs.forEach((input) => {
+        input.disabled = disabled;
+      });
+    };
+    checkbox.addEventListener('change', applyState);
+    applyState();
+  });
+}
+
 function initInfoblockViewSelects(scope) {
   const root = scope || document;
   root.querySelectorAll('.js-infoblock-component').forEach((componentSelect) => {
@@ -61,56 +80,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  initVisualInheritToggles(document);
   initInfoblockViewSelects(document);
 });
-
-const ADMIN_TOAST_TTL = 5000;
-const ADMIN_TOAST_PREFIX = 'cms_toast:';
-
-function shouldShowAdminToast(type, message) {
-  const key = String(type) + '|' + String(message);
-  const now = Date.now();
-
-  try {
-    window.__CMS_TOASTS_SHOWN__ = window.__CMS_TOASTS_SHOWN__ || {};
-    if (window.__CMS_TOASTS_SHOWN__[key]) {
-      return false;
-    }
-  } catch (e) {}
-
-  try {
-    if (window.sessionStorage) {
-      const stored = window.sessionStorage.getItem(ADMIN_TOAST_PREFIX + key);
-      if (stored) {
-        const last = Number.parseInt(stored, 10);
-        if (!Number.isNaN(last) && now - last < ADMIN_TOAST_TTL) {
-          return false;
-        }
-      }
-      window.sessionStorage.setItem(ADMIN_TOAST_PREFIX + key, String(now));
-    }
-  } catch (e) {}
-
-  try {
-    window.__CMS_TOASTS_SHOWN__[key] = 1;
-  } catch (e) {}
-
-  return true;
-}
-
-function showAdminToast(type, message) {
-  if (!shouldShowAdminToast(type, message)) {
-    return;
-  }
-
-  try {
-    if (window.jQuery && window.jQuery.SOW && window.jQuery.SOW.core && window.jQuery.SOW.core.toast) {
-      window.jQuery.SOW.core.toast.show(type, '', message, 'top-center', 3500, true);
-      return;
-    }
-  } catch (e) {}
-  alert(message);
-}
 
 function refreshAdminBlocks(selectors) {
   if (!Array.isArray(selectors)) return;
@@ -123,6 +95,7 @@ function refreshAdminBlocks(selectors) {
       .then((res) => res.text())
       .then((html) => {
         target.innerHTML = html;
+        initVisualInheritToggles(target);
         initInfoblockViewSelects(target);
       });
   });
@@ -150,8 +123,6 @@ function handleAjaxResponse(payload) {
       url.searchParams.set('component_id', payload.focus.component_id);
       window.history.replaceState({}, '', url);
     }
-  } else if (payload.error) {
-    showAdminToast('danger', payload.error);
   }
 }
 
@@ -174,6 +145,7 @@ function openAdminModal(url) {
         title.remove();
       }
       initInfoblockViewSelects(modalBody || document);
+      initVisualInheritToggles(modalBody || document);
     })
     .catch(() => {
       if (modalBody) modalBody.innerHTML = '<div class="text-danger">Не удалось загрузить форму.</div>';
@@ -242,9 +214,7 @@ function submitAjaxForm(form) {
         }
       }
     })
-    .catch(() => {
-      showAdminToast('danger', 'Ошибка запроса. Попробуйте еще раз.');
-    });
+    .catch(() => {});
 }
 
 // SectionTree: toggle expand/collapse by chevron (no navigation)

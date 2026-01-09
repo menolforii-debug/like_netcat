@@ -26,4 +26,4 @@ if ($user) {
     ]);
 }
 
-redirectTo(buildAdminUrl(['action' => 'users_list', 'notice' => 'Пользователь удален']));
+redirectTo(buildAdminUrl(['action' => 'users_list']));
