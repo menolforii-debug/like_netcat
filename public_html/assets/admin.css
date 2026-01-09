@@ -117,31 +117,6 @@ body {
   opacity: .8;
 }
 
-.visual-inherit-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding-left: 0;
-}
-
-.visual-inherit-switch .form-check-input {
-  margin-left: 0;
-  margin-top: 0;
-  flex-shrink: 0;
-  opacity: 1;
-  position: static;
-  min-width: 2.5rem;
-  min-height: 1.25rem;
-  border: 1px solid #ced4da;
-}
-
-.visual-inherit-switch .form-check-input[type="checkbox"] {
-  appearance: auto;
-  -webkit-appearance: auto;
-  background-color: #fff;
-  background-image: none;
-}
-
 /* ===========================
    ComponentTree styles
    =========================== */
