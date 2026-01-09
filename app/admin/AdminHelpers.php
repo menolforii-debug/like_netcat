@@ -113,6 +113,9 @@ function renderAlert(?string $message, string $type = 'info'): void
     if ($message === null || $message === '') {
         return;
     }
+    if (isset($_SERVER['REQUEST_METHOD']) && strtoupper((string) $_SERVER['REQUEST_METHOD']) !== 'GET') {
+        return;
+    }
 
     static $rendered = [];
     $dedupeKey = $type . '|' . $message;
