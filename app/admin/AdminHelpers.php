@@ -635,6 +635,7 @@ function normalizeComponentFieldsInput(array $fieldsInput): array
 
 function renderComponentViewTemplate(string $listTpl, string $singleTpl, string $systemTpl): string
 {
+    $systemTpl = trim(stripSystemTemplateTags($systemTpl));
     $content = "<?php\n";
     $content .= "/** GENERATED FILE. Do not edit manually. */\n";
     $content .= "if (!isset(\$isSingle)) { \$isSingle = false; }\n";
@@ -648,7 +649,7 @@ function renderComponentViewTemplate(string $listTpl, string $singleTpl, string 
     $content .= "<?php\n";
     $content .= "}\n";
 
-    if (trim($systemTpl) !== '') {
+    if ($systemTpl !== '') {
         $content .= rtrim($systemTpl) . "\n";
         $content .= "?>\n";
     }
@@ -702,6 +703,19 @@ function writeComponentViewTemplate(string $componentKey, string $viewName, stri
     @chmod($finalPath, 0660);
 
     return true;
+}
+
+function stripSystemTemplateTags(string $systemTpl): string
+{
+    $trimmed = trim($systemTpl);
+    if ($trimmed === '') {
+        return '';
+    }
+
+    $trimmed = preg_replace('/^<\\?(php)?/i', '', $trimmed);
+    $trimmed = preg_replace('/\\?>$/', '', $trimmed);
+
+    return trim((string) $trimmed);
 }
 
 function layoutTemplatesDir(): string

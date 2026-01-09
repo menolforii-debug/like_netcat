@@ -109,23 +109,7 @@ $componentId = $componentRepo->create($keyword, $name, $fields, $views);
 $viewRepo = new ComponentViewRepo();
 $defaultListTpl = "<?php foreach (\$objects as \$obj): ?>\n<div><?= htmlspecialchars(\$obj['data']['title'] ?? 'Без заголовка', ENT_QUOTES, 'UTF-8') ?></div>\n<?php endforeach; ?>";
 $defaultSingleTpl = "<?php if (!empty(\$object['data']['title'])): ?>\n<h1><?= htmlspecialchars(\$object['data']['title'], ENT_QUOTES, 'UTF-8') ?></h1>\n<?php endif; ?>";
-$defaultSystemTpl = "// Системные настройки шаблона компонента.\n"
-    . "// Пример: игнорировать выборку по разделу (закомментировано).\n"
-    . "// \$objects = DB::fetchAll(\n"
-    . "//     'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at\n"
-    . "//     FROM objects\n"
-    . "//     WHERE component_id = :component_id AND is_deleted = 0 AND status = :status\n"
-    . "//     ORDER BY id ASC',\n"
-    . "//     ['component_id' => (int) (\$component['id'] ?? 0), 'status' => 'published']\n"
-    . "// );\n"
-    . "// \$objects = array_map(static function (\$object) {\n"
-    . "//     \$data = json_decode((string) \$object['data_json'], true);\n"
-    . "//     if (!is_array(\$data)) {\n"
-    . "//         \$data = [];\n"
-    . "//     }\n"
-    . "//     \$object['data'] = \$data;\n"
-    . "//     return \$object;\n"
-    . "// }, \$objects);\n";
+$defaultSystemTpl = "<?php\n?>";
 $viewId = $viewRepo->create($componentId, 'list', $defaultListTpl, $defaultSingleTpl, $defaultSystemTpl, '');
 $error = null;
 if (!writeComponentViewTemplate($keyword, 'list', $defaultListTpl, $defaultSingleTpl, $defaultSystemTpl, $error)) {

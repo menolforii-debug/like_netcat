@@ -21,22 +21,12 @@ function renderTextareaValue($value): string
 
 function defaultSystemTemplate(): string
 {
-    return "<?\n?>";
+    return "<?php\n?>";
 }
 
 function defaultQueryJson(): string
 {
-    return "// Пример настроек запроса (JSON)\n"
-        . "// {\n"
-        . "//   \"mode\": \"extend\",\n"
-        . "//   \"where\": [\"status = :status\"],\n"
-        . "//   \"order\": \"created_at DESC\",\n"
-        . "//   \"limit\": 20,\n"
-        . "//   \"params\": {\n"
-        . "//     \"status\": \"published\"\n"
-        . "//   },\n"
-        . "//   \"ignore_sub\": 0\n"
-        . "// }\n";
+    return '';
 }
 
 $selectedComponent = null;
