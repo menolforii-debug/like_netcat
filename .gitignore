@@ -8,3 +8,5 @@
 /var/backups/
 *.bak
 public_html/files/*
+templates/component/*
+templates/layouts/*
