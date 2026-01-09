@@ -85,6 +85,7 @@ final class Renderer
 
             // Берем только опубликованные объекты сразу из БД, чтобы не гонять лишние данные.
             $objects = $objectRepo->listForInfoblock((int) $infoblock['id'], false, 'published');
+            $infoblock['message_select'] = $objectRepo->getLastSelectQuery();
 
             $isSingle = $requestedObject && (int) $requestedObject['infoblock_id'] === (int) $infoblock['id'];
             if ($isSingle) {
@@ -158,6 +159,7 @@ final class Renderer
         $object = $isSingle && !empty($objects) ? $objects[0] : null;
         $isSingle = $isSingle;
         $settings = $infoblock['settings'] ?? [];
+        $message_select = isset($infoblock['message_select']) ? (string) $infoblock['message_select'] : '';
 
         $templatePath = __DIR__ . '/../../templates/component/' . $component['keyword'] . '/' . $infoblock['view_template'] . '.php';
         if (!is_file($templatePath)) {

@@ -2,6 +2,8 @@
 
 final class ObjectRepo
 {
+    private ?string $lastSelectQuery = null;
+
     public function listForInfoblock($infoblockId, bool $includeDeleted = false, ?string $status = null): array
     {
         $where = 'infoblock_id = :infoblock_id';
@@ -17,11 +19,14 @@ final class ObjectRepo
             $params['status'] = $status;
         }
 
-        return DB::fetchAll(
-            'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
+        $sql = 'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
             FROM objects
             WHERE ' . $where . '
-            ORDER BY id ASC',
+            ORDER BY id ASC';
+        $this->lastSelectQuery = $sql;
+
+        return DB::fetchAll(
+            $sql,
             $params
         );
     }
@@ -150,5 +155,10 @@ final class ObjectRepo
     private function now(): string
     {
         return (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('c');
+    }
+
+    public function getLastSelectQuery(): ?string
+    {
+        return $this->lastSelectQuery;
     }
 }
