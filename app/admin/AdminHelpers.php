@@ -106,14 +106,12 @@ function pullFlashMessage(string $type): string
  * Uses $.SOW.core.toast.show(type, title, body, position, delay, fill)
  *
  * Includes JS-level dedupe to prevent duplicated toasts when renderAlert()
- * is called multiple times with the same message/type.
+ * is called multiple times with the same message/type, including across
+ * AJAX vs GET flows via sessionStorage.
  */
 function renderAlert(?string $message, string $type = 'info'): void
 {
     if ($message === null || $message === '') {
-        return;
-    }
-    if (isset($_SERVER['REQUEST_METHOD']) && strtoupper((string) $_SERVER['REQUEST_METHOD']) !== 'GET') {
         return;
     }
 
@@ -145,23 +143,27 @@ function renderAlert(?string $message, string $type = 'info'): void
   var delay = 3500;
   var fill = true;
 
-  // ---- DEDUPE ----
-  // key: type + message, persisted across quick redirects
+  // ---- DEDUPE (per page load + sessionStorage) ----
+  // key: type + message
   try {
     window.__CMS_TOASTS_SHOWN__ = window.__CMS_TOASTS_SHOWN__ || {};
     var key = String(toastType) + '|' + String(msg);
     if (window.__CMS_TOASTS_SHOWN__[key]) {
       return;
     }
-    window.__CMS_TOASTS_SHOWN__[key] = 1;
+    var now = Date.now();
+    var ttl = 5000;
     if (window.sessionStorage) {
-      var now = Date.now();
-      var last = parseInt(window.sessionStorage.getItem('cms.toast.' + key) || '0', 10);
-      if (last && now - last < 2500) {
-        return;
+      var stored = window.sessionStorage.getItem('cms_toast:' + key);
+      if (stored) {
+        var last = parseInt(stored, 10);
+        if (!isNaN(last) && now - last < ttl) {
+          return;
+        }
       }
-      window.sessionStorage.setItem('cms.toast.' + key, String(now));
+      window.sessionStorage.setItem('cms_toast:' + key, String(now));
     }
+    window.__CMS_TOASTS_SHOWN__[key] = 1;
   } catch (e) {
     // if something goes wrong, do not block the toast
   }
