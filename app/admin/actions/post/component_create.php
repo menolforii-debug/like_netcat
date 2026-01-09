@@ -109,9 +109,10 @@ $componentId = $componentRepo->create($keyword, $name, $fields, $views);
 $viewRepo = new ComponentViewRepo();
 $defaultListTpl = "<?php foreach (\$objects as \$obj): ?>\n<div><?= htmlspecialchars(\$obj['data']['title'] ?? 'Без заголовка', ENT_QUOTES, 'UTF-8') ?></div>\n<?php endforeach; ?>";
 $defaultSingleTpl = "<?php if (!empty(\$object['data']['title'])): ?>\n<h1><?= htmlspecialchars(\$object['data']['title'], ENT_QUOTES, 'UTF-8') ?></h1>\n<?php endif; ?>";
-$viewId = $viewRepo->create($componentId, 'list', $defaultListTpl, $defaultSingleTpl);
+$defaultSystemTpl = "<?php\n?>";
+$viewId = $viewRepo->create($componentId, 'list', $defaultListTpl, $defaultSingleTpl, $defaultSystemTpl, '');
 $error = null;
-if (!writeComponentViewTemplate($keyword, 'list', $defaultListTpl, $defaultSingleTpl, $error)) {
+if (!writeComponentViewTemplate($keyword, 'list', $defaultListTpl, $defaultSingleTpl, $defaultSystemTpl, $error)) {
     $viewRepo->delete($viewId);
     $componentRepo->delete($componentId);
     if (isAjaxRequest()) {
