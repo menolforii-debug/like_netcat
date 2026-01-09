@@ -142,8 +142,8 @@ function renderAlert(?string $message, string $type = 'info'): void
   var delay = 3500;
   var fill = true;
 
-  // ---- DEDUPE (per page load) ----
-  // key: type + message
+  // ---- DEDUPE ----
+  // key: type + message, persisted across quick redirects
   try {
     window.__CMS_TOASTS_SHOWN__ = window.__CMS_TOASTS_SHOWN__ || {};
     var key = String(toastType) + '|' + String(msg);
@@ -151,6 +151,14 @@ function renderAlert(?string $message, string $type = 'info'): void
       return;
     }
     window.__CMS_TOASTS_SHOWN__[key] = 1;
+    if (window.sessionStorage) {
+      var now = Date.now();
+      var last = parseInt(window.sessionStorage.getItem('cms.toast.' + key) || '0', 10);
+      if (last && now - last < 2500) {
+        return;
+      }
+      window.sessionStorage.setItem('cms.toast.' + key, String(now));
+    }
   } catch (e) {
     // if something goes wrong, do not block the toast
   }
