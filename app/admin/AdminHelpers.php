@@ -651,6 +651,13 @@ function renderComponentViewTemplate(string $listTpl, string $singleTpl, string 
     $content .= "<?php\n";
     $content .= "}\n";
 
+    if (trim($systemTpl) !== '') {
+        $content .= "?>\n";
+        $content .= "<?php\n";
+        $content .= rtrim($systemTpl) . "\n";
+        $content .= "?>\n";
+    }
+
     return $content;
 }
 

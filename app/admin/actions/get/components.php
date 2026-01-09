@@ -275,6 +275,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
             echo '<div class="mb-3"><label class="form-label">Системные настройки</label><textarea class="form-control font-monospace code-editor" name="system_tpl" rows="10">' . renderTextareaValue(defaultSystemTemplate()) . '</textarea></div>';
             echo '<div class="mb-3"><label class="form-label">Шаблон списка</label><textarea class="form-control font-monospace code-editor" name="list_tpl" rows="10"></textarea></div>';
             echo '<div class="mb-3"><label class="form-label">Шаблон объекта</label><textarea class="form-control font-monospace code-editor" name="single_tpl" rows="10"></textarea></div>';
+            echo '<div class="mb-3"><label class="form-label">Системные настройки</label><textarea class="form-control font-monospace code-editor" name="system_tpl" rows="10">' . renderTextareaValue(defaultSystemTemplate()) . '</textarea></div>';
             echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
             echo '</form>';
         } elseif ($viewRow === null) {
@@ -288,6 +289,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
             echo '<div class="mb-3"><label class="form-label">Системные настройки</label><textarea class="form-control font-monospace code-editor" name="system_tpl" rows="10">' . renderTextareaValue($viewRow['system_tpl'] ?? '') . '</textarea></div>';
             echo '<div class="mb-3"><label class="form-label">Шаблон списка</label><textarea class="form-control font-monospace code-editor" name="list_tpl" rows="10">' . renderTextareaValue($viewRow['list_tpl'] ?? '') . '</textarea></div>';
             echo '<div class="mb-3"><label class="form-label">Шаблон объекта</label><textarea class="form-control font-monospace code-editor" name="single_tpl" rows="10">' . renderTextareaValue($viewRow['single_tpl'] ?? '') . '</textarea></div>';
+            echo '<div class="mb-3"><label class="form-label">Системные настройки</label><textarea class="form-control font-monospace code-editor" name="system_tpl" rows="10">' . renderTextareaValue($viewRow['system_tpl'] ?? '') . '</textarea></div>';
             echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
             echo '</form>';
             echo '<form class="mt-2" method="post" action="/admin.php?action=component_view_delete" onsubmit="return confirm(\'Удалить шаблон?\')">';
