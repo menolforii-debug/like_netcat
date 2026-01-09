@@ -126,7 +126,7 @@ $defaultSystemTpl = "// Системные настройки шаблона к�
     . "//     \$object['data'] = \$data;\n"
     . "//     return \$object;\n"
     . "// }, \$objects);\n";
-$viewId = $viewRepo->create($componentId, 'list', $defaultListTpl, $defaultSingleTpl, $defaultSystemTpl);
+$viewId = $viewRepo->create($componentId, 'list', $defaultListTpl, $defaultSingleTpl, $defaultSystemTpl, '');
 $error = null;
 if (!writeComponentViewTemplate($keyword, 'list', $defaultListTpl, $defaultSingleTpl, $defaultSystemTpl, $error)) {
     $viewRepo->delete($viewId);
