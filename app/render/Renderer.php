@@ -117,8 +117,10 @@ final class Renderer
             'site' => $site,
             'section' => $section,
             'visual' => $visualSettings,
-            'infoblocks_html' => $core['infoblocks_html'] ?? '',
-        ]);
+            'children' => $children,
+        ], function () use ($core): void {
+            echo $core['infoblocks_html'] ?? '';
+        });
     }
 
     private function renderInfoblockWithWrappers(array $section, array $site, array $infoblock, array $component, array $items, bool $isSingle, $editMode): string

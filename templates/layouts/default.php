@@ -1,10 +1,12 @@
 <?php
 /** @var array $ctx */
+/** @var callable $body */
 
 $title = (string) ($ctx['title'] ?? '');
 $meta = $ctx['meta'] ?? [];
 $site = $ctx['site'] ?? [];
-$infoblocksHtml = (string) ($ctx['infoblocks_html'] ?? '');
+$section = $ctx['section'] ?? [];
+$children = $ctx['children'] ?? [];
 
 
 ?>
@@ -39,7 +41,10 @@ $infoblocksHtml = (string) ($ctx['infoblocks_html'] ?? '');
             </div>
         </nav>
         <main class="container py-4">
-            <?= $infoblocksHtml ?>
+            <?php if (!empty($section)) : ?>
+                <?php Layout::renderSectionHeader($section, $children); ?>
+            <?php endif; ?>
+            <?php $body(); ?>
         </main>
     </div>
 </div>
