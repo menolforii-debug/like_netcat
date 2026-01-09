@@ -31,6 +31,60 @@ final class ObjectRepo
         );
     }
 
+    public function listForInfoblockWithOverride($infoblockId, bool $includeDeleted, ?string $status, array $override): array
+    {
+        $where = ['infoblock_id = :infoblock_id'];
+        if (!$includeDeleted) {
+            $where[] = 'is_deleted = 0';
+        }
+        if ($status !== null && $status !== '') {
+            $where[] = 'status = :status';
+        }
+
+        if (!empty($override['where'])) {
+            foreach ((array) $override['where'] as $condition) {
+                if (is_string($condition) && trim($condition) !== '') {
+                    $where[] = $condition;
+                }
+            }
+        }
+
+        $order = '';
+        if (!empty($override['order']) && is_string($override['order'])) {
+            $order = ' ORDER BY ' . $override['order'];
+        }
+
+        $limit = '';
+        if (isset($override['limit']) && is_numeric($override['limit'])) {
+            $limitValue = (int) $override['limit'];
+            if ($limitValue > 0) {
+                $limit = ' LIMIT ' . $limitValue;
+            }
+        }
+
+        $params = ['infoblock_id' => $infoblockId];
+        if ($status !== null && $status !== '') {
+            $params['status'] = $status;
+        }
+        if (!empty($override['params']) && is_array($override['params'])) {
+            $params = array_merge($params, $override['params']);
+        }
+
+        $sql = 'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
+            FROM objects
+            WHERE ' . implode(' AND ', $where) . $order . $limit;
+        $this->lastSelectQuery = $sql;
+
+        return DB::fetchAll($sql, $params);
+    }
+
+    public function listBySql(string $sql, array $params = []): array
+    {
+        $this->lastSelectQuery = $sql;
+
+        return DB::fetchAll($sql, $params);
+    }
+
     public function findById($id): ?array
     {
         return DB::fetchOne(

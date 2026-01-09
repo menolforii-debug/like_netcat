@@ -40,6 +40,21 @@ function defaultSystemTemplate(): string
         . "// }, \$objects);\n";
 }
 
+function defaultQueryJson(): string
+{
+    return json_encode([
+        'mode' => 'extend',
+        'where' => [
+            'status = :status',
+        ],
+        'order' => 'created_at DESC',
+        'limit' => 20,
+        'params' => [
+            'status' => 'published',
+        ],
+    ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+}
+
 $selectedComponent = null;
 foreach ($components as $component) {
     if ((int) $component['id'] === $componentId) {
@@ -275,6 +290,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
             echo '<div class="mb-3"><label class="form-label">Системные настройки</label><textarea class="form-control font-monospace code-editor" name="system_tpl" rows="10">' . renderTextareaValue(defaultSystemTemplate()) . '</textarea></div>';
             echo '<div class="mb-3"><label class="form-label">Шаблон списка</label><textarea class="form-control font-monospace code-editor" name="list_tpl" rows="10"></textarea></div>';
             echo '<div class="mb-3"><label class="form-label">Шаблон объекта</label><textarea class="form-control font-monospace code-editor" name="single_tpl" rows="10"></textarea></div>';
+            echo '<div class="mb-3"><label class="form-label">Настройки запроса (JSON)</label><textarea class="form-control font-monospace code-editor" name="query_json" rows="10">' . renderTextareaValue(defaultQueryJson()) . '</textarea></div>';
             echo '<div class="mb-3"><label class="form-label">Системные настройки</label><textarea class="form-control font-monospace code-editor" name="system_tpl" rows="10">' . renderTextareaValue(defaultSystemTemplate()) . '</textarea></div>';
             echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
             echo '</form>';
@@ -289,6 +305,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
             echo '<div class="mb-3"><label class="form-label">Системные настройки</label><textarea class="form-control font-monospace code-editor" name="system_tpl" rows="10">' . renderTextareaValue($viewRow['system_tpl'] ?? '') . '</textarea></div>';
             echo '<div class="mb-3"><label class="form-label">Шаблон списка</label><textarea class="form-control font-monospace code-editor" name="list_tpl" rows="10">' . renderTextareaValue($viewRow['list_tpl'] ?? '') . '</textarea></div>';
             echo '<div class="mb-3"><label class="form-label">Шаблон объекта</label><textarea class="form-control font-monospace code-editor" name="single_tpl" rows="10">' . renderTextareaValue($viewRow['single_tpl'] ?? '') . '</textarea></div>';
+            echo '<div class="mb-3"><label class="form-label">Настройки запроса (JSON)</label><textarea class="form-control font-monospace code-editor" name="query_json" rows="10">' . renderTextareaValue($viewRow['query_json'] ?? '') . '</textarea></div>';
             echo '<div class="mb-3"><label class="form-label">Системные настройки</label><textarea class="form-control font-monospace code-editor" name="system_tpl" rows="10">' . renderTextareaValue($viewRow['system_tpl'] ?? '') . '</textarea></div>';
             echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
             echo '</form>';

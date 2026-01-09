@@ -74,6 +74,7 @@ final class Renderer
         $infoblocksHtml = '';
         $infoblockViews = [];
         $itemTitle = '';
+        $viewRepo = new ComponentViewRepo();
         foreach ($infoblocks as $infoblock) {
             $component = $componentRepo->findById((int) $infoblock['component_id']);
             if ($component === null) {
@@ -84,7 +85,15 @@ final class Renderer
             $infoblock['settings'] = $this->decodeSettings($infoblock);
 
             // Берем только опубликованные объекты сразу из БД, чтобы не гонять лишние данные.
-            $objects = $objectRepo->listForInfoblock((int) $infoblock['id'], false, 'published');
+            $viewRow = $viewRepo->findByName((int) ($component['id'] ?? 0), (string) $infoblock['view_template']);
+            $queryOverride = $this->decodeQueryOverride($viewRow);
+            if ($queryOverride !== null && ($queryOverride['mode'] ?? 'extend') === 'replace' && !empty($queryOverride['sql'])) {
+                $objects = $objectRepo->listBySql($queryOverride['sql'], $queryOverride['params'] ?? []);
+            } elseif ($queryOverride !== null) {
+                $objects = $objectRepo->listForInfoblockWithOverride((int) $infoblock['id'], false, 'published', $queryOverride);
+            } else {
+                $objects = $objectRepo->listForInfoblock((int) $infoblock['id'], false, 'published');
+            }
             $infoblock['message_select'] = $objectRepo->getLastSelectQuery();
 
             $isSingle = $requestedObject && (int) $requestedObject['infoblock_id'] === (int) $infoblock['id'];
@@ -169,6 +178,34 @@ final class Renderer
         ob_start();
         require $templatePath;
         return (string) ob_get_clean();
+    }
+
+    private function decodeQueryOverride(?array $viewRow): ?array
+    {
+        if ($viewRow === null || empty($viewRow['query_json'])) {
+            return null;
+        }
+
+        $decoded = json_decode((string) $viewRow['query_json'], true);
+        if (!is_array($decoded)) {
+            return null;
+        }
+
+        $mode = isset($decoded['mode']) && $decoded['mode'] === 'replace' ? 'replace' : 'extend';
+        $sql = isset($decoded['sql']) && is_string($decoded['sql']) ? trim($decoded['sql']) : '';
+        $params = isset($decoded['params']) && is_array($decoded['params']) ? $decoded['params'] : [];
+        $where = isset($decoded['where']) ? (array) $decoded['where'] : [];
+        $order = isset($decoded['order']) && is_string($decoded['order']) ? trim($decoded['order']) : '';
+        $limit = isset($decoded['limit']) && is_numeric($decoded['limit']) ? (int) $decoded['limit'] : null;
+
+        return [
+            'mode' => $mode,
+            'sql' => $sql,
+            'params' => $params,
+            'where' => $where,
+            'order' => $order,
+            'limit' => $limit,
+        ];
     }
 
     private function resolveViewTemplate(array $infoblock, array $component): string
