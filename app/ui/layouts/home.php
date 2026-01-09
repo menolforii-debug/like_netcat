@@ -1,11 +1,11 @@
 <?php
 /** @var array $ctx */
-/** @var callable $body */
 
 $title = (string) ($ctx['title'] ?? '');
 $meta = $ctx['meta'] ?? [];
 $site = $ctx['site'] ?? [];
 $section = $ctx['section'] ?? null;
+$infoblocksHtml = (string) ($ctx['infoblocks_html'] ?? '');
 
 Layout::renderDocumentStart($title, $meta);
 Layout::renderNavbar((string) ($site['title'] ?? 'CMS'), [
@@ -25,7 +25,7 @@ echo '</div>';
 echo '</header>';
 
 echo '<main class="container py-4">';
-$body();
+echo $infoblocksHtml;
 echo '</main>';
 
 Layout::renderDocumentEnd();

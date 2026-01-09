@@ -117,25 +117,8 @@ final class Renderer
             'site' => $site,
             'section' => $section,
             'visual' => $visualSettings,
-        ], function () use ($section, $children, $core): void {
-            $this->renderSection($section, $children, $core, false);
-        });
-    }
-
-    private function renderSection(array $section, array $children, array $core, $editMode): void
-    {
-        $component = ['keyword' => 'section'];
-        $infoblock = ['view_template' => 'default'];
-        $items = $children;
-
-        $templatePath = __DIR__ . '/../../templates/component/section/default.php';
-        if (!is_file($templatePath)) {
-            http_response_code(500);
-            echo 'Template not found';
-            return;
-        }
-
-        require $templatePath;
+            'infoblocks_html' => $core['infoblocks_html'] ?? '',
+        ]);
     }
 
     private function renderInfoblockWithWrappers(array $section, array $site, array $infoblock, array $component, array $items, bool $isSingle, $editMode): string
