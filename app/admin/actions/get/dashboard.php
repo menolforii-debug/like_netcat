@@ -49,7 +49,7 @@ $renderVisualSettings = function (array $visualFields, array $resolvedVisual, ar
         echo '<div class="mb-3">';
         echo '<div class="d-flex justify-content-between align-items-center">';
         echo '<label class="form-label mb-0">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</label>';
-        echo '<div class="form-check form-switch">';
+        echo '<div class="form-check form-switch visual-inherit-switch">';
         echo '<input class="form-check-input js-visual-inherit" type="checkbox" name="visual_inherit[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" value="1" data-target="visual-field-' . htmlspecialchars($fieldId, ENT_QUOTES, 'UTF-8') . '"' . $inheritChecked . '>';
         echo '<label class="form-check-label">Наследовать</label>';
         echo '</div>';
