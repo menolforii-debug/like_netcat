@@ -40,7 +40,6 @@ $renderVisualSettings = function (array $visualFields, array $resolvedVisual, ar
         $hasLocal = array_key_exists($name, $localVisual);
         $resolvedValue = $resolvedVisual[$name] ?? '';
         $value = $hasLocal ? $localVisual[$name] : $resolvedValue;
-        $inheritChecked = $hasLocal ? '' : ' checked';
         $disabledAttr = '';
         $fieldId = $scopeId . '-' . $name;
         $previewId = 'file-preview-' . $fieldId;
@@ -49,10 +48,7 @@ $renderVisualSettings = function (array $visualFields, array $resolvedVisual, ar
         echo '<div class="mb-3">';
         echo '<div class="d-flex justify-content-between align-items-center">';
         echo '<label class="form-label mb-0">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</label>';
-        echo '<div class="form-check visual-inherit-switch">';
-        echo '<input class="form-check-input js-visual-inherit" type="checkbox" name="visual_inherit[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" value="1" data-target="visual-field-' . htmlspecialchars($fieldId, ENT_QUOTES, 'UTF-8') . '"' . $inheritChecked . '>';
-        echo '<label class="form-check-label">Наследовать</label>';
-        echo '</div>';
+        echo '<div></div>';
         echo '</div>';
 
         echo '<div id="visual-field-' . htmlspecialchars($fieldId, ENT_QUOTES, 'UTF-8') . '">';

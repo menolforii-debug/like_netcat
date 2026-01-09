@@ -1,34 +1,3 @@
-function initVisualInheritToggles(scope) {
-  const root = scope || document;
-  root.querySelectorAll('.js-visual-inherit').forEach((checkbox) => {
-    const targetId = checkbox.getAttribute('data-target');
-    if (!targetId) return;
-    const target = root.getElementById ? root.getElementById(targetId) : document.getElementById(targetId);
-    if (!target) return;
-    const inputs = target.querySelectorAll('[data-visual-input]');
-    const applyState = () => {
-      const inherited = checkbox.checked;
-      inputs.forEach((input) => {
-        const tag = input.tagName.toLowerCase();
-        const type = (input.getAttribute('type') || '').toLowerCase();
-        const canReadonly = tag === 'textarea' || (tag === 'input' && !['checkbox', 'file', 'radio'].includes(type));
-        if (canReadonly) {
-          if (inherited) {
-            input.setAttribute('readonly', 'readonly');
-          } else {
-            input.removeAttribute('readonly');
-          }
-          input.disabled = false;
-        } else {
-          input.disabled = inherited;
-        }
-      });
-    };
-    checkbox.addEventListener('change', applyState);
-    applyState();
-  });
-}
-
 function initInfoblockViewSelects(scope) {
   const root = scope || document;
   root.querySelectorAll('.js-infoblock-component').forEach((componentSelect) => {
@@ -92,7 +61,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  initVisualInheritToggles(document);
   initInfoblockViewSelects(document);
 });
 
@@ -117,7 +85,6 @@ function refreshAdminBlocks(selectors) {
       .then((res) => res.text())
       .then((html) => {
         target.innerHTML = html;
-        initVisualInheritToggles(target);
         initInfoblockViewSelects(target);
       });
   });
@@ -169,7 +136,6 @@ function openAdminModal(url) {
         title.remove();
       }
       initInfoblockViewSelects(modalBody || document);
-      initVisualInheritToggles(modalBody || document);
     })
     .catch(() => {
       if (modalBody) modalBody.innerHTML = '<div class="text-danger">Не удалось загрузить форму.</div>';
