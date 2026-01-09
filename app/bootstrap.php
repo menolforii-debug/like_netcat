@@ -46,6 +46,7 @@ require $root . '/app/events.php';
 
 ensureDefaultLayoutTemplates($root);
 ensureDefaultSite(isset($_SERVER['HTTP_HOST']) ? (string) $_SERVER['HTTP_HOST'] : '');
+ensureDefaultVisualFields();
 
 function core(): Core
 {
@@ -254,6 +255,31 @@ PHP;
 PHP;
         file_put_contents($defaultNavPath, $defaultNav);
         @chmod($defaultNavPath, 0660);
+    }
+}
+
+function ensureDefaultVisualFields(): void
+{
+    if (!DB::hasTable('visual_fields')) {
+        return;
+    }
+
+    $row = DB::fetchOne('SELECT COUNT(*) AS cnt FROM visual_fields');
+    $count = $row ? (int) $row['cnt'] : 0;
+    if ($count > 0) {
+        return;
+    }
+
+    $repo = new VisualFieldRepo();
+    $defaults = [
+        ['phone', 'телефон', 'text'],
+        ['email', 'емайл', 'text'],
+        ['adres', 'адрес', 'text'],
+        ['map', 'карта', 'text'],
+    ];
+
+    foreach ($defaults as $index => [$name, $label, $type]) {
+        $repo->create($name, $label, $type, [], $index + 1);
     }
 }
 
