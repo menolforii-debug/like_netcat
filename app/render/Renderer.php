@@ -128,7 +128,7 @@ final class Renderer
         $infoblock = ['view_template' => 'default'];
         $items = $children;
 
-        $templatePath = __DIR__ . '/../../templates/section/default.php';
+        $templatePath = __DIR__ . '/../../templates/component/section/default.php';
         if (!is_file($templatePath)) {
             http_response_code(500);
             echo 'Template not found';
