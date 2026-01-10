@@ -36,6 +36,22 @@
 Также можно вызывать `$body()` для вывода контентной части (в текущем рендеринге —
 HTML инфоблоков раздела).
 
+Пример использования пагинации:
+
+```php
+<?php
+$currentPage = 1;
+$totalPages = 10;
+$baseUrl = '/admin.php';
+$params = [
+    'section_id' => 1,
+    'tab' => 'content',
+    'content_infoblock_id' => 5,
+];
+Layout::renderPagination($currentPage, $totalPages, $baseUrl, $params);
+?>
+```
+
 ### Файл навигации макета
 
 Если существует `templates/layouts/<layout>.nav.php`, он подключается перед макетом
