@@ -205,20 +205,14 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
             echo '<div class="alert alert-light border">Редактирование доступно только для администратора.</div>';
         }
         } else {
-        $infoblockTab = isset($_GET['infoblock_tab']) ? (string) $_GET['infoblock_tab'] : 'list';
-        if (!in_array($infoblockTab, ['list', 'content'], true)) {
-            $infoblockTab = 'list';
-        }
-        if ($tab === 'content') {
-            $tab = 'infoblocks';
-            $infoblockTab = 'content';
-        }
+        $contentInfoblockId = isset($_GET['content_infoblock_id']) ? (int) $_GET['content_infoblock_id'] : 0;
 
         $tabs = [
             'section' => 'Раздел',
             'design' => 'Макет дизайна',
             'seo' => 'SEO',
             'infoblocks' => 'Инфоблоки',
+            'content' => 'Контент',
         ];
         echo '<ul class="nav nav-tabs mb-3">';
         foreach ($tabs as $key => $label) {
@@ -366,7 +360,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
             } else {
                 echo '<div class="alert alert-light border">Редактирование доступно только для администратора.</div>';
             }
-        } elseif ($tab === 'infoblocks') {
+        } elseif ($tab === 'infoblocks' || $tab === 'content') {
             $infoblocks = $infoblockRepo->listForSection((int) $selected['id']);
             $components = $componentRepo->listAll();
             $componentMap = [];
@@ -374,13 +368,12 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                 $componentMap[(int) $component['id']] = $component;
             }
 
-            echo '<ul class="nav nav-tabs mb-3">';
-            echo '<li class="nav-item"><a class="nav-link' . ($infoblockTab === 'list' ? ' active' : '') . '" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $selectedId, 'tab' => 'infoblocks', 'infoblock_tab' => 'list']), ENT_QUOTES, 'UTF-8') . '">Список</a></li>';
-            echo '<li class="nav-item"><a class="nav-link' . ($infoblockTab === 'content' ? ' active' : '') . '" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $selectedId, 'tab' => 'infoblocks', 'infoblock_tab' => 'content']), ENT_QUOTES, 'UTF-8') . '">Контент</a></li>';
-            echo '</ul>';
-
-                if ($infoblockTab === 'content') {
+            if ($tab === 'content') {
+                if (!empty($infoblocks) && $contentInfoblockId <= 0) {
+                    $contentInfoblockId = (int) $infoblocks[0]['id'];
+                }
                 $showDeleted = !empty($_GET['show_deleted']);
+                $perPage = 20;
                 $previewToken = ensurePreviewToken();
                 $sectionPath = buildSectionPathFromId($sectionRepo, (int) $selected['id']);
 
@@ -388,10 +381,32 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                 if (empty($infoblocks)) {
                     echo '<div class="alert alert-light border">В этом разделе нет инфоблоков.</div>';
                 } else {
+                    if (count($infoblocks) > 1) {
+                        echo '<ul class="nav nav-tabs mb-3">';
+                        foreach ($infoblocks as $infoblockTabItem) {
+                            $tabActive = (int) $infoblockTabItem['id'] === $contentInfoblockId ? ' active' : '';
+                            $tabUrl = buildAdminUrl([
+                                'section_id' => $selectedId,
+                                'tab' => 'content',
+                                'content_infoblock_id' => (int) $infoblockTabItem['id'],
+                            ]);
+                            echo '<li class="nav-item"><a class="nav-link' . $tabActive . '" href="' . htmlspecialchars($tabUrl, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars((string) $infoblockTabItem['name'], ENT_QUOTES, 'UTF-8') . '</a></li>';
+                        }
+                        echo '</ul>';
+                    }
+
                     foreach ($infoblocks as $infoblock) {
+                        if ($contentInfoblockId > 0 && (int) $infoblock['id'] !== $contentInfoblockId) {
+                            continue;
+                        }
                         $component = $componentMap[(int) $infoblock['component_id']] ?? null;
                         $componentName = $component ? (string) $component['name'] : 'Неизвестно';
-                        $objects = $objectRepo->listForInfoblock((int) $infoblock['id'], $showDeleted);
+                        $totalObjects = $objectRepo->countForInfoblock((int) $infoblock['id'], $showDeleted);
+                        $pagination = resolvePagination($totalObjects, $perPage);
+                        $page = $pagination['page'];
+                        $totalPages = $pagination['total_pages'];
+                        $offset = $pagination['offset'];
+                        $objects = $objectRepo->listForInfoblockPaged((int) $infoblock['id'], $showDeleted, null, $perPage, $offset);
                         $canCreate = Permission::canAction($currentUser, $infoblock, 'create');
                         $canEdit = Permission::canAction($currentUser, $infoblock, 'edit');
                         $canDelete = Permission::canAction($currentUser, $infoblock, 'delete');
@@ -410,8 +425,8 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                         $toggleLabel = $showDeleted ? 'Скрыть удаленные' : 'Показать удаленные';
                         $toggleParams = [
                             'section_id' => $selectedId,
-                            'tab' => 'infoblocks',
-                            'infoblock_tab' => 'content',
+                            'tab' => 'content',
+                            'content_infoblock_id' => (int) $infoblock['id'],
                             'show_deleted' => $showDeleted ? null : 1,
                         ];
                         echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars(buildAdminUrl($toggleParams), ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($toggleLabel, ENT_QUOTES, 'UTF-8') . '</a>';
@@ -499,11 +514,18 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                                 echo '</td>';
                                 echo '</tr>';
                             }
-                            echo '</tbody></table></div>';
-                        }
-
-                        echo '</div>';
+                        echo '</tbody></table></div>';
                     }
+
+                    Layout::renderPagination($page, $totalPages, '/admin.php', [
+                        'section_id' => $selectedId,
+                        'tab' => 'content',
+                        'content_infoblock_id' => (int) $infoblock['id'],
+                        'show_deleted' => $showDeleted ? 1 : null,
+                    ]);
+
+                    echo '</div>';
+                }
                 }
             } else {
                 $maxSort = 0;
