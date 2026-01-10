@@ -31,8 +31,8 @@
 - `Layout::renderNavbar($brand, $links)` — быстрый вывод navbar.
 - `Layout::renderDocumentStart($title, $meta)` / `Layout::renderDocumentEnd()` — готовые обёртки HTML.
 - `Layout::renderSectionHeader($section, $children)` — вывод заголовка раздела и списка дочерних разделов.
-- `Layout::renderPagination($currentPage, $totalPages, $baseUrl, $params)` — вывод пагинации.
-- `Layout::getPaginationItems($currentPage, $totalPages, $baseUrl, $params)` — получить массив элементов пагинации для кастомной разметки.
+- `Layout::renderPagination($currentPage, $totalPages, $baseUrl, $params)` — вывод пагинации (если параметры `null`, просто ничего не выводит).
+- `Layout::getPaginationItems($currentPage, $totalPages, $baseUrl, $params)` — получить массив элементов пагинации для кастомной разметки (при `null` вернёт пустой массив).
 
 Также можно вызывать `$body()` для вывода контентной части (в текущем рендеринге —
 HTML инфоблоков раздела).

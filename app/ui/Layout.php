@@ -83,9 +83,9 @@ final class Layout
         echo '</div>';
     }
 
-    public static function renderPagination(int $currentPage, int $totalPages, string $baseUrl, array $params = []): void
+    public static function renderPagination(?int $currentPage, ?int $totalPages, ?string $baseUrl, array $params = []): void
     {
-        if ($totalPages <= 1) {
+        if ($currentPage === null || $totalPages === null || $baseUrl === null || $totalPages <= 1) {
             return;
         }
 
@@ -125,9 +125,9 @@ final class Layout
     /**
      * Возвращает список элементов пагинации для кастомной разметки.
      */
-    public static function getPaginationItems(int $currentPage, int $totalPages, string $baseUrl, array $params = []): array
+    public static function getPaginationItems(?int $currentPage, ?int $totalPages, ?string $baseUrl, array $params = []): array
     {
-        if ($totalPages <= 1) {
+        if ($currentPage === null || $totalPages === null || $baseUrl === null || $totalPages <= 1) {
             return [];
         }
 
