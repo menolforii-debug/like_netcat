@@ -83,6 +83,41 @@ final class Layout
         echo '</div>';
     }
 
+    public static function renderPagination(int $currentPage, int $totalPages, string $baseUrl, array $params = []): void
+    {
+        if ($totalPages <= 1) {
+            return;
+        }
+
+        $currentPage = max(1, min($currentPage, $totalPages));
+        $params = array_filter($params, static function ($value): bool {
+            return $value !== null && $value !== '';
+        });
+
+        echo '<nav aria-label="Навигация по страницам">';
+        echo '<ul class="pagination">';
+
+        $prevDisabled = $currentPage <= 1 ? ' disabled' : '';
+        echo '<li class="page-item' . $prevDisabled . '">';
+        echo '<a class="page-link" href="' . htmlspecialchars(self::paginationUrl($baseUrl, $params, $currentPage - 1), ENT_QUOTES, 'UTF-8') . '" aria-label="Предыдущая">&laquo;</a>';
+        echo '</li>';
+
+        for ($page = 1; $page <= $totalPages; $page++) {
+            $active = $page === $currentPage ? ' active' : '';
+            echo '<li class="page-item' . $active . '">';
+            echo '<a class="page-link" href="' . htmlspecialchars(self::paginationUrl($baseUrl, $params, $page), ENT_QUOTES, 'UTF-8') . '">' . $page . '</a>';
+            echo '</li>';
+        }
+
+        $nextDisabled = $currentPage >= $totalPages ? ' disabled' : '';
+        echo '<li class="page-item' . $nextDisabled . '">';
+        echo '<a class="page-link" href="' . htmlspecialchars(self::paginationUrl($baseUrl, $params, $currentPage + 1), ENT_QUOTES, 'UTF-8') . '" aria-label="Следующая">&raquo;</a>';
+        echo '</li>';
+
+        echo '</ul>';
+        echo '</nav>';
+    }
+
     public static function getMainMenuItems(array $ctx, int $maxDepth = 2): array
     {
         $site = $ctx['site'] ?? [];
@@ -183,6 +218,19 @@ final class Layout
         }
 
         return $items;
+    }
+
+    private static function paginationUrl(string $baseUrl, array $params, int $page): string
+    {
+        $page = max(1, $page);
+        $params['page'] = $page;
+
+        $query = http_build_query($params);
+        if ($query === '') {
+            return $baseUrl;
+        }
+
+        return $baseUrl . '?' . $query;
     }
 
     public static function sowAssetsAvailable(): bool

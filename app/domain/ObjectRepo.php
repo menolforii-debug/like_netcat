@@ -31,6 +31,54 @@ final class ObjectRepo
         );
     }
 
+    public function listForInfoblockPaged($infoblockId, bool $includeDeleted, ?string $status, int $limit, int $offset): array
+    {
+        $where = 'infoblock_id = :infoblock_id';
+        if (!$includeDeleted) {
+            $where .= ' AND is_deleted = 0';
+        }
+        if ($status !== null && $status !== '') {
+            $where .= ' AND status = :status';
+        }
+
+        $params = [
+            'infoblock_id' => $infoblockId,
+            'limit' => $limit,
+            'offset' => $offset,
+        ];
+        if ($status !== null && $status !== '') {
+            $params['status'] = $status;
+        }
+
+        $sql = 'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
+            FROM objects
+            WHERE ' . $where . '
+            ORDER BY id ASC
+            LIMIT :limit OFFSET :offset';
+        $this->lastSelectQuery = $this->interpolateQuery($sql, $params);
+
+        return DB::fetchAll($sql, $params);
+    }
+
+    public function countForInfoblock($infoblockId, bool $includeDeleted = false, ?string $status = null): int
+    {
+        $where = 'infoblock_id = :infoblock_id';
+        if (!$includeDeleted) {
+            $where .= ' AND is_deleted = 0';
+        }
+        if ($status !== null && $status !== '') {
+            $where .= ' AND status = :status';
+        }
+
+        $params = ['infoblock_id' => $infoblockId];
+        if ($status !== null && $status !== '') {
+            $params['status'] = $status;
+        }
+
+        $row = DB::fetchOne('SELECT COUNT(*) AS cnt FROM objects WHERE ' . $where, $params);
+        return $row ? (int) $row['cnt'] : 0;
+    }
+
     public function listForInfoblockWithOverride($infoblockId, bool $includeDeleted, ?string $status, array $override): array
     {
         $where = [];
