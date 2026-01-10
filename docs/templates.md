@@ -93,6 +93,17 @@ HTML инфоблоков раздела).
 <?php endif ?>
 ```
 
+Пример использования в макете:
+
+```php
+<div class="collapse navbar-collapse" id="navbarMain">
+    <?php $menuItems = Layout::getMainMenuItems($ctx, 2); ?>
+    <?php if (!empty($menuItems)) : ?>
+        <!-- Здесь ваша кастомная разметка меню -->
+    <?php endif ?>
+</div>
+```
+
 ## Шаблоны компонентов (`templates/component/<keyword>/<view>.php`)
 
 Шаблоны компонентов подключаются в `Renderer::renderInfoblock()`.
