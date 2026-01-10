@@ -83,10 +83,69 @@ final class Layout
         echo '</div>';
     }
 
-    public static function renderPagination(int $currentPage, int $totalPages, string $baseUrl, array $params = []): void
+    public static function renderPagination(
+        ?int $currentPage,
+        ?int $totalPages,
+        ?string $baseUrl,
+        array $params = [],
+        array $options = []
+    ): void
     {
-        if ($totalPages <= 1) {
+        if ($currentPage === null || $totalPages === null || $baseUrl === null) {
             return;
+        }
+
+        $items = self::getPaginationItems($currentPage, $totalPages, $baseUrl, $params, $options);
+        if (empty($items)) {
+            return;
+        }
+
+        echo '<nav aria-label="Навигация по страницам">';
+        echo '<ul class="pagination">';
+
+        foreach ($items as $item) {
+            $classes = ['page-item'];
+            if (!empty($item['active'])) {
+                $classes[] = 'active';
+            }
+            if (!empty($item['disabled'])) {
+                $classes[] = 'disabled';
+            }
+            $label = (string) ($item['label'] ?? '');
+            $url = (string) ($item['url'] ?? '#');
+            $aria = (string) ($item['aria'] ?? '');
+
+            echo '<li class="' . implode(' ', $classes) . '">';
+            echo '<a class="page-link" href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '"';
+            if ($aria !== '') {
+                echo ' aria-label="' . htmlspecialchars($aria, ENT_QUOTES, 'UTF-8') . '"';
+            }
+            echo '>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</a>';
+            echo '</li>';
+        }
+
+        echo '</ul>';
+        echo '</nav>';
+    }
+
+    /**
+     * Возвращает список элементов пагинации для кастомной разметки.
+     */
+    public static function getPaginationItems(
+        ?int $currentPage,
+        ?int $totalPages,
+        ?string $baseUrl,
+        array $params = [],
+        array $options = []
+    ): array
+    {
+        if ($currentPage === null || $totalPages === null || $baseUrl === null) {
+            return [];
+        }
+
+        $showSingle = !empty($options['show_single']);
+        if ($totalPages <= 1 && !$showSingle) {
+            return [];
         }
 
         $currentPage = max(1, min($currentPage, $totalPages));
@@ -94,28 +153,40 @@ final class Layout
             return $value !== null && $value !== '';
         });
 
-        echo '<nav aria-label="Навигация по страницам">';
-        echo '<ul class="pagination">';
-
-        $prevDisabled = $currentPage <= 1 ? ' disabled' : '';
-        echo '<li class="page-item' . $prevDisabled . '">';
-        echo '<a class="page-link" href="' . htmlspecialchars(self::paginationUrl($baseUrl, $params, $currentPage - 1), ENT_QUOTES, 'UTF-8') . '" aria-label="Предыдущая">&laquo;</a>';
-        echo '</li>';
+        $items = [];
+        $items[] = [
+            'type' => 'prev',
+            'page' => max(1, $currentPage - 1),
+            'label' => '«',
+            'aria' => 'Предыдущая',
+            'url' => self::paginationUrl($baseUrl, $params, $currentPage - 1),
+            'active' => false,
+            'disabled' => $currentPage <= 1,
+        ];
 
         for ($page = 1; $page <= $totalPages; $page++) {
-            $active = $page === $currentPage ? ' active' : '';
-            echo '<li class="page-item' . $active . '">';
-            echo '<a class="page-link" href="' . htmlspecialchars(self::paginationUrl($baseUrl, $params, $page), ENT_QUOTES, 'UTF-8') . '">' . $page . '</a>';
-            echo '</li>';
+            $items[] = [
+                'type' => 'page',
+                'page' => $page,
+                'label' => (string) $page,
+                'aria' => '',
+                'url' => self::paginationUrl($baseUrl, $params, $page),
+                'active' => $page === $currentPage,
+                'disabled' => false,
+            ];
         }
 
-        $nextDisabled = $currentPage >= $totalPages ? ' disabled' : '';
-        echo '<li class="page-item' . $nextDisabled . '">';
-        echo '<a class="page-link" href="' . htmlspecialchars(self::paginationUrl($baseUrl, $params, $currentPage + 1), ENT_QUOTES, 'UTF-8') . '" aria-label="Следующая">&raquo;</a>';
-        echo '</li>';
+        $items[] = [
+            'type' => 'next',
+            'page' => min($totalPages, $currentPage + 1),
+            'label' => '»',
+            'aria' => 'Следующая',
+            'url' => self::paginationUrl($baseUrl, $params, $currentPage + 1),
+            'active' => false,
+            'disabled' => $currentPage >= $totalPages,
+        ];
 
-        echo '</ul>';
-        echo '</nav>';
+        return $items;
     }
 
     public static function getMainMenuItems(array $ctx, int $maxDepth = 2): array

@@ -96,6 +96,8 @@ final class FieldValidator
             case 'text':
             case 'html':
                 return (string) $value;
+            case 'select':
+                return (string) $value;
             case 'int':
                 if (!is_numeric($value)) {
                     $errors[] = 'Поле "' . $name . '" должно быть числом.';
@@ -110,6 +112,7 @@ final class FieldValidator
                 }
                 return (float) $value;
             case 'bool':
+            case 'checkbox':
                 return $this->toBool($value);
             case 'date':
                 $value = (string) $value;
