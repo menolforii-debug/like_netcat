@@ -34,7 +34,50 @@ $children = $ctx['children'] ?? [];
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarMain">
-                    <?php Layout::renderMainMenu($ctx, 2); ?>
+                    <?php $menuItems = Layout::getMainMenuItems($ctx, 2); ?>
+                    <?php if (!empty($menuItems)) : ?>
+                        <ul class="navbar-nav">
+                            <?php foreach ($menuItems as $sd): ?>
+                                <?php $submenu = $sd['children'] ?? []; ?>
+                                <?php if (!empty($submenu)): ?>
+                                    <li class="nav-item dropdown">
+                                        <a href="#"
+                                           class="nav-link dropdown-toggle<?= !empty($sd['active']) ? ' active' : '' ?>"
+                                           data-bs-toggle="dropdown"
+                                           aria-haspopup="true"
+                                           aria-expanded="false">
+                                            <?= htmlspecialchars((string) $sd['name'], ENT_QUOTES, 'UTF-8') ?>
+                                        </a>
+                                        <div class="dropdown-menu dropdown-menu-hover dropdown-menu-clean dropdown-fadeindown rounded-xl">
+                                            <ul class="list-unstyled m-0 p-0">
+                                                <?php foreach ($submenu as $ch): ?>
+                                                    <li class="dropdown-item">
+                                                        <?php if (!empty($ch['active'])): ?>
+                                                            <span class="dropdown-link active"><?= htmlspecialchars((string) $ch['name'], ENT_QUOTES, 'UTF-8') ?></span>
+                                                        <?php else: ?>
+                                                            <a href="<?= htmlspecialchars((string) $ch['url'], ENT_QUOTES, 'UTF-8') ?>" class="dropdown-link">
+                                                                <?= htmlspecialchars((string) $ch['name'], ENT_QUOTES, 'UTF-8') ?>
+                                                            </a>
+                                                        <?php endif ?>
+                                                    </li>
+                                                <?php endforeach ?>
+                                            </ul>
+                                        </div>
+                                    </li>
+                                <?php else: ?>
+                                    <li class="nav-item dropdown">
+                                        <?php if (!empty($sd['active'])): ?>
+                                            <span class="nav-link active"><?= htmlspecialchars((string) $sd['name'], ENT_QUOTES, 'UTF-8') ?></span>
+                                        <?php else: ?>
+                                            <a href="<?= htmlspecialchars((string) $sd['url'], ENT_QUOTES, 'UTF-8') ?>" class="nav-link">
+                                                <?= htmlspecialchars((string) $sd['name'], ENT_QUOTES, 'UTF-8') ?>
+                                            </a>
+                                        <?php endif ?>
+                                    </li>
+                                <?php endif ?>
+                            <?php endforeach ?>
+                        </ul>
+                    <?php endif ?>
                     <ul class="navbar-nav ms-auto">
                         <li class="nav-item"><a class="nav-link" href="/admin.php">Админ</a></li>
                     </ul>
