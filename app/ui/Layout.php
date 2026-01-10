@@ -83,6 +83,20 @@ final class Layout
         echo '</div>';
     }
 
+    public static function getMainMenuItems(array $ctx, int $maxDepth = 2): array
+    {
+        $site = $ctx['site'] ?? [];
+        $section = $ctx['section'] ?? [];
+        $siteId = (int) ($site['id'] ?? 0);
+        if ($siteId <= 0) {
+            return [];
+        }
+
+        $currentId = (int) ($section['id'] ?? 0);
+        $repo = new SectionRepo();
+        return self::buildMenuItems($repo, $siteId, $siteId, $currentId, 1, $maxDepth);
+    }
+
     public static function render(string $layoutKey, array $ctx, callable $body): void
     {
         $layoutKey = trim($layoutKey) !== '' ? $layoutKey : 'default';
@@ -137,6 +151,38 @@ final class Layout
     private static function layoutNavPath(string $layoutKey): string
     {
         return dirname(__DIR__, 2) . '/templates/layouts/' . $layoutKey . '.nav.php';
+    }
+
+    private static function buildMenuItems(SectionRepo $repo, int $siteId, int $parentId, int $currentId, int $depth, int $maxDepth): array
+    {
+        if ($depth > $maxDepth) {
+            return [];
+        }
+
+        $children = $repo->listChildren($parentId);
+        $items = [];
+        foreach ($children as $child) {
+            $englishName = (string) ($child['english_name'] ?? '');
+            if ($englishName === '404') {
+                continue;
+            }
+
+            $itemId = (int) ($child['id'] ?? 0);
+            $name = (string) ($child['title'] ?? $englishName);
+            if ($name === '') {
+                continue;
+            }
+
+            $items[] = [
+                'id' => $itemId,
+                'name' => $name,
+                'url' => $repo->buildPath($itemId),
+                'active' => $itemId === $currentId || ($currentId > 0 && $repo->isDescendant($currentId, $itemId)),
+                'children' => $depth < $maxDepth ? self::buildMenuItems($repo, $siteId, $itemId, $currentId, $depth + 1, $maxDepth) : [],
+            ];
+        }
+
+        return $items;
     }
 
     public static function sowAssetsAvailable(): bool
