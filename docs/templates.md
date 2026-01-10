@@ -40,14 +40,19 @@ HTML инфоблоков раздела).
 
 ```php
 <?php
+// Текущая страница (например, из $_GET['page']).
 $currentPage = 1;
+// Общее число страниц (например, на основе COUNT / perPage).
 $totalPages = 10;
+// Базовый URL без параметров.
 $baseUrl = '/admin.php';
+// Параметры, которые нужно сохранить в ссылках пагинации.
 $params = [
     'section_id' => 1,
     'tab' => 'content',
     'content_infoblock_id' => 5,
 ];
+// Вывод пагинации.
 Layout::renderPagination($currentPage, $totalPages, $baseUrl, $params);
 ?>
 ```
