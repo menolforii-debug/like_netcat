@@ -83,13 +83,21 @@ final class Layout
         echo '</div>';
     }
 
-    public static function renderPagination(?int $currentPage, ?int $totalPages, ?string $baseUrl, array $params = []): void
+ 
+    public static function renderPagination(
+        ?int $currentPage,
+        ?int $totalPages,
+        ?string $baseUrl,
+        array $params = [],
+        array $options = []
+    ): void
     {
-        if ($currentPage === null || $totalPages === null || $baseUrl === null || $totalPages <= 1) {
+        if ($currentPage === null || $totalPages === null || $baseUrl === null) {
             return;
         }
 
-        $items = self::getPaginationItems($currentPage, $totalPages, $baseUrl, $params);
+        $items = self::getPaginationItems($currentPage, $totalPages, $baseUrl, $params, $options);
+ 
         if (empty($items)) {
             return;
         }
@@ -125,9 +133,22 @@ final class Layout
     /**
      * Возвращает список элементов пагинации для кастомной разметки.
      */
-    public static function getPaginationItems(?int $currentPage, ?int $totalPages, ?string $baseUrl, array $params = []): array
+ 
+    public static function getPaginationItems(
+        ?int $currentPage,
+        ?int $totalPages,
+        ?string $baseUrl,
+        array $params = [],
+        array $options = []
+    ): array
     {
-        if ($currentPage === null || $totalPages === null || $baseUrl === null || $totalPages <= 1) {
+        if ($currentPage === null || $totalPages === null || $baseUrl === null) {
+            return [];
+        }
+
+        $showSingle = !empty($options['show_single']);
+        if ($totalPages <= 1 && !$showSingle) {
+ 
             return [];
         }
 
