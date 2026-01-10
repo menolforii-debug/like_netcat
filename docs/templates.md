@@ -31,7 +31,8 @@
 - `Layout::renderNavbar($brand, $links)` — быстрый вывод navbar.
 - `Layout::renderDocumentStart($title, $meta)` / `Layout::renderDocumentEnd()` — готовые обёртки HTML.
 - `Layout::renderSectionHeader($section, $children)` — вывод заголовка раздела и списка дочерних разделов.
-- `Layout::renderPagination($currentPage, $totalPages, $baseUrl, $params)` — вывод пагинации.
+- `Layout::renderPagination($currentPage, $totalPages, $baseUrl, $params)` — вывод пагинации (если параметры `null`, просто ничего не выводит).
+- `Layout::getPaginationItems($currentPage, $totalPages, $baseUrl, $params)` — получить массив элементов пагинации для кастомной разметки (при `null` вернёт пустой массив).
 
 Также можно вызывать `$body()` для вывода контентной части (в текущем рендеринге —
 HTML инфоблоков раздела).
@@ -50,6 +51,36 @@ $params = [
 ];
 Layout::renderPagination($currentPage, $totalPages, $baseUrl, $params);
 ?>
+```
+
+Пример кастомной разметки с `getPaginationItems`:
+
+```php
+<?php
+$items = Layout::getPaginationItems($currentPage, $totalPages, $baseUrl, $params);
+?>
+<?php if (!empty($items)) : ?>
+    <div class="pagination-custom">
+        <?php foreach ($items as $item): ?>
+            <?php
+            $classes = ['page-link'];
+            if (!empty($item['active'])) {
+                $classes[] = 'is-active';
+            }
+            if (!empty($item['disabled'])) {
+                $classes[] = 'is-disabled';
+            }
+            ?>
+            <a class="<?= htmlspecialchars(implode(' ', $classes), ENT_QUOTES, 'UTF-8') ?>"
+               href="<?= htmlspecialchars((string) $item['url'], ENT_QUOTES, 'UTF-8') ?>"
+               <?php if (!empty($item['aria'])): ?>
+                   aria-label="<?= htmlspecialchars((string) $item['aria'], ENT_QUOTES, 'UTF-8') ?>"
+               <?php endif; ?>>
+                <?= htmlspecialchars((string) $item['label'], ENT_QUOTES, 'UTF-8') ?>
+            </a>
+        <?php endforeach; ?>
+    </div>
+<?php endif ?>
 ```
 
 ### Файл навигации макета
