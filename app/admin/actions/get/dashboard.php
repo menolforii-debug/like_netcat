@@ -373,6 +373,8 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                     $contentInfoblockId = (int) $infoblocks[0]['id'];
                 }
                 $showDeleted = !empty($_GET['show_deleted']);
+                $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
+                $perPage = 20;
                 $previewToken = ensurePreviewToken();
                 $sectionPath = buildSectionPathFromId($sectionRepo, (int) $selected['id']);
 
@@ -400,7 +402,13 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                         }
                         $component = $componentMap[(int) $infoblock['component_id']] ?? null;
                         $componentName = $component ? (string) $component['name'] : 'Неизвестно';
-                        $objects = $objectRepo->listForInfoblock((int) $infoblock['id'], $showDeleted);
+                        $totalObjects = $objectRepo->countForInfoblock((int) $infoblock['id'], $showDeleted);
+                        $totalPages = max(1, (int) ceil($totalObjects / $perPage));
+                        if ($page > $totalPages) {
+                            $page = 1;
+                        }
+                        $offset = ($page - 1) * $perPage;
+                        $objects = $objectRepo->listForInfoblockPaged((int) $infoblock['id'], $showDeleted, null, $perPage, $offset);
                         $canCreate = Permission::canAction($currentUser, $infoblock, 'create');
                         $canEdit = Permission::canAction($currentUser, $infoblock, 'edit');
                         $canDelete = Permission::canAction($currentUser, $infoblock, 'delete');
@@ -508,11 +516,18 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                                 echo '</td>';
                                 echo '</tr>';
                             }
-                            echo '</tbody></table></div>';
-                        }
-
-                        echo '</div>';
+                        echo '</tbody></table></div>';
                     }
+
+                    Layout::renderPagination($page, $totalPages, '/admin.php', [
+                        'section_id' => $selectedId,
+                        'tab' => 'content',
+                        'content_infoblock_id' => (int) $infoblock['id'],
+                        'show_deleted' => $showDeleted ? 1 : null,
+                    ]);
+
+                    echo '</div>';
+                }
                 }
             } else {
                 $maxSort = 0;
