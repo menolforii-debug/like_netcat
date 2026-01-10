@@ -92,6 +92,7 @@ final class Renderer
             }
             if ($queryOverride !== null && ($queryOverride['mode'] ?? 'extend') === 'replace' && !empty($queryOverride['sql'])) {
                 $objects = $objectRepo->listBySql($queryOverride['sql'], $queryOverride['params'] ?? []);
+                $objects = $this->filterOverrideObjects($objects, $infoblock, $queryOverride);
             } elseif ($queryOverride !== null) {
                 $objects = $objectRepo->listForInfoblockWithOverride((int) $infoblock['id'], false, 'published', $queryOverride);
             } else {
@@ -215,6 +216,46 @@ final class Renderer
             'limit' => $limit,
             'ignore_sub' => $ignoreSub,
         ];
+    }
+
+    private function filterOverrideObjects(array $objects, array $infoblock, array $override): array
+    {
+        $filtered = [];
+        $infoblockId = (int) ($infoblock['id'] ?? 0);
+        $componentId = (int) ($infoblock['component_id'] ?? 0);
+        $ignoreSub = !empty($override['ignore_sub']);
+
+        foreach ($objects as $object) {
+            if (!is_array($object)) {
+                continue;
+            }
+
+            if (!isset($object['status']) || !isset($object['is_deleted'])) {
+                continue;
+            }
+
+            if ((string) $object['status'] !== 'published') {
+                continue;
+            }
+
+            if (!empty($object['is_deleted'])) {
+                continue;
+            }
+
+            if ($ignoreSub) {
+                if (!isset($object['component_id']) || (int) $object['component_id'] !== $componentId) {
+                    continue;
+                }
+            } else {
+                if (!isset($object['infoblock_id']) || (int) $object['infoblock_id'] !== $infoblockId) {
+                    continue;
+                }
+            }
+
+            $filtered[] = $object;
+        }
+
+        return $filtered;
     }
 
     private function resolveViewTemplate(array $infoblock, array $component): string
