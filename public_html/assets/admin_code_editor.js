@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     editor.setSize(null, 320);
 
     textarea.dataset.codemirror = '1';
+    textarea._codeMirror = editor;
     editors.push(editor);
   });
 

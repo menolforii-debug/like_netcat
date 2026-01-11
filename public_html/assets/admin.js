@@ -66,6 +66,58 @@ function initInfoblockViewSelects(scope) {
   });
 }
 
+function initCodeEditorFullscreen(scope) {
+  const root = scope || document;
+  const wrappers = root.querySelectorAll('.js-code-editor-wrapper');
+  if (!wrappers.length) return;
+
+  const setFullscreen = (wrapper, enabled) => {
+    wrapper.classList.toggle('is-fullscreen', enabled);
+    const expandButton = wrapper.querySelector('.js-code-editor-expand');
+    const collapseButton = wrapper.querySelector('.js-code-editor-collapse');
+    if (expandButton) expandButton.classList.toggle('d-none', enabled);
+    if (collapseButton) collapseButton.classList.toggle('d-none', !enabled);
+
+    const textarea = wrapper.querySelector('textarea.code-editor');
+    const editor = textarea ? textarea._codeMirror : null;
+    if (editor) {
+      if (enabled) {
+        const height = Math.max(240, window.innerHeight - 180);
+        editor.setSize(null, height);
+      } else {
+        editor.setSize(null, 320);
+      }
+      editor.refresh();
+    }
+
+    const hasFullscreen = document.querySelector('.js-code-editor-wrapper.is-fullscreen');
+    document.body.classList.toggle('code-editor-fullscreen-open', !!hasFullscreen);
+  };
+
+  wrappers.forEach((wrapper) => {
+    const expandButton = wrapper.querySelector('.js-code-editor-expand');
+    const collapseButton = wrapper.querySelector('.js-code-editor-collapse');
+    if (expandButton) {
+      expandButton.addEventListener('click', () => setFullscreen(wrapper, true));
+    }
+    if (collapseButton) {
+      collapseButton.addEventListener('click', () => setFullscreen(wrapper, false));
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    document.querySelectorAll('.js-code-editor-wrapper.is-fullscreen').forEach((wrapper) => {
+      const textarea = wrapper.querySelector('textarea.code-editor');
+      const editor = textarea ? textarea._codeMirror : null;
+      if (editor) {
+        const height = Math.max(240, window.innerHeight - 180);
+        editor.setSize(null, height);
+        editor.refresh();
+      }
+    });
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('textarea.code-editor').forEach((textarea) => {
     textarea.addEventListener('keydown', (event) => {
@@ -82,6 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initVisualInheritToggles(document);
   initInfoblockViewSelects(document);
+  initCodeEditorFullscreen(document);
 });
 
 const ADMIN_SNACKBAR_DURATION = 3500;

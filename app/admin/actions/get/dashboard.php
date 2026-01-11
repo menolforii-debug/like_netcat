@@ -550,11 +550,12 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                 } else {
                     echo '<div class="table-responsive">';
                     echo '<table class="table table-sm align-middle">';
-                    echo '<thead><tr><th>Сортировка</th><th>Название</th><th>Компонент</th><th>Шаблон</th><th>Включен</th><th>Действия</th></tr></thead><tbody>';
+                    echo '<thead><tr><th>ID</th><th>Сортировка</th><th>Название</th><th>Компонент</th><th>Шаблон</th><th>Включен</th><th>Действия</th></tr></thead><tbody>';
                     foreach ($infoblocks as $infoblock) {
                         $component = $componentMap[(int) $infoblock['component_id']] ?? null;
                         $componentName = $component ? (string) $component['name'] : 'Неизвестно';
                         echo '<tr>';
+                        echo '<td>' . (int) $infoblock['id'] . '</td>';
                         echo '<td>' . (int) $infoblock['sort'] . '</td>';
                         echo '<td>' . htmlspecialchars((string) $infoblock['name'], ENT_QUOTES, 'UTF-8') . '</td>';
                         echo '<td>' . htmlspecialchars($componentName, ENT_QUOTES, 'UTF-8') . '</td>';

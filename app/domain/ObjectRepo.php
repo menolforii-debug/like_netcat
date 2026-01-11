@@ -112,10 +112,20 @@ final class ObjectRepo
         }
 
         $limit = '';
+        $offset = '';
         if (isset($override['limit']) && is_numeric($override['limit'])) {
             $limitValue = (int) $override['limit'];
             if ($limitValue > 0) {
                 $limit = ' LIMIT ' . $limitValue;
+            }
+        }
+        if (isset($override['offset']) && is_numeric($override['offset'])) {
+            $offsetValue = (int) $override['offset'];
+            if ($offsetValue >= 0) {
+                if ($limit === '') {
+                    $limit = ' LIMIT -1';
+                }
+                $offset = ' OFFSET ' . $offsetValue;
             }
         }
 
@@ -128,10 +138,101 @@ final class ObjectRepo
 
         $sql = 'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
             FROM objects
-            WHERE ' . implode(' AND ', $where) . $order . $limit;
+            WHERE ' . implode(' AND ', $where) . $order . $limit . $offset;
         $this->lastSelectQuery = $this->interpolateQuery($sql, $params);
 
         return DB::fetchAll($sql, $params);
+    }
+
+    public function listByFilters(array $filters): array
+    {
+        $sql = isset($filters['sql']) && is_string($filters['sql']) ? trim($filters['sql']) : '';
+        $params = isset($filters['params']) && is_array($filters['params']) ? $filters['params'] : [];
+        if ($sql !== '') {
+            return $this->listBySql($sql, $params);
+        }
+
+        $infoblockId = $filters['infoblock_id'] ?? null;
+        $componentId = $filters['component_id'] ?? null;
+        if ($infoblockId === null && $componentId === null) {
+            return [];
+        }
+
+        $status = null;
+        if (isset($filters['status'])) {
+            $statusValue = trim((string) $filters['status']);
+            $status = $statusValue !== '' ? $statusValue : null;
+        }
+
+        $override = [
+            'where' => [],
+            'params' => $params,
+        ];
+
+        $includeDeleted = false;
+        if (array_key_exists('is_deleted', $filters)) {
+            $isDeleted = $filters['is_deleted'];
+            if ($isDeleted !== null && $isDeleted !== '') {
+                $isDeletedValue = (int) (bool) $isDeleted;
+                if ($isDeletedValue === 1) {
+                    $includeDeleted = true;
+                    $override['where'][] = 'is_deleted = :is_deleted';
+                    $override['params']['is_deleted'] = 1;
+                }
+            }
+        }
+
+        if (isset($filters['section_id']) && $filters['section_id'] !== '' && $filters['section_id'] !== null) {
+            $override['where'][] = 'section_id = :section_id';
+            $override['params']['section_id'] = (int) $filters['section_id'];
+        }
+
+        if (isset($filters['site_id']) && $filters['site_id'] !== '' && $filters['site_id'] !== null) {
+            $override['where'][] = 'site_id = :site_id';
+            $override['params']['site_id'] = (int) $filters['site_id'];
+        }
+
+        if (isset($filters['where'])) {
+            foreach ((array) $filters['where'] as $condition) {
+                if (is_string($condition) && trim($condition) !== '') {
+                    $override['where'][] = $condition;
+                }
+            }
+        }
+
+        $order = $filters['order'] ?? $filters['sort'] ?? null;
+        if (is_string($order) && trim($order) !== '') {
+            $override['order'] = $order;
+        }
+
+        if (isset($filters['limit']) && is_numeric($filters['limit'])) {
+            $limitValue = (int) $filters['limit'];
+            if ($limitValue > 0) {
+                $override['limit'] = $limitValue;
+            }
+        }
+
+        if (isset($filters['offset']) && is_numeric($filters['offset'])) {
+            $offsetValue = (int) $filters['offset'];
+            if ($offsetValue >= 0) {
+                $override['offset'] = $offsetValue;
+            }
+        }
+
+        $useIgnoreSub = !empty($filters['ignore_sub']) || ($infoblockId === null && $componentId !== null);
+        if ($componentId !== null) {
+            if ($useIgnoreSub) {
+                $override['component_id'] = (int) $componentId;
+            } else {
+                $override['where'][] = 'component_id = :component_id';
+                $override['params']['component_id'] = (int) $componentId;
+            }
+        }
+        if ($useIgnoreSub) {
+            $override['ignore_sub'] = 1;
+        }
+
+        return $this->listForInfoblockWithOverride((int) ($infoblockId ?? 0), $includeDeleted, $status, $override);
     }
 
     public function listBySql(string $sql, array $params = []): array

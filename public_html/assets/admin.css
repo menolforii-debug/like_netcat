@@ -214,3 +214,22 @@ body {
   color: rgba(0,0,0,.45);
   font-weight: 600;
 }
+
+.code-editor-fullscreen-open {
+  overflow: hidden;
+}
+
+.js-code-editor-wrapper.is-fullscreen {
+  position: fixed;
+  inset: 16px;
+  z-index: 1055;
+  background: #fff;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+.js-code-editor-wrapper.is-fullscreen .CodeMirror {
+  height: 100%;
+}
