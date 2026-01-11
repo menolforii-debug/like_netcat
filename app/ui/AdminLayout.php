@@ -31,14 +31,15 @@ final class AdminLayout
 
         echo "<body class=\"bg-light\">\n";
         echo "<div class=\"d-flex flex-column min-vh-100\">\n";
-        echo "<header class=\"navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm\">\n";
-        echo "<div class=\"container-fluid\">\n";
-        echo "<a class=\"navbar-brand fw-semibold\" href=\"/admin.php\">Админка</a>\n";
+        echo "<header id=\"header\" class=\"shadow-xs bg-gradient-primary\">\n";
+        echo "<div class=\"container-fluid position-relative\">\n";
+        echo "<nav class=\"navbar navbar-expand-lg navbar-dark text-white\">\n";
+        echo "<a class=\"navbar-brand text-white fw-semibold\" href=\"/admin.php\">Админка</a>\n";
         echo "<button class=\"navbar-toggler\" type=\"button\" data-bs-toggle=\"collapse\" data-bs-target=\"#adminTopNav\" aria-controls=\"adminTopNav\" aria-expanded=\"false\" aria-label=\"Toggle navigation\">\n";
         echo "<span class=\"navbar-toggler-icon\"></span>\n";
         echo "</button>\n";
-        echo "<div class=\"collapse navbar-collapse\" id=\"adminTopNav\">\n";
-        echo "<ul class=\"navbar-nav me-auto mb-2 mb-lg-0\">\n";
+        echo "<div class=\"collapse navbar-collapse navbar-animate-fadein\" id=\"adminTopNav\">\n";
+        echo "<ul class=\"navbar-nav\">\n";
         $action = isset($_GET['action']) ? (string) $_GET['action'] : '';
         $action = $action !== '' ? $action : 'dashboard';
         $menu = [
@@ -51,13 +52,15 @@ final class AdminLayout
         ];
         foreach ($menu as $key => $item) {
             $active = $action === $key ? ' active' : '';
-            echo '<li class="nav-item"><a class="nav-link' . $active . '" href="' . htmlspecialchars($item['href'], ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8') . "</a></li>\n";
+            $ariaCurrent = $action === $key ? ' aria-current="page"' : '';
+            echo '<li class="nav-item"><a class="nav-link' . $active . '"' . $ariaCurrent . ' href="' . htmlspecialchars($item['href'], ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8') . "</a></li>\n";
         }
         echo "</ul>\n";
-        echo "<div class=\"d-flex gap-2\">\n";
-        echo "<a class=\"btn btn-outline-dark btn-sm\" href=\"/admin.php?action=logout\">Выйти</a>\n";
+        echo "<div class=\"ms-lg-auto\">\n";
+        echo "<a class=\"btn btn-sm btn-light\" href=\"/admin.php?action=logout\">Выйти</a>\n";
         echo "</div>\n";
         echo "</div>\n";
+        echo "</nav>\n";
         echo "</div>\n";
         echo "</header>\n";
         echo "<main class=\"flex-grow-1\">\n";
