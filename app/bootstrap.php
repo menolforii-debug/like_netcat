@@ -61,6 +61,13 @@ function usersCount(): int
     return $row ? (int) $row['cnt'] : 0;
 }
 
+function nc_objects_list(array $filters): array
+{
+    $repo = new ObjectRepo();
+
+    return $repo->listByFilters($filters);
+}
+
 function ensureDefaultSite(string $host): void
 {
     if (!DB::hasTable('sections')) {

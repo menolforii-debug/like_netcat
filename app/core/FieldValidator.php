@@ -94,6 +94,7 @@ final class FieldValidator
         switch ($type) {
             case 'string':
             case 'text':
+            case 'textarea':
             case 'html':
                 return (string) $value;
             case 'select':
