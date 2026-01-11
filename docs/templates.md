@@ -233,6 +233,33 @@ $pageItems = array_slice($items, ($currentPage - 1) * $perPage, $perPage);
 - `$object` — объект в режиме single (первый элемент `$objects`), либо `null`.
 - `$core` — системный массив (в текущем коде пустой, но доступен для совместимости).
 - `$message_select` — SQL‑запрос, которым была получена выборка объектов (для отладки).
+- Поля объекта доступны как в массиве `data`, так и в виде отдельных переменных с префиксом `f_`
+  (например, поле `big_text` можно использовать как `$object['data']['big_text']` и как `$f_big_text`).
+
+### Дополнительные helper‑функции
+
+В шаблонах компонентов можно вызывать `nc_objects_list()` для выборки объектов по фильтрам
+(см. подробное описание в `docs/objects-api.md`).
+
+### Пример доступа к полям объекта
+
+Внутри шаблонов компонентов рекомендуется приводить поля объекта к переменным с префиксом `f_`,
+чтобы избежать повторения длинных выражений.
+
+```php
+<?php
+/** @var array $object */
+$f_title = (string) ($object['data']['title'] ?? 'Без заголовка');
+$f_big_text = (string) ($object['data']['big_text'] ?? '');
+?>
+
+<article class="news-item">
+    <h2><?= htmlspecialchars($f_title, ENT_QUOTES, 'UTF-8') ?></h2>
+    <?php if ($f_big_text !== ''): ?>
+        <p><?= htmlspecialchars($f_big_text, ENT_QUOTES, 'UTF-8') ?></p>
+    <?php endif; ?>
+</article>
+```
 
 ### Дополнительные helper‑функции
 
