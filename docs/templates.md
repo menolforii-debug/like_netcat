@@ -62,13 +62,11 @@ Layout::renderPagination($currentPage, $totalPages, $baseUrl, $params, [
 
 ```php
 <?php
-<<<<<<< HEAD
-$items = Layout::getPaginationItems($currentPage, $totalPages, $baseUrl, $params);
-=======
+
 $items = Layout::getPaginationItems($currentPage, $totalPages, $baseUrl, $params, [
     // 'show_single' => true,
 ]);
->>>>>>> origin/codex/conduct-comprehensive-code-review-cr15u0
+
 ?>
 <?php if (!empty($items)) : ?>
     <div class="pagination-custom">
