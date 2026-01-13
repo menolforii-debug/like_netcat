@@ -568,6 +568,7 @@ foreach ($segments as $segment) {
     </div>
 </div>
 <script src="/assets/sow/js/vendor.markdowneditor.min.js"></script>
+<script src="/assets/sow/js/vendor_bundle.min.js"></script>
 <script src="/assets/sow/js/core.min.js"></script>
 <script>
     (function () {
