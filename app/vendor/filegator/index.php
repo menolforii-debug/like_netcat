@@ -240,6 +240,21 @@ if ($editTarget !== '') {
         $editTarget = '';
     }
 }
+if ($editTarget === '' && isset($_GET['edit'])) {
+    http_response_code(400);
+    $errors[] = 'Редактирование разрешено только для текстовых файлов проекта.';
+}
+
+$segments = $current === '' ? [] : explode('/', $current);
+$breadcrumbs = [];
+$crumbPath = '';
+foreach ($segments as $segment) {
+    $crumbPath = $crumbPath === '' ? $segment : $crumbPath . '/' . $segment;
+    $breadcrumbs[] = [
+        'name' => $segment,
+        'path' => $crumbPath,
+    ];
+}
 
 ?>
 <!doctype html>
@@ -260,7 +275,19 @@ if ($editTarget !== '') {
 <div class="container-fluid py-3">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <strong>Текущий путь:</strong> /<?= htmlspecialchars($current, ENT_QUOTES, 'UTF-8') ?>
+            <strong>Путь:</strong>
+            <nav aria-label="breadcrumb" class="d-inline-block">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="?path=">/</a></li>
+                    <?php foreach ($breadcrumbs as $crumb): ?>
+                        <li class="breadcrumb-item">
+                            <a href="?path=<?= urlencode($crumb['path']) ?>">
+                                <?= htmlspecialchars($crumb['name'], ENT_QUOTES, 'UTF-8') ?>
+                            </a>
+                        </li>
+                    <?php endforeach; ?>
+                </ol>
+            </nav>
         </div>
         <?php if ($parent !== '' || $current !== ''): ?>
             <a class="btn btn-sm btn-outline-secondary" href="?path=<?= urlencode($parent) ?>">Назад</a>
@@ -311,7 +338,12 @@ if ($editTarget !== '') {
                                     <?php if ($item['type'] === 'file'): ?>
                                         <?php $ext = strtolower(pathinfo((string) $item['name'], PATHINFO_EXTENSION)); ?>
                                         <?php if ($ext !== '' && in_array($ext, $editableExtensions, true)): ?>
-                                            <a class="btn btn-sm btn-outline-primary" href="?path=<?= urlencode($current) ?>&edit=<?= urlencode($item['path']) ?>">Редактировать</a>
+                                            <button class="btn btn-sm btn-outline-primary js-edit-file"
+                                                    type="button"
+                                                    data-file-path="<?= htmlspecialchars($item['path'], ENT_QUOTES, 'UTF-8') ?>"
+                                                    data-file-name="<?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?>">
+                                                Редактировать
+                                            </button>
                                         <?php endif; ?>
                                     <?php endif; ?>
                                     <form method="post">
@@ -368,20 +400,81 @@ if ($editTarget !== '') {
         </div>
     </div>
 
-    <?php if ($editTarget !== ''): ?>
-        <div class="card shadow-sm mt-3 file-editor">
-            <div class="card-header bg-white fw-semibold">Редактирование: <?= htmlspecialchars($editTarget, ENT_QUOTES, 'UTF-8') ?></div>
-            <div class="card-body">
-                <form method="post">
-                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
-                    <input type="hidden" name="action" value="save">
-                    <input type="hidden" name="item" value="<?= htmlspecialchars($editTarget, ENT_QUOTES, 'UTF-8') ?>">
-                    <textarea class="form-control mb-2" name="content"><?= htmlspecialchars($editContent, ENT_QUOTES, 'UTF-8') ?></textarea>
-                    <button class="btn btn-success" type="submit">Сохранить</button>
-                </form>
+    <div class="modal fade" id="fileEditModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Редактирование файла</h5>
+                    <button type="button" class="btn-close js-cancel-edit" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="post" id="fileEditForm">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="action" value="save">
+                        <input type="hidden" name="item" id="fileEditPath" value="">
+                        <textarea class="form-control mb-2" name="content" id="fileEditContent"><?= htmlspecialchars($editContent, ENT_QUOTES, 'UTF-8') ?></textarea>
+                        <div class="d-flex justify-content-end gap-2">
+                            <button class="btn btn-outline-secondary js-cancel-edit" type="button">Отмена</button>
+                            <button class="btn btn-success" type="submit">Сохранить</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
-    <?php endif; ?>
+    </div>
 </div>
+<script>
+    (function () {
+        var modalEl = document.getElementById('fileEditModal');
+        if (!modalEl) {
+            return;
+        }
+        var modal = new bootstrap.Modal(modalEl, {backdrop: 'static', keyboard: false});
+        var editButtons = document.querySelectorAll('.js-edit-file');
+        var pathInput = document.getElementById('fileEditPath');
+        var contentArea = document.getElementById('fileEditContent');
+        var titleEl = modalEl.querySelector('.modal-title');
+        var cancelButtons = modalEl.querySelectorAll('.js-cancel-edit');
+
+        editButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                var filePath = button.getAttribute('data-file-path') || '';
+                var fileName = button.getAttribute('data-file-name') || 'Редактирование файла';
+                if (pathInput) {
+                    pathInput.value = filePath;
+                }
+                if (titleEl) {
+                    titleEl.textContent = 'Редактирование: ' + fileName;
+                }
+                modal.show();
+                if (window.CodeMirror && contentArea) {
+                    if (!contentArea._cm) {
+                        contentArea._cm = CodeMirror.fromTextArea(contentArea, {
+                            lineNumbers: true,
+                            mode: 'application/x-httpd-php',
+                            theme: 'default'
+                        });
+                    }
+                    contentArea._cm.refresh();
+                }
+            });
+        });
+
+        cancelButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                modal.hide();
+            });
+        });
+
+        var form = document.getElementById('fileEditForm');
+        if (form) {
+            form.addEventListener('submit', function () {
+                if (contentArea && contentArea._cm) {
+                    contentArea._cm.save();
+                }
+            });
+        }
+    })();
+</script>
 </body>
 </html>
