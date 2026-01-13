@@ -102,6 +102,25 @@ function formatPermissions(int $permissions): string
     return substr(sprintf('%o', $permissions), -4);
 }
 
+/**
+ * Проверяет имя файла на наличие недопустимых символов и путей.
+ */
+function isValidFileName(string $name): bool
+{
+    if ($name === '' || $name === '.' || $name === '..') {
+        return false;
+    }
+
+    if (str_contains($name, '/') || str_contains($name, '\\')) {
+        return false;
+    }
+
+    return basename($name) === $name;
+}
+
+/**
+ * Возвращает режим подсветки CodeMirror по расширению файла.
+ */
 function detectEditorMode(string $extension): string
 {
     $extension = strtolower($extension);
@@ -147,6 +166,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException('Не удалось создать папку.');
             }
             $messages[] = 'Папка создана.';
+        } elseif ($action === 'create_file') {
+            $name = trim((string) ($_POST['name'] ?? ''));
+            if (!isValidFileName($name)) {
+                throw new RuntimeException('Некорректное имя файла.');
+            }
+            $dest = resolvePath($root, $target . '/' . $name);
+            if (file_exists($dest)) {
+                throw new RuntimeException('Файл уже существует.');
+            }
+            if (file_put_contents($dest, '') === false) {
+                throw new RuntimeException('Не удалось создать файл.');
+            }
+            @chmod($dest, 0660);
+            $messages[] = 'Файл создан.';
         } elseif ($action === 'upload') {
             if (!isset($_FILES['file'])) {
                 throw new RuntimeException('Файл не передан.');
@@ -468,6 +501,18 @@ foreach ($segments as $segment) {
                         <input type="hidden" name="target" value="<?= htmlspecialchars($current, ENT_QUOTES, 'UTF-8') ?>">
                         <input class="form-control mb-2" type="file" name="file" required>
                         <button class="btn btn-primary w-100" type="submit">Загрузить</button>
+                    </form>
+                </div>
+            </div>
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-white fw-semibold">Создать файл</div>
+                <div class="card-body">
+                    <form method="post">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="action" value="create_file">
+                        <input type="hidden" name="target" value="<?= htmlspecialchars($current, ENT_QUOTES, 'UTF-8') ?>">
+                        <input class="form-control mb-2" type="text" name="name" placeholder="Имя файла" required>
+                        <button class="btn btn-outline-primary w-100" type="submit">Создать файл</button>
                     </form>
                 </div>
             </div>
