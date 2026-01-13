@@ -7,7 +7,7 @@ if (!Auth::isAdmin()) {
     redirectTo('/admin.php?action=login');
 }
 
-$managerPath = __DIR__ . '/../app/vendor/tinyfilemanager/tinyfilemanager.php';
+$managerPath = __DIR__ . '/../app/vendor/filegator/index.php';
 if (!is_file($managerPath)) {
     http_response_code(500);
     echo 'File manager not found';
