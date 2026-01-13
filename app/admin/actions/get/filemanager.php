@@ -4,17 +4,13 @@ if (!Auth::isAdmin()) {
     redirectTo(buildAdminUrl(['error' => 'Недостаточно прав']));
 }
 
-$managerPath = dirname(__DIR__, 4) . '/app/vendor/tinyfilemanager/tinyfilemanager.php';
-if (!is_file($managerPath)) {
-    http_response_code(500);
-    AdminLayout::renderHeader('Ошибка');
-    echo '<div class="container py-4">';
-    echo '<div class="text-danger fw-semibold">File manager not found</div>';
-    echo '</div>';
-    AdminLayout::renderFooter();
-    exit;
-}
-
-define('FM_EMBED', true);
-
-require $managerPath;
+AdminLayout::renderHeader('Файлы');
+echo '<div class="d-flex justify-content-between align-items-center mb-3">';
+echo '<h1 class="h4 mb-0">Файлы</h1>';
+echo '</div>';
+echo '<div class="card shadow-sm">';
+echo '<div class="card-body p-0">';
+echo '<iframe title="Файловый менеджер" src="/admin.php?action=filemanager_embed" style="width:100%;min-height:75vh;border:0;"></iframe>';
+echo '</div>';
+echo '</div>';
+AdminLayout::renderFooter();

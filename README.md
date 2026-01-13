@@ -72,10 +72,11 @@ php bin/cms sections:add --parent-id=1 --english-name=news --title="Новост
 
 ## Файловый менеджер
 
-- Раздел `Файлы` открывает Tiny File Manager, встроенный в админку.
+- Раздел `Файлы` открывает Tiny File Manager внутри админки и показывает хедер админ‑панели.
 - Доступен только администраторам, используется авторизация CMS.
 - Корень файлового менеджера — корень проекта.
-- Входной URL: `/admin.php?action=filemanager`.
+- Входной URL: `/admin.php?action=filemanager` (встроенная страница).
+- Внутренний URL для iframe: `/admin.php?action=filemanager_embed`.
 
 ## Шаблоны
 
