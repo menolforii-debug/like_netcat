@@ -6,7 +6,7 @@ if (!class_exists('Auth') || !method_exists('Auth', 'isAdmin') || !Auth::isAdmin
     exit;
 }
 
-$root = realpath(__DIR__ . '/../../../public_html/files');
+$root = realpath(__DIR__ . '/../../../');
 if ($root === false) {
     http_response_code(500);
     echo 'Корневая директория файлового менеджера не найдена.';
@@ -208,12 +208,36 @@ if ($current !== '') {
     }
 }
 
+$editableExtensions = [
+    'php',
+    'phtml',
+    'html',
+    'htm',
+    'css',
+    'scss',
+    'sass',
+    'less',
+    'js',
+    'json',
+    'yml',
+    'yaml',
+    'md',
+    'txt',
+    'xml',
+    'svg',
+    'env',
+    'ini',
+    'htaccess',
+];
 $editTarget = isset($_GET['edit']) ? normalizePath((string) $_GET['edit']) : '';
 $editContent = '';
 if ($editTarget !== '') {
     $editPath = resolvePath($root, $editTarget);
-    if (is_file($editPath)) {
+    $ext = strtolower(pathinfo($editPath, PATHINFO_EXTENSION));
+    if (is_file($editPath) && ($ext !== '' && in_array($ext, $editableExtensions, true))) {
         $editContent = (string) file_get_contents($editPath);
+    } else {
+        $editTarget = '';
     }
 }
 
@@ -285,13 +309,16 @@ if ($editTarget !== '') {
                                 <td><?= $item['modified'] ? date('Y-m-d H:i', (int) $item['modified']) : '—' ?></td>
                                 <td class="file-actions">
                                     <?php if ($item['type'] === 'file'): ?>
-                                        <a class="btn btn-sm btn-outline-primary" href="?path=<?= urlencode($current) ?>&edit=<?= urlencode($item['path']) ?>">Редактировать</a>
+                                        <?php $ext = strtolower(pathinfo((string) $item['name'], PATHINFO_EXTENSION)); ?>
+                                        <?php if ($ext !== '' && in_array($ext, $editableExtensions, true)): ?>
+                                            <a class="btn btn-sm btn-outline-primary" href="?path=<?= urlencode($current) ?>&edit=<?= urlencode($item['path']) ?>">Редактировать</a>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                     <form method="post">
                                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="item" value="<?= htmlspecialchars($item['path'], ENT_QUOTES, 'UTF-8') ?>">
-                                        <button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>
+                                        <button class="btn btn-sm btn-outline-danger" type="submit" onclick="return confirm('Удалить <?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?>?')">Удалить</button>
                                     </form>
                                 </td>
                             </tr>
