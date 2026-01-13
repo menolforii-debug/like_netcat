@@ -102,6 +102,46 @@ function formatPermissions(int $permissions): string
     return substr(sprintf('%o', $permissions), -4);
 }
 
+/**
+ * Проверяет имя файла на наличие недопустимых символов и путей.
+ */
+function isValidFileName(string $name): bool
+{
+    if ($name === '' || $name === '.' || $name === '..') {
+        return false;
+    }
+
+    if (str_contains($name, '/') || str_contains($name, '\\')) {
+        return false;
+    }
+
+    return basename($name) === $name;
+}
+
+/**
+ * Возвращает режим подсветки CodeMirror по расширению файла.
+ */
+function detectEditorMode(string $extension): string
+{
+    $extension = strtolower($extension);
+    $modes = [
+        'php' => 'application/x-httpd-php',
+        'phtml' => 'application/x-httpd-php',
+        'html' => 'htmlmixed',
+        'htm' => 'htmlmixed',
+        'xml' => 'xml',
+        'svg' => 'xml',
+        'js' => 'javascript',
+        'json' => 'application/json',
+        'css' => 'css',
+        'scss' => 'text/x-scss',
+        'sass' => 'text/x-scss',
+        'less' => 'text/x-less',
+    ];
+
+    return $modes[$extension] ?? 'text/plain';
+}
+
 $current = isset($_GET['path']) ? (string) $_GET['path'] : '';
 $current = normalizePath($current);
 $currentPath = resolvePath($root, $current);
@@ -126,6 +166,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException('Не удалось создать папку.');
             }
             $messages[] = 'Папка создана.';
+        } elseif ($action === 'create_file') {
+            $name = trim((string) ($_POST['name'] ?? ''));
+            if (!isValidFileName($name)) {
+                throw new RuntimeException('Некорректное имя файла.');
+            }
+            $dest = resolvePath($root, $target . '/' . $name);
+            if (file_exists($dest)) {
+                throw new RuntimeException('Файл уже существует.');
+            }
+            if (file_put_contents($dest, '') === false) {
+                throw new RuntimeException('Не удалось создать файл.');
+            }
+            @chmod($dest, 0660);
+            $messages[] = 'Файл создан.';
         } elseif ($action === 'upload') {
             if (!isset($_FILES['file'])) {
                 throw new RuntimeException('Файл не передан.');
@@ -253,11 +307,15 @@ $editableExtensions = [
 ];
 $editTarget = isset($_GET['edit']) ? normalizePath((string) $_GET['edit']) : '';
 $editContent = '';
+$editMode = 'text/plain';
+$editName = '';
 if ($editTarget !== '') {
     $editPath = resolvePath($root, $editTarget);
     $ext = strtolower(pathinfo($editPath, PATHINFO_EXTENSION));
     if (is_file($editPath) && ($ext !== '' && in_array($ext, $editableExtensions, true))) {
         $editContent = (string) file_get_contents($editPath);
+        $editMode = detectEditorMode($ext);
+        $editName = basename($editPath);
     } else {
         $editTarget = '';
     }
@@ -296,7 +354,10 @@ foreach ($segments as $segment) {
         .file-sort-button .sort-indicator { font-size: 0.8em; }
     </style>
 </head>
-<body class="bg-light">
+<body class="bg-light"
+      data-current-path="<?= htmlspecialchars($current, ENT_QUOTES, 'UTF-8') ?>"
+      data-edit-target="<?= htmlspecialchars($editTarget, ENT_QUOTES, 'UTF-8') ?>"
+      data-edit-name="<?= htmlspecialchars($editName, ENT_QUOTES, 'UTF-8') ?>">
 <div class="container-fluid py-3">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
@@ -444,6 +505,18 @@ foreach ($segments as $segment) {
                 </div>
             </div>
             <div class="card shadow-sm mb-3">
+                <div class="card-header bg-white fw-semibold">Создать файл</div>
+                <div class="card-body">
+                    <form method="post">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="action" value="create_file">
+                        <input type="hidden" name="target" value="<?= htmlspecialchars($current, ENT_QUOTES, 'UTF-8') ?>">
+                        <input class="form-control mb-2" type="text" name="name" placeholder="Имя файла" required>
+                        <button class="btn btn-outline-primary w-100" type="submit">Создать файл</button>
+                    </form>
+                </div>
+            </div>
+            <div class="card shadow-sm mb-3">
                 <div class="card-header bg-white fw-semibold">Создать папку</div>
                 <div class="card-body">
                     <form method="post">
@@ -470,7 +543,10 @@ foreach ($segments as $segment) {
                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                         <input type="hidden" name="action" value="save">
                         <input type="hidden" name="item" id="fileEditPath" value="">
-                        <textarea class="form-control mb-2 code-editor" name="content" id="fileEditContent"><?= htmlspecialchars($editContent, ENT_QUOTES, 'UTF-8') ?></textarea>
+                        <textarea class="form-control mb-2 code-editor"
+                                  name="content"
+                                  id="fileEditContent"
+                                  data-editor-mode="<?= htmlspecialchars($editMode, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($editContent, ENT_QUOTES, 'UTF-8') ?></textarea>
                         <div class="d-flex justify-content-end gap-2">
                             <button class="btn btn-outline-secondary js-cancel-edit" type="button">Отмена</button>
                             <button class="btn btn-success" type="submit">Сохранить</button>
@@ -568,6 +644,7 @@ foreach ($segments as $segment) {
 </div>
 <script src="/assets/sow/js/core.min.js"></script>
 <script src="/assets/sow/js/vendor_bundle.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
@@ -587,6 +664,10 @@ foreach ($segments as $segment) {
         var contentArea = document.getElementById('fileEditContent');
         var titleEl = modalEl.querySelector('.modal-title');
         var cancelButtons = modalEl.querySelectorAll('.js-cancel-edit');
+        var bodyDataset = document.body ? document.body.dataset : {};
+        var initialEditTarget = bodyDataset.editTarget || '';
+        var initialEditName = bodyDataset.editName || '';
+        var currentPath = bodyDataset.currentPath || '';
         var deleteModalEl = document.getElementById('fileDeleteModal');
         var deleteModal = deleteModalEl ? new bootstrap.Modal(deleteModalEl, {backdrop: 'static', keyboard: false}) : null;
         var deleteButtons = document.querySelectorAll('.js-delete-file');
@@ -616,20 +697,24 @@ foreach ($segments as $segment) {
         editButtons.forEach(function (button) {
             button.addEventListener('click', function () {
                 var filePath = button.getAttribute('data-file-path') || '';
-                var fileName = button.getAttribute('data-file-name') || 'Редактирование файла';
-                if (pathInput) {
-                    pathInput.value = filePath;
+                if (!filePath) {
+                    return;
                 }
-                if (titleEl) {
-                    titleEl.textContent = 'Редактирование: ' + fileName;
-                }
-                modal.show();
+                var url = new URL(window.location.href);
+                url.searchParams.set('path', currentPath);
+                url.searchParams.set('edit', filePath);
+                window.location.href = url.toString();
             });
         });
 
         cancelButtons.forEach(function (button) {
             button.addEventListener('click', function () {
                 modal.hide();
+                var url = new URL(window.location.href);
+                if (url.searchParams.has('edit')) {
+                    url.searchParams.delete('edit');
+                    window.history.replaceState({}, '', url);
+                }
             });
         });
 
@@ -732,7 +817,7 @@ foreach ($segments as $segment) {
             });
         });
 
-        document.addEventListener('DOMContentLoaded', function () {
+        var initializeEditors = function () {
             if (!window.CodeMirror) {
                 return;
             }
@@ -749,10 +834,11 @@ foreach ($segments as $segment) {
                     return;
                 }
 
+                var editorMode = textarea.dataset.editorMode || 'text/plain';
                 var editor = window.CodeMirror.fromTextArea(textarea, {
                     lineNumbers: true,
                     lineWrapping: true,
-                    mode: 'application/x-httpd-php',
+                    mode: editorMode,
                     indentUnit: 2,
                     tabSize: 2,
                     indentWithTabs: false
@@ -796,7 +882,24 @@ foreach ($segments as $segment) {
             window.addEventListener('resize', refreshAll);
             document.addEventListener('shown.bs.tab', refreshAll);
             document.addEventListener('shown.bs.collapse', refreshAll);
-        });
+            modalEl.addEventListener('shown.bs.modal', refreshAll);
+
+            if (initialEditTarget) {
+                if (pathInput) {
+                    pathInput.value = initialEditTarget;
+                }
+                if (titleEl) {
+                    titleEl.textContent = 'Редактирование: ' + (initialEditName || 'файл');
+                }
+                modal.show();
+            }
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeEditors);
+        } else {
+            initializeEditors();
+        }
 
         var tableBody = document.querySelector('.file-table tbody');
         var sortButtons = document.querySelectorAll('.js-sort');
