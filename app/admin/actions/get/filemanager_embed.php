@@ -1,7 +1,11 @@
 <?php
 
 if (!Auth::isAdmin()) {
-    redirectTo(buildAdminUrl(['error' => 'Недостаточно прав']));
+ 
+    http_response_code(403);
+    echo 'Недостаточно прав';
+    exit;
+ 
 }
 
 $managerPath = dirname(__DIR__, 4) . '/app/vendor/tinyfilemanager/tinyfilemanager.php';
