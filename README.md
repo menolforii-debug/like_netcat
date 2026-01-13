@@ -76,7 +76,7 @@ php bin/cms sections:add --parent-id=1 --english-name=news --title="Новост
 - Доступен только администраторам, используется авторизация CMS.
 - Корень файлового менеджера — корень проекта.
 - Входной URL: `/admin.php?action=filemanager` (страница с хедером админки).
-- Встроенный iframe использует `/filemanager.php`, доступен только администраторам.
+- Встроенный iframe использует `/admin.php?action=filemanager_embed`, доступен только администраторам.
 
 ## Шаблоны
 
