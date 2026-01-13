@@ -147,7 +147,8 @@ $current = normalizePath($current);
 $currentPath = resolvePath($root, $current);
 
 $errors = [];
-$messages = [];
+$messages = $_SESSION['filemanager_flash'] ?? [];
+unset($_SESSION['filemanager_flash']);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
@@ -231,7 +232,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (file_put_contents($path, $content) === false) {
                 throw new RuntimeException('Не удалось сохранить файл.');
             }
-            $messages[] = 'Файл сохранён.';
+            $_SESSION['filemanager_flash'] = ['Файл сохранён.'];
+            header('Location: ?path=' . urlencode($current));
+            exit;
         } elseif ($action === 'chmod') {
             $item = normalizePath((string) ($_POST['item'] ?? ''));
             $permissions = trim((string) ($_POST['permissions'] ?? ''));
