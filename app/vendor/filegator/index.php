@@ -97,6 +97,11 @@ function ensureCsrf(string $token): void
     }
 }
 
+function formatPermissions(int $permissions): string
+{
+    return substr(sprintf('%o', $permissions), -4);
+}
+
 $current = isset($_GET['path']) ? (string) $_GET['path'] : '';
 $current = normalizePath($current);
 $currentPath = resolvePath($root, $current);
@@ -173,6 +178,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException('Не удалось сохранить файл.');
             }
             $messages[] = 'Файл сохранён.';
+        } elseif ($action === 'chmod') {
+            $item = normalizePath((string) ($_POST['item'] ?? ''));
+            $permissions = trim((string) ($_POST['permissions'] ?? ''));
+            if ($item === '' || $permissions === '') {
+                throw new RuntimeException('Недостаточно данных для изменения прав.');
+            }
+            if (!preg_match('/^[0-7]{3,4}$/', $permissions)) {
+                throw new RuntimeException('Права должны быть в формате 644 или 0755.');
+            }
+            $path = resolvePath($root, $item);
+            $mode = intval($permissions, 8);
+            if (!@chmod($path, $mode)) {
+                throw new RuntimeException('Не удалось изменить права.');
+            }
+            $messages[] = 'Права изменены.';
         }
     } catch (Throwable $e) {
         $errors[] = $e->getMessage();
@@ -189,12 +209,14 @@ if (is_dir($currentPath)) {
             }
             $itemPath = $currentPath . DIRECTORY_SEPARATOR . $item;
             $isDir = is_dir($itemPath);
+            $permissions = fileperms($itemPath);
             $items[] = [
                 'name' => $item,
                 'path' => trim($current . '/' . $item, '/'),
                 'type' => $isDir ? 'dir' : 'file',
                 'size' => $isDir ? null : filesize($itemPath),
                 'modified' => filemtime($itemPath) ?: null,
+                'permissions' => $permissions !== false ? formatPermissions($permissions) : '0000',
             ];
         }
     }
@@ -265,6 +287,7 @@ foreach ($segments as $segment) {
     <title>Файловый менеджер</title>
     <link href="/assets/sow/css/vendor_bundle.min.css" rel="stylesheet">
     <link href="/assets/sow/css/core.min.css" rel="stylesheet">
+    <link href="/assets/sow/css/vendor.markdowneditor.min.css" rel="stylesheet">
     <style>
         .file-table td, .file-table th { vertical-align: middle; }
         .file-actions form { display: inline; }
@@ -309,7 +332,7 @@ foreach ($segments as $segment) {
             <div class="card shadow-sm">
                 <div class="card-header bg-white fw-semibold">Файлы и папки</div>
                 <div class="table-responsive">
-                    <table class="table table-sm table-striped mb-0 file-table">
+                    <table class="table table-sm table-striped table-hover mb-0 file-table">
                         <thead>
                         <tr>
                             <th>
@@ -332,7 +355,7 @@ foreach ($segments as $segment) {
                                     Изменён <span class="sort-indicator"></span>
                                 </button>
                             </th>
-                            <th></th>
+                            <th class="text-end"></th>
                         </tr>
                         </thead>
                         <tbody>
@@ -343,7 +366,11 @@ foreach ($segments as $segment) {
                             <tr data-type="<?= htmlspecialchars($item['type'], ENT_QUOTES, 'UTF-8') ?>"
                                 data-name="<?= htmlspecialchars(mb_strtolower($item['name'], 'UTF-8'), ENT_QUOTES, 'UTF-8') ?>"
                                 data-size="<?= $item['size'] !== null ? (int) $item['size'] : 0 ?>"
-                                data-modified="<?= $item['modified'] ? (int) $item['modified'] : 0 ?>">
+                                data-modified="<?= $item['modified'] ? (int) $item['modified'] : 0 ?>"
+                                data-size-text="<?= htmlspecialchars($item['size'] !== null ? number_format((int) $item['size']) . ' B' : '—', ENT_QUOTES, 'UTF-8') ?>"
+                                data-modified-text="<?= htmlspecialchars($item['modified'] ? date('Y-m-d H:i', (int) $item['modified']) : '—', ENT_QUOTES, 'UTF-8') ?>"
+                                data-type-text="<?= htmlspecialchars($item['type'] === 'dir' ? 'Папка' : 'Файл', ENT_QUOTES, 'UTF-8') ?>"
+                                data-permissions="<?= htmlspecialchars($item['permissions'], ENT_QUOTES, 'UTF-8') ?>">
                                 <td>
                                     <?php if ($item['type'] === 'dir'): ?>
                                         <a href="?path=<?= urlencode($item['path']) ?>">
@@ -356,36 +383,46 @@ foreach ($segments as $segment) {
                                 <td><?= $item['type'] === 'dir' ? 'Папка' : 'Файл' ?></td>
                                 <td><?= $item['size'] !== null ? number_format((int) $item['size']) . ' B' : '—' ?></td>
                                 <td><?= $item['modified'] ? date('Y-m-d H:i', (int) $item['modified']) : '—' ?></td>
-                                <td class="file-actions">
-                                    <?php if ($item['type'] === 'file'): ?>
-                                        <?php $ext = strtolower(pathinfo((string) $item['name'], PATHINFO_EXTENSION)); ?>
-                                        <?php if ($ext !== '' && in_array($ext, $editableExtensions, true)): ?>
-                                        <button class="btn btn-sm btn-outline-primary js-edit-file"
+                                <td class="file-actions text-end">
+                                    <div class="d-inline-flex justify-content-end gap-1">
+                                        <?php if ($item['type'] === 'file'): ?>
+                                            <?php $ext = strtolower(pathinfo((string) $item['name'], PATHINFO_EXTENSION)); ?>
+                                            <?php if ($ext !== '' && in_array($ext, $editableExtensions, true)): ?>
+                                            <button class="btn btn-sm btn-outline-primary js-edit-file"
+                                                    type="button"
+                                                    title="Редактировать"
+                                                    aria-label="Редактировать"
+                                                    data-file-path="<?= htmlspecialchars($item['path'], ENT_QUOTES, 'UTF-8') ?>"
+                                                    data-file-name="<?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?>">
+                                                <i class="fi fi-code" aria-hidden="true"></i>
+                                            </button>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                        <button class="btn btn-sm btn-outline-secondary js-properties-file"
                                                 type="button"
-                                                title="Редактировать"
-                                                aria-label="Редактировать"
+                                                title="Свойства"
+                                                aria-label="Свойства"
                                                 data-file-path="<?= htmlspecialchars($item['path'], ENT_QUOTES, 'UTF-8') ?>"
                                                 data-file-name="<?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?>">
-                                            <i class="fi fi-code" aria-hidden="true"></i>
+                                            <i class="fi fi-cog" aria-hidden="true"></i>
                                         </button>
-                                        <?php endif; ?>
-                                    <?php endif; ?>
-                                    <button class="btn btn-sm btn-outline-secondary js-rename-file"
-                                            type="button"
-                                            title="Переименовать"
-                                            aria-label="Переименовать"
-                                            data-file-path="<?= htmlspecialchars($item['path'], ENT_QUOTES, 'UTF-8') ?>"
-                                            data-file-name="<?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?>">
-                                        <i class="fi fi-pencil" aria-hidden="true"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger js-delete-file"
-                                            type="button"
-                                            title="Удалить"
-                                            aria-label="Удалить"
-                                            data-file-path="<?= htmlspecialchars($item['path'], ENT_QUOTES, 'UTF-8') ?>"
-                                            data-file-name="<?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?>">
-                                        <i class="fi fi-thrash" aria-hidden="true"></i>
-                                    </button>
+                                        <button class="btn btn-sm btn-outline-secondary js-rename-file"
+                                                type="button"
+                                                title="Переименовать"
+                                                aria-label="Переименовать"
+                                                data-file-path="<?= htmlspecialchars($item['path'], ENT_QUOTES, 'UTF-8') ?>"
+                                                data-file-name="<?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?>">
+                                            <i class="fi fi-pencil" aria-hidden="true"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger js-delete-file"
+                                                type="button"
+                                                title="Удалить"
+                                                aria-label="Удалить"
+                                                data-file-path="<?= htmlspecialchars($item['path'], ENT_QUOTES, 'UTF-8') ?>"
+                                                data-file-name="<?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?>">
+                                            <i class="fi fi-thrash" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -491,7 +528,46 @@ foreach ($segments as $segment) {
             </div>
         </div>
     </div>
+    <div class="modal fade" id="filePropsModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Свойства</h5>
+                    <button type="button" class="btn-close js-cancel-props" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <dl class="row small mb-3">
+                        <dt class="col-4">Имя</dt>
+                        <dd class="col-8" id="filePropsName"></dd>
+                        <dt class="col-4">Путь</dt>
+                        <dd class="col-8" id="filePropsPathText"></dd>
+                        <dt class="col-4">Тип</dt>
+                        <dd class="col-8" id="filePropsType"></dd>
+                        <dt class="col-4">Размер</dt>
+                        <dd class="col-8" id="filePropsSize"></dd>
+                        <dt class="col-4">Изменён</dt>
+                        <dd class="col-8" id="filePropsModified"></dd>
+                    </dl>
+                    <form method="post" id="filePropsForm">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="action" value="chmod">
+                        <input type="hidden" name="item" id="filePropsPath" value="">
+                        <div class="mb-2">
+                            <label class="form-label">Права доступа (octal)</label>
+                            <input class="form-control" type="text" name="permissions" id="filePropsPermissions" required>
+                            <div class="form-text">Например: 644 для файла, 0755 для папки.</div>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2">
+                            <button class="btn btn-outline-secondary js-cancel-props" type="button">Отмена</button>
+                            <button class="btn btn-primary" type="submit">Сохранить права</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+<script src="/assets/sow/js/vendor.markdowneditor.min.js"></script>
 <script src="/assets/sow/js/core.min.js"></script>
 <script>
     (function () {
@@ -518,6 +594,18 @@ foreach ($segments as $segment) {
         var renamePathInput = document.getElementById('fileRenamePath');
         var renameNameInput = document.getElementById('fileRenameName');
         var renameCancelButtons = document.querySelectorAll('.js-cancel-rename');
+
+        var propsModalEl = document.getElementById('filePropsModal');
+        var propsModal = propsModalEl ? new bootstrap.Modal(propsModalEl, {backdrop: 'static', keyboard: false}) : null;
+        var propsButtons = document.querySelectorAll('.js-properties-file');
+        var propsPathInput = document.getElementById('filePropsPath');
+        var propsNameEl = document.getElementById('filePropsName');
+        var propsPathTextEl = document.getElementById('filePropsPathText');
+        var propsTypeEl = document.getElementById('filePropsType');
+        var propsSizeEl = document.getElementById('filePropsSize');
+        var propsModifiedEl = document.getElementById('filePropsModified');
+        var propsPermissionsInput = document.getElementById('filePropsPermissions');
+        var propsCancelButtons = document.querySelectorAll('.js-cancel-props');
 
         editButtons.forEach(function (button) {
             button.addEventListener('click', function () {
@@ -597,6 +685,53 @@ foreach ($segments as $segment) {
             button.addEventListener('click', function () {
                 if (renameModal) {
                     renameModal.hide();
+                }
+            });
+        });
+
+        propsButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                if (!propsModal) {
+                    return;
+                }
+                var row = button.closest('tr');
+                var filePath = button.getAttribute('data-file-path') || '';
+                var fileName = button.getAttribute('data-file-name') || '';
+                var typeText = row ? row.getAttribute('data-type-text') : '';
+                var sizeText = row ? row.getAttribute('data-size-text') : '';
+                var modifiedText = row ? row.getAttribute('data-modified-text') : '';
+                var permissions = row ? row.getAttribute('data-permissions') : '';
+                if (propsPathInput) {
+                    propsPathInput.value = filePath;
+                }
+                if (propsNameEl) {
+                    propsNameEl.textContent = fileName;
+                }
+                if (propsPathTextEl) {
+                    propsPathTextEl.textContent = filePath || '—';
+                }
+                if (propsTypeEl) {
+                    propsTypeEl.textContent = typeText || '—';
+                }
+                if (propsSizeEl) {
+                    propsSizeEl.textContent = sizeText || '—';
+                }
+                if (propsModifiedEl) {
+                    propsModifiedEl.textContent = modifiedText || '—';
+                }
+                if (propsPermissionsInput) {
+                    propsPermissionsInput.value = permissions || '';
+                    propsPermissionsInput.focus();
+                    propsPermissionsInput.select();
+                }
+                propsModal.show();
+            });
+        });
+
+        propsCancelButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                if (propsModal) {
+                    propsModal.hide();
                 }
             });
         });
