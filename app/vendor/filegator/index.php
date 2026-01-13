@@ -470,7 +470,7 @@ foreach ($segments as $segment) {
                         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                         <input type="hidden" name="action" value="save">
                         <input type="hidden" name="item" id="fileEditPath" value="">
-                        <textarea class="form-control mb-2" name="content" id="fileEditContent"><?= htmlspecialchars($editContent, ENT_QUOTES, 'UTF-8') ?></textarea>
+                        <textarea class="form-control mb-2 code-editor" name="content" id="fileEditContent"><?= htmlspecialchars($editContent, ENT_QUOTES, 'UTF-8') ?></textarea>
                         <div class="d-flex justify-content-end gap-2">
                             <button class="btn btn-outline-secondary js-cancel-edit" type="button">Отмена</button>
                             <button class="btn btn-success" type="submit">Сохранить</button>
@@ -569,6 +569,12 @@ foreach ($segments as $segment) {
 <script src="/assets/sow/js/core.min.js"></script>
 <script src="/assets/sow/js/vendor_bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/php/php.min.js"></script>
 <script>
     (function () {
         var modalEl = document.getElementById('fileEditModal');
@@ -618,16 +624,6 @@ foreach ($segments as $segment) {
                     titleEl.textContent = 'Редактирование: ' + fileName;
                 }
                 modal.show();
-                if (window.CodeMirror && contentArea) {
-                    if (!contentArea._cm) {
-                        contentArea._cm = CodeMirror.fromTextArea(contentArea, {
-                            lineNumbers: true,
-                            mode: 'application/x-httpd-php',
-                            theme: 'default'
-                        });
-                    }
-                    contentArea._cm.refresh();
-                }
             });
         });
 
@@ -736,14 +732,71 @@ foreach ($segments as $segment) {
             });
         });
 
-        var form = document.getElementById('fileEditForm');
-        if (form) {
-            form.addEventListener('submit', function () {
-                if (contentArea && contentArea._cm) {
-                    contentArea._cm.save();
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!window.CodeMirror) {
+                return;
+            }
+
+            var textareas = document.querySelectorAll('textarea.code-editor');
+            if (!textareas.length) {
+                return;
+            }
+
+            var editors = [];
+
+            textareas.forEach(function (textarea) {
+                if (textarea.dataset.codemirror === '1') {
+                    return;
+                }
+
+                var editor = window.CodeMirror.fromTextArea(textarea, {
+                    lineNumbers: true,
+                    lineWrapping: true,
+                    mode: 'application/x-httpd-php',
+                    indentUnit: 2,
+                    tabSize: 2,
+                    indentWithTabs: false
+                });
+
+                editor.setSize(null, 320);
+
+                textarea.dataset.codemirror = '1';
+                textarea._codeMirror = editor;
+                editors.push(editor);
+            });
+
+            window.setTimeout(function () {
+                editors.forEach(function (ed) {
+                    ed.refresh();
+                });
+            }, 0);
+
+            var forms = new Set();
+            textareas.forEach(function (ta) {
+                var form = ta.closest('form');
+                if (form) {
+                    forms.add(form);
                 }
             });
-        }
+
+            forms.forEach(function (form) {
+                form.addEventListener('submit', function () {
+                    editors.forEach(function (ed) {
+                        ed.save();
+                    });
+                });
+            });
+
+            var refreshAll = function () {
+                editors.forEach(function (ed) {
+                    ed.refresh();
+                });
+            };
+
+            window.addEventListener('resize', refreshAll);
+            document.addEventListener('shown.bs.tab', refreshAll);
+            document.addEventListener('shown.bs.collapse', refreshAll);
+        });
 
         var tableBody = document.querySelector('.file-table tbody');
         var sortButtons = document.querySelectorAll('.js-sort');
