@@ -362,23 +362,29 @@ foreach ($segments as $segment) {
                                         <?php if ($ext !== '' && in_array($ext, $editableExtensions, true)): ?>
                                         <button class="btn btn-sm btn-outline-primary js-edit-file"
                                                 type="button"
+                                                title="Редактировать"
+                                                aria-label="Редактировать"
                                                 data-file-path="<?= htmlspecialchars($item['path'], ENT_QUOTES, 'UTF-8') ?>"
                                                 data-file-name="<?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?>">
-                                            Редактировать
+                                            <i class="fi fi-code" aria-hidden="true"></i>
                                         </button>
                                         <?php endif; ?>
                                     <?php endif; ?>
                                     <button class="btn btn-sm btn-outline-secondary js-rename-file"
                                             type="button"
+                                            title="Переименовать"
+                                            aria-label="Переименовать"
                                             data-file-path="<?= htmlspecialchars($item['path'], ENT_QUOTES, 'UTF-8') ?>"
                                             data-file-name="<?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?>">
-                                        Переименовать
+                                        <i class="fi fi-pencil" aria-hidden="true"></i>
                                     </button>
                                     <button class="btn btn-sm btn-outline-danger js-delete-file"
                                             type="button"
+                                            title="Удалить"
+                                            aria-label="Удалить"
                                             data-file-path="<?= htmlspecialchars($item['path'], ENT_QUOTES, 'UTF-8') ?>"
                                             data-file-name="<?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?>">
-                                        Удалить
+                                        <i class="fi fi-thrash" aria-hidden="true"></i>
                                     </button>
                                 </td>
                             </tr>
@@ -411,12 +417,6 @@ foreach ($segments as $segment) {
                         <input class="form-control mb-2" type="text" name="name" placeholder="Имя папки" required>
                         <button class="btn btn-outline-primary w-100" type="submit">Создать</button>
                     </form>
-                </div>
-            </div>
-            <div class="card shadow-sm">
-                <div class="card-header bg-white fw-semibold">Переименовать</div>
-                <div class="card-body">
-                    <div class="text-muted small">Переименование доступно из таблицы файлов.</div>
                 </div>
             </div>
         </div>
@@ -492,7 +492,7 @@ foreach ($segments as $segment) {
         </div>
     </div>
 </div>
-<script src="/assets/sow/js/vendor_bundle.min.js"></script>
+<script src="/assets/sow/js/core.min.js"></script>
 <script>
     (function () {
         var modalEl = document.getElementById('fileEditModal');
