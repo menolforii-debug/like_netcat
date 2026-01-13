@@ -70,6 +70,13 @@ php bin/cms sections:add --parent-id=1 --english-name=news --title="Новост
 Дополнительно поддерживаются права на уровне инфоблока через `extra_json.permissions`.
 Если они не заданы, используются дефолты (гость — `view`, редактор — полный набор действий).
 
+## Файловый менеджер
+
+- Раздел `Файлы` открывает Tiny File Manager, встроенный в админку.
+- Доступен только администраторам, используется авторизация CMS.
+- Корень файлового менеджера — корень проекта.
+- Входной URL: `/admin.php?action=filemanager`.
+
 ## Шаблоны
 
 - Макеты: `templates/layouts/<layout>.php` + опциональный `templates/layouts/<layout>.nav.php`.
