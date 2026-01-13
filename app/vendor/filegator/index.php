@@ -287,7 +287,7 @@ foreach ($segments as $segment) {
     <title>Файловый менеджер</title>
     <link href="/assets/sow/css/vendor_bundle.min.css" rel="stylesheet">
     <link href="/assets/sow/css/core.min.css" rel="stylesheet">
-     <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" rel="stylesheet">
+    <link href="/assets/sow/css/vendor.markdowneditor.min.css" rel="stylesheet">
     <style>
         .file-table td, .file-table th { vertical-align: middle; }
         .file-actions form { display: inline; }
@@ -567,16 +567,8 @@ foreach ($segments as $segment) {
         </div>
     </div>
 </div>
- 
- <script src="/assets/sow/js/core.min.js"></script>
-<script src="/assets/sow/js/vendor_bundle.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/php/php.min.js"></script>    
+<script src="/assets/sow/js/core.min.js"></script>
+<script src="/assets/sow/js/vendor.markdowneditor.min.js"></script>
 <script>
     (function () {
         var modalEl = document.getElementById('fileEditModal');
@@ -626,7 +618,19 @@ foreach ($segments as $segment) {
                     titleEl.textContent = 'Редактирование: ' + fileName;
                 }
                 modal.show();
-                if (window.CodeMirror && contentArea) {
+                if (window.EasyMDE && contentArea) {
+                    if (!contentArea._easymde) {
+                        contentArea._easymde = new EasyMDE({
+                            element: contentArea,
+                            autoDownloadFontAwesome: false,
+                            status: false,
+                            spellChecker: false,
+                            lineNumbers: true,
+                            lineWrapping: true
+                        });
+                    }
+                    contentArea._easymde.codemirror.refresh();
+                } else if (window.CodeMirror && contentArea) {
                     if (!contentArea._cm) {
                         contentArea._cm = CodeMirror.fromTextArea(contentArea, {
                             lineNumbers: true,
@@ -747,7 +751,9 @@ foreach ($segments as $segment) {
         var form = document.getElementById('fileEditForm');
         if (form) {
             form.addEventListener('submit', function () {
-                if (contentArea && contentArea._cm) {
+                if (contentArea && contentArea._easymde) {
+                    contentArea._easymde.codemirror.save();
+                } else if (contentArea && contentArea._cm) {
                     contentArea._cm.save();
                 }
             });
