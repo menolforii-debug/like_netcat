@@ -269,6 +269,9 @@ foreach ($segments as $segment) {
         .file-table td, .file-table th { vertical-align: middle; }
         .file-actions form { display: inline; }
         .file-editor textarea { min-height: 240px; }
+        .file-sort-button { color: inherit; text-decoration: none; }
+        .file-sort-button:hover { text-decoration: underline; }
+        .file-sort-button .sort-indicator { font-size: 0.8em; }
     </style>
 </head>
 <body class="bg-light">
@@ -309,10 +312,26 @@ foreach ($segments as $segment) {
                     <table class="table table-sm table-striped mb-0 file-table">
                         <thead>
                         <tr>
-                            <th>Имя</th>
-                            <th>Тип</th>
-                            <th>Размер</th>
-                            <th>Изменён</th>
+                            <th>
+                                <button class="btn btn-link p-0 file-sort-button js-sort" type="button" data-sort="name">
+                                    Имя <span class="sort-indicator"></span>
+                                </button>
+                            </th>
+                            <th>
+                                <button class="btn btn-link p-0 file-sort-button js-sort" type="button" data-sort="type">
+                                    Тип <span class="sort-indicator"></span>
+                                </button>
+                            </th>
+                            <th>
+                                <button class="btn btn-link p-0 file-sort-button js-sort" type="button" data-sort="size">
+                                    Размер <span class="sort-indicator"></span>
+                                </button>
+                            </th>
+                            <th>
+                                <button class="btn btn-link p-0 file-sort-button js-sort" type="button" data-sort="modified">
+                                    Изменён <span class="sort-indicator"></span>
+                                </button>
+                            </th>
                             <th></th>
                         </tr>
                         </thead>
@@ -321,7 +340,10 @@ foreach ($segments as $segment) {
                             <tr><td colspan="5" class="text-muted">Пусто</td></tr>
                         <?php endif; ?>
                         <?php foreach ($items as $item): ?>
-                            <tr>
+                            <tr data-type="<?= htmlspecialchars($item['type'], ENT_QUOTES, 'UTF-8') ?>"
+                                data-name="<?= htmlspecialchars(mb_strtolower($item['name'], 'UTF-8'), ENT_QUOTES, 'UTF-8') ?>"
+                                data-size="<?= $item['size'] !== null ? (int) $item['size'] : 0 ?>"
+                                data-modified="<?= $item['modified'] ? (int) $item['modified'] : 0 ?>">
                                 <td>
                                     <?php if ($item['type'] === 'dir'): ?>
                                         <a href="?path=<?= urlencode($item['path']) ?>">
@@ -470,6 +492,7 @@ foreach ($segments as $segment) {
         </div>
     </div>
 </div>
+<script src="/assets/sow/js/vendor_bundle.min.js"></script>
 <script>
     (function () {
         var modalEl = document.getElementById('fileEditModal');
@@ -586,6 +609,89 @@ foreach ($segments as $segment) {
                 }
             });
         }
+
+        var tableBody = document.querySelector('.file-table tbody');
+        var sortButtons = document.querySelectorAll('.js-sort');
+        if (!tableBody || sortButtons.length === 0) {
+            return;
+        }
+
+        var currentSort = {key: 'size', direction: 'desc'};
+
+        function getSortValue(row, key) {
+            if (!row || !row.dataset) {
+                return '';
+            }
+            if (key === 'size') {
+                return parseInt(row.dataset.size || '0', 10);
+            }
+            if (key === 'modified') {
+                return parseInt(row.dataset.modified || '0', 10);
+            }
+            if (key === 'type') {
+                return row.dataset.type || '';
+            }
+            return row.dataset.name || '';
+        }
+
+        function updateIndicators(activeKey, direction) {
+            sortButtons.forEach(function (button) {
+                var indicator = button.querySelector('.sort-indicator');
+                if (!indicator) {
+                    return;
+                }
+                if (button.dataset.sort === activeKey) {
+                    indicator.textContent = direction === 'asc' ? '▲' : '▼';
+                } else {
+                    indicator.textContent = '';
+                }
+            });
+        }
+
+        function sortRows(key, direction) {
+            var rows = Array.prototype.slice.call(tableBody.querySelectorAll('tr'));
+            rows.sort(function (a, b) {
+                var aType = a.dataset.type || '';
+                var bType = b.dataset.type || '';
+                if (aType !== bType) {
+                    return aType === 'dir' ? -1 : 1;
+                }
+                var aValue = getSortValue(a, key);
+                var bValue = getSortValue(b, key);
+                if (key === 'name' || key === 'type') {
+                    var textResult = String(aValue).localeCompare(String(bValue), 'ru', {numeric: true, sensitivity: 'base'});
+                    return direction === 'asc' ? textResult : -textResult;
+                }
+                var result = Number(aValue) - Number(bValue);
+                if (result === 0) {
+                    result = String(getSortValue(a, 'name')).localeCompare(String(getSortValue(b, 'name')), 'ru', {
+                        numeric: true,
+                        sensitivity: 'base'
+                    });
+                }
+                return direction === 'asc' ? result : -result;
+            });
+            rows.forEach(function (row) {
+                tableBody.appendChild(row);
+            });
+            updateIndicators(key, direction);
+        }
+
+        sortButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                var key = button.dataset.sort || 'name';
+                var direction = 'asc';
+                if (currentSort.key === key) {
+                    direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                } else if (key === 'size') {
+                    direction = 'desc';
+                }
+                currentSort = {key: key, direction: direction};
+                sortRows(key, direction);
+            });
+        });
+
+        sortRows(currentSort.key, currentSort.direction);
     })();
 </script>
 </body>
