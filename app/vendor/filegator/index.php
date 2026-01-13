@@ -287,7 +287,7 @@ foreach ($segments as $segment) {
     <title>Файловый менеджер</title>
     <link href="/assets/sow/css/vendor_bundle.min.css" rel="stylesheet">
     <link href="/assets/sow/css/core.min.css" rel="stylesheet">
-    <link href="/assets/sow/css/vendor.markdowneditor.min.css" rel="stylesheet">
+     <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" rel="stylesheet">
     <style>
         .file-table td, .file-table th { vertical-align: middle; }
         .file-actions form { display: inline; }
