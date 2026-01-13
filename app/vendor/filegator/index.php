@@ -338,20 +338,26 @@ foreach ($segments as $segment) {
                                     <?php if ($item['type'] === 'file'): ?>
                                         <?php $ext = strtolower(pathinfo((string) $item['name'], PATHINFO_EXTENSION)); ?>
                                         <?php if ($ext !== '' && in_array($ext, $editableExtensions, true)): ?>
-                                            <button class="btn btn-sm btn-outline-primary js-edit-file"
-                                                    type="button"
-                                                    data-file-path="<?= htmlspecialchars($item['path'], ENT_QUOTES, 'UTF-8') ?>"
-                                                    data-file-name="<?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?>">
-                                                Редактировать
-                                            </button>
+                                        <button class="btn btn-sm btn-outline-primary js-edit-file"
+                                                type="button"
+                                                data-file-path="<?= htmlspecialchars($item['path'], ENT_QUOTES, 'UTF-8') ?>"
+                                                data-file-name="<?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?>">
+                                            Редактировать
+                                        </button>
                                         <?php endif; ?>
                                     <?php endif; ?>
-                                    <form method="post">
-                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
-                                        <input type="hidden" name="action" value="delete">
-                                        <input type="hidden" name="item" value="<?= htmlspecialchars($item['path'], ENT_QUOTES, 'UTF-8') ?>">
-                                        <button class="btn btn-sm btn-outline-danger" type="submit" onclick="return confirm('Удалить <?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?>?')">Удалить</button>
-                                    </form>
+                                    <button class="btn btn-sm btn-outline-secondary js-rename-file"
+                                            type="button"
+                                            data-file-path="<?= htmlspecialchars($item['path'], ENT_QUOTES, 'UTF-8') ?>"
+                                            data-file-name="<?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?>">
+                                        Переименовать
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger js-delete-file"
+                                            type="button"
+                                            data-file-path="<?= htmlspecialchars($item['path'], ENT_QUOTES, 'UTF-8') ?>"
+                                            data-file-name="<?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?>">
+                                        Удалить
+                                    </button>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -388,13 +394,7 @@ foreach ($segments as $segment) {
             <div class="card shadow-sm">
                 <div class="card-header bg-white fw-semibold">Переименовать</div>
                 <div class="card-body">
-                    <form method="post">
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
-                        <input type="hidden" name="action" value="rename">
-                        <input class="form-control mb-2" type="text" name="item" placeholder="Путь (относительно корня)" required>
-                        <input class="form-control mb-2" type="text" name="name" placeholder="Новое имя" required>
-                        <button class="btn btn-outline-secondary w-100" type="submit">Переименовать</button>
-                    </form>
+                    <div class="text-muted small">Переименование доступно из таблицы файлов.</div>
                 </div>
             </div>
         </div>
@@ -422,6 +422,53 @@ foreach ($segments as $segment) {
             </div>
         </div>
     </div>
+    <div class="modal fade" id="fileDeleteModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Удалить файл</h5>
+                    <button type="button" class="btn-close js-cancel-delete" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2">Удалить: <strong id="fileDeleteName"></strong>?</div>
+                    <form method="post" id="fileDeleteForm">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="item" id="fileDeletePath" value="">
+                        <div class="d-flex justify-content-end gap-2">
+                            <button class="btn btn-outline-secondary js-cancel-delete" type="button">Отмена</button>
+                            <button class="btn btn-danger" type="submit">Удалить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="fileRenameModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Переименовать</h5>
+                    <button type="button" class="btn-close js-cancel-rename" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="post" id="fileRenameForm">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="action" value="rename">
+                        <input type="hidden" name="item" id="fileRenamePath" value="">
+                        <div class="mb-2">
+                            <label class="form-label">Новое имя</label>
+                            <input class="form-control" type="text" name="name" id="fileRenameName" required>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2">
+                            <button class="btn btn-outline-secondary js-cancel-rename" type="button">Отмена</button>
+                            <button class="btn btn-primary" type="submit">Переименовать</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 <script>
     (function () {
@@ -435,6 +482,19 @@ foreach ($segments as $segment) {
         var contentArea = document.getElementById('fileEditContent');
         var titleEl = modalEl.querySelector('.modal-title');
         var cancelButtons = modalEl.querySelectorAll('.js-cancel-edit');
+        var deleteModalEl = document.getElementById('fileDeleteModal');
+        var deleteModal = deleteModalEl ? new bootstrap.Modal(deleteModalEl, {backdrop: 'static', keyboard: false}) : null;
+        var deleteButtons = document.querySelectorAll('.js-delete-file');
+        var deletePathInput = document.getElementById('fileDeletePath');
+        var deleteNameEl = document.getElementById('fileDeleteName');
+        var deleteCancelButtons = document.querySelectorAll('.js-cancel-delete');
+
+        var renameModalEl = document.getElementById('fileRenameModal');
+        var renameModal = renameModalEl ? new bootstrap.Modal(renameModalEl, {backdrop: 'static', keyboard: false}) : null;
+        var renameButtons = document.querySelectorAll('.js-rename-file');
+        var renamePathInput = document.getElementById('fileRenamePath');
+        var renameNameInput = document.getElementById('fileRenameName');
+        var renameCancelButtons = document.querySelectorAll('.js-cancel-rename');
 
         editButtons.forEach(function (button) {
             button.addEventListener('click', function () {
@@ -463,6 +523,58 @@ foreach ($segments as $segment) {
         cancelButtons.forEach(function (button) {
             button.addEventListener('click', function () {
                 modal.hide();
+            });
+        });
+
+        deleteButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                if (!deleteModal) {
+                    return;
+                }
+                var filePath = button.getAttribute('data-file-path') || '';
+                var fileName = button.getAttribute('data-file-name') || '';
+                if (deletePathInput) {
+                    deletePathInput.value = filePath;
+                }
+                if (deleteNameEl) {
+                    deleteNameEl.textContent = fileName;
+                }
+                deleteModal.show();
+            });
+        });
+
+        deleteCancelButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                if (deleteModal) {
+                    deleteModal.hide();
+                }
+            });
+        });
+
+        renameButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                if (!renameModal) {
+                    return;
+                }
+                var filePath = button.getAttribute('data-file-path') || '';
+                var fileName = button.getAttribute('data-file-name') || '';
+                if (renamePathInput) {
+                    renamePathInput.value = filePath;
+                }
+                if (renameNameInput) {
+                    renameNameInput.value = fileName;
+                    renameNameInput.focus();
+                    renameNameInput.select();
+                }
+                renameModal.show();
+            });
+        });
+
+        renameCancelButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                if (renameModal) {
+                    renameModal.hide();
+                }
             });
         });
 
