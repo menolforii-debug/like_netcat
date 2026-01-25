@@ -348,6 +348,19 @@ function componentKeyIsValid(string $componentKey): bool
     return true;
 }
 
+function snippetKeyIsValid(string $snippetKey): bool
+{
+    if (!preg_match('/^[A-Za-z0-9_-]+$/', $snippetKey)) {
+        return false;
+    }
+
+    if (str_contains($snippetKey, '..') || str_contains($snippetKey, '/') || str_contains($snippetKey, '\\')) {
+        return false;
+    }
+
+    return true;
+}
+
 function parseVisualFieldOptions(string $value): array
 {
     $lines = preg_split('/\r\n|\r|\n/', $value);
@@ -750,6 +763,28 @@ function readLayoutNavTemplate(string $layoutKey): ?string
     }
 
     $path = layoutNavTemplatesDir() . '/' . $layoutKey . '.nav.php';
+    if (!is_file($path)) {
+        return null;
+    }
+
+    $content = file_get_contents($path);
+    return $content === false ? null : $content;
+}
+
+function readDefaultLayoutTemplateFile(): ?string
+{
+    $path = layoutTemplatesDir() . '/default/layout.tpl.php';
+    if (!is_file($path)) {
+        return null;
+    }
+
+    $content = file_get_contents($path);
+    return $content === false ? null : $content;
+}
+
+function readDefaultLayoutNavTemplateFile(): ?string
+{
+    $path = layoutNavTemplatesDir() . '/default/nav.tpl.php';
     if (!is_file($path)) {
         return null;
     }
