@@ -12,8 +12,8 @@
 - `Layout::renderNavbar($brand, $links)` — быстрый вывод navbar.
 - `Layout::renderDocumentStart($title, $meta)` / `Layout::renderDocumentEnd()` — готовые обёртки HTML.
 - `Layout::renderSectionHeader($section, $children)` — вывод заголовка раздела и списка дочерних разделов.
-- `Layout::renderPagination($currentPage, $totalPages, $baseUrl, $params, $options)` — вывод пагинации.
-- `Layout::getPaginationItems($currentPage, $totalPages, $baseUrl, $params, $options)` — массив элементов пагинации для кастомной разметки.
+- `Layout::renderPagination($currentPage, $totalPages, $baseUrl, $params, $options)` — вывод пагинации (если параметры `null`, ничего не выводит).
+- `Layout::getPaginationItems($currentPage, $totalPages, $baseUrl, $params, $options)` — массив элементов пагинации для кастомной разметки (при `null` вернёт пустой массив).
 - `Layout::getMainMenuItems($ctx, $maxDepth)` — получить дерево меню по разделам.
 
 ### Глобальные функции
@@ -33,7 +33,48 @@ Layout::renderPagination($currentPage, $totalPages, $baseUrl, $params);
 ?>
 ```
 
+### Пагинация (кастомная разметка)
+
+```php
+<?php
+$items = Layout::getPaginationItems($currentPage, $totalPages, $baseUrl, $params, [
+    // 'show_single' => true,
+]);
+?>
+<?php if (!empty($items)) : ?>
+    <nav class="pagination-custom">
+        <?php foreach ($items as $item): ?>
+            <?php
+            $classes = ['page-link'];
+            if (!empty($item['active'])) {
+                $classes[] = 'is-active';
+            }
+            if (!empty($item['disabled'])) {
+                $classes[] = 'is-disabled';
+            }
+            ?>
+            <a class="<?= htmlspecialchars(implode(' ', $classes), ENT_QUOTES, 'UTF-8') ?>"
+               href="<?= htmlspecialchars((string) $item['url'], ENT_QUOTES, 'UTF-8') ?>"
+               <?php if (!empty($item['aria'])): ?>
+                   aria-label="<?= htmlspecialchars((string) $item['aria'], ENT_QUOTES, 'UTF-8') ?>"
+               <?php endif; ?>>
+                <?= htmlspecialchars((string) $item['label'], ENT_QUOTES, 'UTF-8') ?>
+            </a>
+        <?php endforeach; ?>
+    </nav>
+<?php endif ?>
+```
+
 ### Доступные переменные
+
+Состав `$ctx`:
+
+- `title` — строка заголовка страницы (SEO).
+- `meta` — массив метаданных (`description`, `keywords`).
+- `site` — массив сайта из таблицы `sections` (корневой раздел).
+- `section` — массив текущего раздела.
+- `visual` — визуальные настройки, унаследованные по дереву разделов.
+- `children` — массив дочерних разделов текущего раздела (каждый содержит `path` и `title`).
 
 - `$ctx` — массив контекста (`title`, `meta`, `site`, `section`, `visual`, `children`).
 - `$body` — callable для вывода контентной части страницы.
