@@ -758,6 +758,28 @@ function readLayoutNavTemplate(string $layoutKey): ?string
     return $content === false ? null : $content;
 }
 
+function readDefaultLayoutTemplateFile(): ?string
+{
+    $path = layoutTemplatesDir() . '/_default.tpl.php';
+    if (!is_file($path)) {
+        return null;
+    }
+
+    $content = file_get_contents($path);
+    return $content === false ? null : $content;
+}
+
+function readDefaultLayoutNavTemplateFile(): ?string
+{
+    $path = layoutNavTemplatesDir() . '/_default.nav.tpl.php';
+    if (!is_file($path)) {
+        return null;
+    }
+
+    $content = file_get_contents($path);
+    return $content === false ? null : $content;
+}
+
 function writeLayoutTemplate(string $layoutKey, string $content, ?string &$error = null): bool
 {
     if (!layoutKeyIsValid($layoutKey)) {

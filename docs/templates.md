@@ -201,6 +201,16 @@ $pageItems = array_slice($items, ($currentPage - 1) * $perPage, $perPage);
 <?php endif ?>
 ```
 
+## Дефолтные шаблоны для нового макета
+
+Админка подставляет стартовую разметку для новых макетов из файлов:
+
+- `templates/layouts/_default.tpl.php` — шаблон макета по умолчанию.
+- `templates/layouts/_default.nav.tpl.php` — шаблон навигации по умолчанию.
+
+При создании нового макета эти файлы читаются через `readDefaultLayoutTemplateFile()` и
+`readDefaultLayoutNavTemplateFile()` (см. `app/admin/AdminHelpers.php`).【F:app/admin/AdminHelpers.php†L743-L780】
+
 Пример использования в макете:
 
 ```php
