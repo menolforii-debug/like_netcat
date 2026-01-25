@@ -35,9 +35,19 @@
 - `Layout::renderPagination($currentPage, $totalPages, $baseUrl, $params, $options)` — вывод пагинации (если параметры `null`, просто ничего не выводит).
 - `Layout::getPaginationItems($currentPage, $totalPages, $baseUrl, $params, $options)` — получить массив элементов пагинации для кастомной разметки (при `null` вернёт пустой массив).
  
+Также доступны глобальные helper-функции:
+
+- `insert_snip($keyword)` — вставляет содержимое врезки по ключу (сырое HTML/JS из админки, без экранирования).
+
 
 Также можно вызывать `$body()` для вывода контентной части (в текущем рендеринге —
 HTML инфоблоков раздела).
+
+Пример вставки врезки:
+
+```php
+<?php insert_snip('footer_banner'); ?>
+```
 
 Пример использования пагинации:
 
@@ -200,6 +210,16 @@ $pageItems = array_slice($items, ($currentPage - 1) * $perPage, $perPage);
     </ul>
 <?php endif ?>
 ```
+
+## Дефолтные шаблоны для нового макета
+
+Админка подставляет стартовую разметку для новых макетов из файлов:
+
+- `templates/layouts/default/layout.tpl.php` — шаблон макета по умолчанию.
+- `templates/layouts/default/nav.tpl.php` — шаблон навигации по умолчанию.
+
+При создании нового макета эти файлы читаются через `readDefaultLayoutTemplateFile()` и
+`readDefaultLayoutNavTemplateFile()` (см. `app/admin/AdminHelpers.php`).【F:app/admin/AdminHelpers.php†L743-L780】
 
 Пример использования в макете:
 
