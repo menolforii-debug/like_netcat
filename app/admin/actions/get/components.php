@@ -5,7 +5,9 @@ if (!Auth::isAdmin()) {
 }
 
 $components = $componentRepo->listAll();
-$componentId = isset($_GET['component_id']) ? (int) $_GET['component_id'] : 0;
+$componentIdRaw = isset($_GET['component_id']) ? (string) $_GET['component_id'] : '';
+$isNewComponent = $componentIdRaw === '_new';
+$componentId = $isNewComponent ? 0 : (int) $componentIdRaw;
 $viewName = isset($_GET['view']) ? trim((string) $_GET['view']) : '';
 $tab = isset($_GET['tab']) ? (string) $_GET['tab'] : 'general';
 if (!in_array($tab, ['general', 'fields'], true)) {
@@ -23,21 +25,6 @@ function renderTextareaValue($value): string
 function defaultSystemTemplate(): string
 {
     return "<?php\n?>";
-}
-
-function defaultQueryJson(): string
-{
-    return "// Пример настроек запроса (JSON)\n"
-        . "// {\n"
-        . "//   \"mode\": \"extend\",\n"
-        . "//   \"where\": [\"status = :status\"],\n"
-        . "//   \"order\": \"created_at DESC\",\n"
-        . "//   \"limit\": 20,\n"
-        . "//   \"params\": {\n"
-        . "//     \"status\": \"published\"\n"
-        . "//   },\n"
-        . "//   \"ignore_sub\": 0\n"
-        . "// }\n";
 }
 
 $selectedComponent = null;
@@ -116,6 +103,8 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
     $fields = $ctx['fields'];
     $viewsByComponent = $ctx['viewsByComponent'];
     $viewRepo = $ctx['viewRepo'];
+    $isNewComponent = $ctx['isNewComponent'];
+    $errorMessage = $ctx['errorMessage'];
 
     if ($wrap) {
         echo '<div id="components_block" data-refresh-url="' . htmlspecialchars(buildAdminUrl(['action' => 'components_block', 'component_id' => $componentId, 'tab' => $tab, 'view' => $viewName !== '' ? $viewName : null]), ENT_QUOTES, 'UTF-8') . '">';
@@ -131,7 +120,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
 
     echo '<div class="d-flex align-items-center justify-content-between mb-2">';
     echo '<div class="fw-semibold">Компоненты</div>';
-    echo '<a class="btn btn-icon-square btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'component_new']), ENT_QUOTES, 'UTF-8') . '" title="Добавить компонент" aria-label="Добавить компонент">+</a>';
+    echo '<a class="btn btn-icon-square btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'components', 'component_id' => '_new']), ENT_QUOTES, 'UTF-8') . '" title="Добавить компонент" aria-label="Добавить компонент">+</a>';
     echo '</div>';
 
     if (empty($components)) {
@@ -246,13 +235,32 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
     echo '<div class="card shadow-sm">';
     echo '<div class="card-body">';
 
-    if ($selectedComponent === null) {
+    if ($selectedComponent === null && !$isNewComponent) {
         if ($errorMessage !== '') {
             echo '<div class="mb-3 text-danger">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
         }
         echo '<div class="text-muted"> </div>';
         echo '</div></div>';
         AdminLayout::closeContent();
+        if ($wrap) {
+            echo '</div>';
+        }
+        return;
+    }
+
+    if ($isNewComponent) {
+        if ($errorMessage !== '') {
+            echo '<div class="mb-3 text-danger">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
+        }
+        echo '<form method="post" action="/admin.php?action=component_create">';
+        echo csrfTokenField();
+        echo '<div class="mb-3"><label class="form-label">Ключ</label><input class="form-control" name="keyword" required></div>';
+        echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" name="name" required></div>';
+        echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
+        echo '</form>';
+        echo '</div></div>';
+        AdminLayout::closeContent();
+
         if ($wrap) {
             echo '</div>';
         }
@@ -295,14 +303,6 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
             echo '</div>';
             echo '</div>';
             echo '<div class="mb-3 js-code-editor-wrapper">';
-            echo '<label class="form-label">Настройки запроса (JSON)</label>';
-            echo '<textarea class="form-control font-monospace code-editor" name="query_json" rows="10">' . renderTextareaValue(defaultQueryJson()) . '</textarea>';
-            echo '<div class="mt-2 d-flex gap-2">';
-            echo '<button class="btn btn-sm btn-outline-secondary js-code-editor-expand" type="button">Развернуть</button>';
-            echo '<button class="btn btn-sm btn-outline-secondary js-code-editor-collapse d-none" type="button">Свернуть</button>';
-            echo '</div>';
-            echo '</div>';
-            echo '<div class="mb-3 js-code-editor-wrapper">';
             echo '<label class="form-label">Системные настройки</label>';
             echo '<textarea class="form-control font-monospace code-editor" name="system_tpl" rows="10">' . renderTextareaValue(defaultSystemTemplate()) . '</textarea>';
             echo '<div class="mt-2 d-flex gap-2">';
@@ -334,14 +334,6 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
             echo '<div class="mb-3 js-code-editor-wrapper">';
             echo '<label class="form-label">Шаблон объекта</label>';
             echo '<textarea class="form-control font-monospace code-editor" name="single_tpl" rows="10">' . renderTextareaValue($viewRow['single_tpl'] ?? '') . '</textarea>';
-            echo '<div class="mt-2 d-flex gap-2">';
-            echo '<button class="btn btn-sm btn-outline-secondary js-code-editor-expand" type="button">Развернуть</button>';
-            echo '<button class="btn btn-sm btn-outline-secondary js-code-editor-collapse d-none" type="button">Свернуть</button>';
-            echo '</div>';
-            echo '</div>';
-            echo '<div class="mb-3 js-code-editor-wrapper">';
-            echo '<label class="form-label">Настройки запроса (JSON)</label>';
-            echo '<textarea class="form-control font-monospace code-editor" name="query_json" rows="10">' . renderTextareaValue($viewRow['query_json'] ?? '') . '</textarea>';
             echo '<div class="mt-2 d-flex gap-2">';
             echo '<button class="btn btn-sm btn-outline-secondary js-code-editor-expand" type="button">Развернуть</button>';
             echo '<button class="btn btn-sm btn-outline-secondary js-code-editor-collapse d-none" type="button">Свернуть</button>';
@@ -503,6 +495,8 @@ $ctx = [
     'fields' => $fields,
     'viewsByComponent' => $viewsByComponent,
     'viewRepo' => $viewRepo,
+    'isNewComponent' => $isNewComponent,
+    'errorMessage' => $errorMessage,
 ];
 
 $partial = isset($_GET['partial']) ? (string) $_GET['partial'] : '';

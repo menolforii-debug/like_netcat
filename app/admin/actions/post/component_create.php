@@ -110,18 +110,7 @@ $viewRepo = new ComponentViewRepo();
 $defaultListTpl = "<?php foreach (\$objects as \$obj): ?>\n<div><?= htmlspecialchars(\$obj['data']['title'] ?? 'Без заголовка', ENT_QUOTES, 'UTF-8') ?></div>\n<?php endforeach; ?>";
 $defaultSingleTpl = "<?php if (!empty(\$object['data']['title'])): ?>\n<h1><?= htmlspecialchars(\$object['data']['title'], ENT_QUOTES, 'UTF-8') ?></h1>\n<?php endif; ?>";
 $defaultSystemTpl = "<?php\n?>";
-$defaultQueryJson = "// Пример настроек запроса (JSON)\n"
-    . "// {\n"
-    . "//   \"mode\": \"extend\",\n"
-    . "//   \"where\": [\"status = :status\"],\n"
-    . "//   \"order\": \"created_at DESC\",\n"
-    . "//   \"limit\": 20,\n"
-    . "//   \"params\": {\n"
-    . "//     \"status\": \"published\"\n"
-    . "//   },\n"
-    . "//   \"ignore_sub\": 0\n"
-    . "// }\n";
-$viewId = $viewRepo->create($componentId, 'list', $defaultListTpl, $defaultSingleTpl, $defaultSystemTpl, $defaultQueryJson);
+$viewId = $viewRepo->create($componentId, 'list', $defaultListTpl, $defaultSingleTpl, $defaultSystemTpl);
 $error = null;
 if (!writeComponentViewTemplate($keyword, 'list', $defaultListTpl, $defaultSingleTpl, $defaultSystemTpl, $error)) {
     $viewRepo->delete($viewId);
