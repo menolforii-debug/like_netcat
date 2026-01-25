@@ -179,9 +179,20 @@ final class Renderer
             return '';
         }
 
+        $previousScope = $GLOBALS['_snip_scope'] ?? null;
+        $GLOBALS['_snip_scope'] = get_defined_vars();
+
         ob_start();
         require $templatePath;
-        return (string) ob_get_clean();
+        $output = (string) ob_get_clean();
+
+        if ($previousScope !== null) {
+            $GLOBALS['_snip_scope'] = $previousScope;
+        } else {
+            unset($GLOBALS['_snip_scope']);
+        }
+
+        return $output;
     }
 
     private function decodeQueryOverride(?array $viewRow): ?array
