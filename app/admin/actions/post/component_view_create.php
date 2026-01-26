@@ -9,7 +9,6 @@ $viewName = isset($_POST['view_name']) ? trim((string) $_POST['view_name']) : ''
 $listTpl = isset($_POST['list_tpl']) ? (string) $_POST['list_tpl'] : '';
 $singleTpl = isset($_POST['single_tpl']) ? (string) $_POST['single_tpl'] : '';
 $systemTpl = isset($_POST['system_tpl']) ? (string) $_POST['system_tpl'] : '';
-$queryJson = isset($_POST['query_json']) ? (string) $_POST['query_json'] : '';
 
 if ($componentId <= 0) {
     if (isAjaxRequest()) {
@@ -49,7 +48,7 @@ if ($existingView !== null) {
     redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'view' => '_new', 'error' => 'Шаблон с таким ключом уже существует']));
 }
 
-$viewId = $viewRepo->create($componentId, $viewName, $listTpl, $singleTpl, $systemTpl, $queryJson);
+$viewId = $viewRepo->create($componentId, $viewName, $listTpl, $singleTpl, $systemTpl);
 $error = null;
 if (!writeComponentViewTemplate((string) $component['keyword'], $viewName, $listTpl, $singleTpl, $systemTpl, $error)) {
     $viewRepo->delete($viewId);
