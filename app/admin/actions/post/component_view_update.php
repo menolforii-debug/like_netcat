@@ -10,7 +10,6 @@ $viewName = isset($_POST['view_name']) ? trim((string) $_POST['view_name']) : ''
 $listTpl = isset($_POST['list_tpl']) ? (string) $_POST['list_tpl'] : '';
 $singleTpl = isset($_POST['single_tpl']) ? (string) $_POST['single_tpl'] : '';
 $systemTpl = isset($_POST['system_tpl']) ? (string) $_POST['system_tpl'] : '';
-$queryJson = isset($_POST['query_json']) ? (string) $_POST['query_json'] : '';
 
 if ($viewId <= 0 || $componentId <= 0) {
     if (isAjaxRequest()) {
@@ -55,7 +54,7 @@ if (!writeComponentViewTemplate((string) $component['keyword'], $viewName, $list
     redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'view' => $viewName, 'error' => $error ?? 'Не удалось сохранить шаблон']));
 }
 
-$viewRepo->update($viewId, $viewName, $listTpl, $singleTpl, $systemTpl, $queryJson);
+$viewRepo->update($viewId, $viewName, $listTpl, $singleTpl, $systemTpl);
 syncComponentViewsJson($componentId);
 
 if (isAjaxRequest()) {

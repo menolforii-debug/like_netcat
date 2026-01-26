@@ -221,12 +221,21 @@ final class Layout
         $ctx['site'] = isset($ctx['site']) && is_array($ctx['site']) ? $ctx['site'] : [];
         $ctx['section'] = $ctx['section'] ?? null;
 
+        $previousScope = $GLOBALS['_snip_scope'] ?? null;
+        $GLOBALS['_snip_scope'] = get_defined_vars();
+
         $navPath = self::layoutNavPath($layoutKey);
         if (is_file($navPath)) {
             require $navPath;
         }
 
         require $layoutPath;
+
+        if ($previousScope !== null) {
+            $GLOBALS['_snip_scope'] = $previousScope;
+        } else {
+            unset($GLOBALS['_snip_scope']);
+        }
     }
 
     public static function layoutExists(string $layoutKey): bool

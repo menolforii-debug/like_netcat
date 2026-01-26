@@ -5,7 +5,7 @@ final class ComponentViewRepo
     public function listForComponent(int $componentId): array
     {
         return DB::fetchAll(
-            'SELECT id, component_id, name, list_tpl, single_tpl, system_tpl, query_json, created_at, updated_at
+            'SELECT id, component_id, name, list_tpl, single_tpl, system_tpl, created_at, updated_at
             FROM component_views
             WHERE component_id = :component_id
             ORDER BY id ASC',
@@ -32,7 +32,7 @@ final class ComponentViewRepo
     public function findById(int $id): ?array
     {
         return DB::fetchOne(
-            'SELECT id, component_id, name, list_tpl, single_tpl, system_tpl, query_json, created_at, updated_at
+            'SELECT id, component_id, name, list_tpl, single_tpl, system_tpl, created_at, updated_at
             FROM component_views WHERE id = :id LIMIT 1',
             ['id' => $id]
         );
@@ -41,7 +41,7 @@ final class ComponentViewRepo
     public function findByName(int $componentId, string $name): ?array
     {
         return DB::fetchOne(
-            'SELECT id, component_id, name, list_tpl, single_tpl, system_tpl, query_json, created_at, updated_at
+            'SELECT id, component_id, name, list_tpl, single_tpl, system_tpl, created_at, updated_at
             FROM component_views WHERE component_id = :component_id AND name = :name LIMIT 1',
             [
                 'component_id' => $componentId,
@@ -50,12 +50,12 @@ final class ComponentViewRepo
         );
     }
 
-    public function create(int $componentId, string $name, string $listTpl, string $singleTpl, string $systemTpl, string $queryJson): int
+    public function create(int $componentId, string $name, string $listTpl, string $singleTpl, string $systemTpl): int
     {
         $now = $this->now();
         $stmt = DB::pdo()->prepare(
-            'INSERT INTO component_views (component_id, name, list_tpl, single_tpl, system_tpl, query_json, created_at, updated_at)
-            VALUES (:component_id, :name, :list_tpl, :single_tpl, :system_tpl, :query_json, :created_at, :updated_at)'
+            'INSERT INTO component_views (component_id, name, list_tpl, single_tpl, system_tpl, created_at, updated_at)
+            VALUES (:component_id, :name, :list_tpl, :single_tpl, :system_tpl, :created_at, :updated_at)'
         );
         $stmt->execute([
             'component_id' => $componentId,
@@ -63,7 +63,6 @@ final class ComponentViewRepo
             'list_tpl' => $listTpl,
             'single_tpl' => $singleTpl,
             'system_tpl' => $systemTpl,
-            'query_json' => $queryJson,
             'created_at' => $now,
             'updated_at' => $now,
         ]);
@@ -71,11 +70,11 @@ final class ComponentViewRepo
         return (int) DB::pdo()->lastInsertId();
     }
 
-    public function update(int $id, string $name, string $listTpl, string $singleTpl, string $systemTpl, string $queryJson): void
+    public function update(int $id, string $name, string $listTpl, string $singleTpl, string $systemTpl): void
     {
         $stmt = DB::pdo()->prepare(
             'UPDATE component_views
-            SET name = :name, list_tpl = :list_tpl, single_tpl = :single_tpl, system_tpl = :system_tpl, query_json = :query_json, updated_at = :updated_at
+            SET name = :name, list_tpl = :list_tpl, single_tpl = :single_tpl, system_tpl = :system_tpl, updated_at = :updated_at
             WHERE id = :id'
         );
         $stmt->execute([
@@ -83,7 +82,6 @@ final class ComponentViewRepo
             'list_tpl' => $listTpl,
             'single_tpl' => $singleTpl,
             'system_tpl' => $systemTpl,
-            'query_json' => $queryJson,
             'updated_at' => $this->now(),
             'id' => $id,
         ]);

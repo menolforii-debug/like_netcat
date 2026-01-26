@@ -74,7 +74,6 @@ final class Renderer
         $infoblocksHtml = '';
         $infoblockViews = [];
         $itemTitle = '';
-        $viewRepo = new ComponentViewRepo();
         foreach ($infoblocks as $infoblock) {
             $component = $componentRepo->findById((int) $infoblock['component_id']);
             if ($component === null) {
@@ -85,19 +84,7 @@ final class Renderer
             $infoblock['settings'] = $this->decodeSettings($infoblock);
 
             // Берем только опубликованные объекты сразу из БД, чтобы не гонять лишние данные.
-            $viewRow = $viewRepo->findByName((int) ($component['id'] ?? 0), (string) $infoblock['view_template']);
-            $queryOverride = $this->decodeQueryOverride($viewRow);
-            if ($queryOverride !== null) {
-                $queryOverride['component_id'] = (int) ($component['id'] ?? 0);
-            }
-            if ($queryOverride !== null && ($queryOverride['mode'] ?? 'extend') === 'replace' && !empty($queryOverride['sql'])) {
-                $objects = $objectRepo->listBySql($queryOverride['sql'], $queryOverride['params'] ?? []);
-                $objects = $this->filterOverrideObjects($objects, $infoblock, $queryOverride);
-            } elseif ($queryOverride !== null) {
-                $objects = $objectRepo->listForInfoblockWithOverride((int) $infoblock['id'], false, 'published', $queryOverride);
-            } else {
-                $objects = $objectRepo->listForInfoblock((int) $infoblock['id'], false, 'published');
-            }
+            $objects = $objectRepo->listForInfoblock((int) $infoblock['id'], false, 'published');
             $infoblock['message_select'] = $objectRepo->getLastSelectQuery();
 
             $isSingle = $requestedObject && (int) $requestedObject['infoblock_id'] === (int) $infoblock['id'];
@@ -179,84 +166,22 @@ final class Renderer
             return '';
         }
 
+        $previousScope = $GLOBALS['_snip_scope'] ?? null;
+        $GLOBALS['_snip_scope'] = get_defined_vars();
+
         ob_start();
         require $templatePath;
-        return (string) ob_get_clean();
+        $output = (string) ob_get_clean();
+
+        if ($previousScope !== null) {
+            $GLOBALS['_snip_scope'] = $previousScope;
+        } else {
+            unset($GLOBALS['_snip_scope']);
+        }
+
+        return $output;
     }
 
-    private function decodeQueryOverride(?array $viewRow): ?array
-    {
-        if ($viewRow === null || empty($viewRow['query_json'])) {
-            return null;
-        }
-
-        $decoded = json_decode((string) $viewRow['query_json'], true);
-        if (!is_array($decoded)) {
-            return null;
-        }
-
-        $mode = isset($decoded['mode']) && $decoded['mode'] === 'replace' ? 'replace' : 'extend';
-        $sql = isset($decoded['sql']) && is_string($decoded['sql']) ? trim($decoded['sql']) : '';
-        $params = isset($decoded['params']) && is_array($decoded['params']) ? $decoded['params'] : [];
-        $where = isset($decoded['where']) ? (array) $decoded['where'] : [];
-        $order = isset($decoded['order']) && is_string($decoded['order']) ? trim($decoded['order']) : '';
-        $limit = isset($decoded['limit']) && is_numeric($decoded['limit']) ? (int) $decoded['limit'] : null;
-        $ignoreSub = !empty($decoded['ignore_sub']);
-        $systemTpl = isset($viewRow['system_tpl']) ? (string) $viewRow['system_tpl'] : '';
-        if ($systemTpl !== '' && preg_match('/\\$ignore_sub\\s*=\\s*(\\d+)/', $systemTpl, $matches) === 1) {
-            $ignoreSub = ((int) $matches[1]) === 1;
-        }
-
-        return [
-            'mode' => $mode,
-            'sql' => $sql,
-            'params' => $params,
-            'where' => $where,
-            'order' => $order,
-            'limit' => $limit,
-            'ignore_sub' => $ignoreSub,
-        ];
-    }
-
-    private function filterOverrideObjects(array $objects, array $infoblock, array $override): array
-    {
-        $filtered = [];
-        $infoblockId = (int) ($infoblock['id'] ?? 0);
-        $componentId = (int) ($infoblock['component_id'] ?? 0);
-        $ignoreSub = !empty($override['ignore_sub']);
-
-        foreach ($objects as $object) {
-            if (!is_array($object)) {
-                continue;
-            }
-
-            if (!isset($object['status']) || !isset($object['is_deleted'])) {
-                continue;
-            }
-
-            if ((string) $object['status'] !== 'published') {
-                continue;
-            }
-
-            if (!empty($object['is_deleted'])) {
-                continue;
-            }
-
-            if ($ignoreSub) {
-                if (!isset($object['component_id']) || (int) $object['component_id'] !== $componentId) {
-                    continue;
-                }
-            } else {
-                if (!isset($object['infoblock_id']) || (int) $object['infoblock_id'] !== $infoblockId) {
-                    continue;
-                }
-            }
-
-            $filtered[] = $object;
-        }
-
-        return $filtered;
-    }
 
     private function resolveViewTemplate(array $infoblock, array $component): string
     {
