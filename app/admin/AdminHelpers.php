@@ -40,16 +40,6 @@ function isValidCsrfToken(?string $token): bool
     return hash_equals((string) $_SESSION['csrf_token'], (string) $token);
 }
 
-function parseJsonField(string $value, string $errorMessage): array
-{
-    $decoded = json_decode($value, true);
-    if (!is_array($decoded)) {
-        throw new InvalidArgumentException($errorMessage);
-    }
-
-    return $decoded;
-}
-
 function collectSections(SectionRepo $repo, int $parentId): array
 {
     $items = [];
@@ -78,16 +68,6 @@ function collectSectionTree(SectionRepo $repo, int $parentId, int $depth = 0): a
 function decodeExtra(array $row): array
 {
     return Utils::decodeExtra($row);
-}
-
-function decodeSettings(array $row): array
-{
-    $decoded = json_decode((string) ($row['settings_json'] ?? '{}'), true);
-    if (!is_array($decoded)) {
-        return [];
-    }
-
-    return $decoded;
 }
 
 function componentViews(array $component): array
@@ -332,7 +312,7 @@ function parseMirrorLines(string $value): array
 
 function englishNameIsValid(string $englishName): bool
 {
-    return (bool) preg_match('/^[A-Za-z0-9_-]+$/', $englishName);
+    return Utils::isUrlSafe($englishName);
 }
 
 function componentKeyIsValid(string $componentKey): bool
@@ -729,6 +709,59 @@ function stripSystemTemplateTags(string $systemTpl): string
     $trimmed = preg_replace('/\\?>$/', '', $trimmed);
 
     return trim((string) $trimmed);
+}
+
+function componentActionTemplatePath(string $componentKey): string
+{
+    return dirname(__DIR__, 2) . '/templates/component/' . $componentKey . '/actions.php';
+}
+
+function readComponentActionTemplate(string $componentKey): string
+{
+    $path = componentActionTemplatePath($componentKey);
+    if (!is_file($path)) {
+        return '';
+    }
+
+    $content = file_get_contents($path);
+    if ($content === false) {
+        return '';
+    }
+
+    return stripSystemTemplateTags($content);
+}
+
+function writeComponentActionTemplate(string $componentKey, string $template, ?string &$error = null): bool
+{
+    $template = trim(stripSystemTemplateTags($template));
+    $dir = dirname(componentActionTemplatePath($componentKey));
+    if (!is_dir($dir)) {
+        mkdir($dir, 0770, true);
+        @chmod($dir, 0770);
+    }
+
+    $path = componentActionTemplatePath($componentKey);
+    if ($template === '') {
+        if (is_file($path)) {
+            @unlink($path);
+        }
+        return true;
+    }
+
+    $content = "<?php\n" . rtrim($template) . "\n";
+    if (file_put_contents($path, $content) === false) {
+        $error = 'Не удалось сохранить шаблон действий.';
+        return false;
+    }
+    @chmod($path, 0660);
+
+    $lintOutput = @shell_exec('php -l ' . escapeshellarg($path));
+    if ($lintOutput !== null && stripos($lintOutput, 'No syntax errors detected') === false) {
+        $error = 'Синтаксическая ошибка в шаблоне действий: ' . trim((string) $lintOutput);
+        return false;
+    }
+
+    return true;
 }
 
 function layoutTemplatesDir(): string
