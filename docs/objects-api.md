@@ -1,7 +1,7 @@
-# API выборки объектов (`nc_objects_list`)
+# API выборки объектов (`objects_list`)
 
 Функция предназначена для выборки объектов из таблицы `objects` с фильтрами,
-аналогичными старому `nc_objects_list`, и доступна в любом месте, где загружен
+аналогичными старому `objects_list`, и доступна в любом месте, где загружен
 `app/bootstrap.php` (в том числе в шаблонах компонентов).
 
 ## Сигнатура
@@ -11,7 +11,7 @@
  * @param array $filters
  * @return array
  */
-$objects = nc_objects_list($filters);
+$objects = objects_list($filters);
 ```
 
 ## Входные параметры
@@ -56,7 +56,7 @@ $objects = nc_objects_list($filters);
 ### Опубликованные объекты инфоблока
 
 ```php
-$items = nc_objects_list([
+$items = objects_list([
     'infoblock_id' => 12,
     'status' => 'published',
     'order' => 'id DESC',
@@ -67,7 +67,7 @@ $items = nc_objects_list([
 ### Фильтр по разделу и компоненту
 
 ```php
-$items = nc_objects_list([
+$items = objects_list([
     'infoblock_id' => 12,
     'component_id' => 3,
     'section_id' => 7,
@@ -79,7 +79,7 @@ $items = nc_objects_list([
 ### Выборка удалённых объектов компонента (ignore_sub)
 
 ```php
-$items = nc_objects_list([
+$items = objects_list([
     'component_id' => 3,
     'ignore_sub' => 1,
     'is_deleted' => 1,
@@ -90,7 +90,7 @@ $items = nc_objects_list([
 ### Полный SQL (replace‑режим)
 
 ```php
-$items = nc_objects_list([
+$items = objects_list([
     'sql' => 'SELECT * FROM objects WHERE status = :status ORDER BY id DESC',
     'params' => ['status' => 'published'],
 ]);

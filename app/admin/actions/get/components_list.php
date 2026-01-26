@@ -123,7 +123,7 @@ echo '</ul>';
 
 if ($tab === 'general') {
     echo '<form method="post" action="/admin.php?action=component_update">';
-    echo csrfTokenField();
+    echo csrf_token_field();
     echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
     echo '<div class="mb-3"><label class="form-label">Ключ</label><input class="form-control" name="keyword" value="' . htmlspecialchars((string) $selectedComponent['keyword'], ENT_QUOTES, 'UTF-8') . '" required></div>';
     echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" name="name" value="' . htmlspecialchars((string) $selectedComponent['name'], ENT_QUOTES, 'UTF-8') . '" required></div>';
@@ -150,7 +150,7 @@ if ($tab === 'general') {
 
 if ($tab === 'fields') {
     echo '<form method="post" action="/admin.php?action=component_update">';
-    echo csrfTokenField();
+    echo csrf_token_field();
     echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
     echo '<input type="hidden" name="keyword" value="' . htmlspecialchars((string) $selectedComponent['keyword'], ENT_QUOTES, 'UTF-8') . '">';
     echo '<input type="hidden" name="name" value="' . htmlspecialchars((string) $selectedComponent['name'], ENT_QUOTES, 'UTF-8') . '">';
@@ -218,7 +218,7 @@ if ($tab === 'fields') {
 
 if ($tab === 'views') {
     echo '<form method="post" action="/admin.php?action=component_update">';
-    echo csrfTokenField();
+    echo csrf_token_field();
     echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
     echo '<input type="hidden" name="keyword" value="' . htmlspecialchars((string) $selectedComponent['keyword'], ENT_QUOTES, 'UTF-8') . '">';
     echo '<input type="hidden" name="name" value="' . htmlspecialchars((string) $selectedComponent['name'], ENT_QUOTES, 'UTF-8') . '">';

@@ -22,9 +22,10 @@ CREATE TABLE IF NOT EXISTS infoblocks (
     site_id INTEGER NOT NULL,
     section_id INTEGER NOT NULL,
     component_id INTEGER NOT NULL,
+    `key` TEXT NOT NULL DEFAULT '',
     name TEXT NOT NULL,
     view_template TEXT NOT NULL,
-    settings_json TEXT NOT NULL DEFAULT '{}',
+    per_page INTEGER NOT NULL DEFAULT 0,
     extra_json TEXT NOT NULL DEFAULT '{}',
     sort INTEGER NOT NULL DEFAULT 0,
     is_enabled INTEGER NOT NULL DEFAULT 1,
@@ -106,6 +107,7 @@ CREATE INDEX IF NOT EXISTS idx_sections_parent_id ON sections(parent_id);
 CREATE INDEX IF NOT EXISTS idx_infoblocks_site_id ON infoblocks(site_id);
 CREATE INDEX IF NOT EXISTS idx_infoblocks_section_id ON infoblocks(section_id);
 CREATE INDEX IF NOT EXISTS idx_infoblocks_component_id ON infoblocks(component_id);
+CREATE INDEX IF NOT EXISTS idx_infoblocks_key ON infoblocks(key);
 CREATE INDEX IF NOT EXISTS idx_objects_site_id ON objects(site_id);
 CREATE INDEX IF NOT EXISTS idx_objects_section_id ON objects(section_id);
 CREATE INDEX IF NOT EXISTS idx_objects_infoblock_id ON objects(infoblock_id);

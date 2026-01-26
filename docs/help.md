@@ -27,11 +27,12 @@
 ## Компоненты
 
 - `docs/components.md` — структура компонентов, представления, шаблоны list/single, `system_tpl`.
+- `docs/cli.md` — описание CLI‑утилиты `bin/cms`.
 
 ## Функции / API
 
 - `docs/functions-api.md` — список функций/хелперов, доступных в макетах/компонентах/врезках.
-- `docs/objects-api.md` — подробное описание `nc_objects_list()` и фильтров.
+- `docs/objects-api.md` — подробное описание `objects_list()` и фильтров.
 
 ## Остальные документы
 
