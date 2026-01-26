@@ -59,7 +59,7 @@ if ($id <= 0) {
 
 echo '<span data-modal-title="' . ($id > 0 ? 'Редактировать раздел' : 'Новый раздел') . '"></span>';
 echo '<form method="post" action="/admin.php?action=' . ($id > 0 ? 'section_update' : 'section_create') . '" data-ajax="true">';
-echo csrfTokenField();
+echo csrf_token_field();
 if ($id > 0) {
     echo '<input type="hidden" name="id" value="' . (int) $section['id'] . '">';
 }
