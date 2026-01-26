@@ -7,6 +7,7 @@ require $root . '/app/core/DB.php';
 require $root . '/app/core/EventBus.php';
 require $root . '/app/core/Core.php';
 require $root . '/app/core/Utils.php';
+require $root . '/app/core/Functions.php';
 require $root . '/app/core/Auth.php';
 require $root . '/app/core/AdminLog.php';
 require $root . '/app/core/Permission.php';
@@ -55,14 +56,14 @@ function core(): Core
     return $GLOBALS['core'];
 }
 
-function usersCount(): int
+function users_count(): int
 {
     $row = DB::fetchOne('SELECT COUNT(*) AS cnt FROM users');
 
     return $row ? (int) $row['cnt'] : 0;
 }
 
-function nc_objects_list(array $filters): array
+function objects_list(array $filters): array
 {
     $repo = new ObjectRepo();
 
