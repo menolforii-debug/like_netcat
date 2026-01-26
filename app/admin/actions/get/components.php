@@ -130,7 +130,19 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
 
         AdminLayout::openContent();
         echo '<div class="card shadow-sm"><div class="card-body">';
-        echo '<div class="text-muted">Создайте первый компонент.</div>';
+        if ($isNewComponent) {
+            if ($errorMessage !== '') {
+                echo '<div class="mb-3 text-danger">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
+            }
+            echo '<form method="post" action="/admin.php?action=component_create">';
+            echo csrfTokenField();
+            echo '<div class="mb-3"><label class="form-label">Ключ</label><input class="form-control" name="keyword" required></div>';
+            echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" name="name" required></div>';
+            echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
+            echo '</form>';
+        } else {
+            echo '<div class="text-muted">Создайте первый компонент.</div>';
+        }
         echo '</div></div>';
         AdminLayout::closeContent();
 
