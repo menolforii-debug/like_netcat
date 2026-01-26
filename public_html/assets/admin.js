@@ -338,6 +338,10 @@ function openAdminModal(url) {
       }
       initInfoblockViewSelects(parts.contentEl || document);
       initVisualInheritToggles(parts.contentEl || document);
+      initCodeEditorFullscreen(parts.contentEl || document);
+      if (window.initCodeEditors) {
+        window.initCodeEditors(parts.contentEl || document);
+      }
     })
     .catch(() => {
       showModalError('Не удалось загрузить форму.');

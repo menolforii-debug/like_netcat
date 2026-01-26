@@ -3,7 +3,7 @@
 $error = isset($error) ? (string) $error : '';
 $bootstrapNotice = '';
 
-if (usersCount() === 0) {
+if (users_count() === 0) {
     $password = bin2hex(random_bytes(6));
     Auth::createUser('admin', $password, Auth::ROLE_ADMIN);
     $_SESSION['bootstrap_admin_pass'] = $password;
