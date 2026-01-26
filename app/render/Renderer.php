@@ -19,6 +19,12 @@ final class Renderer
     public function renderSitePath(array $site, string $path): void
     {
         $sectionRepo = new SectionRepo();
+        $settings = $sectionRepo->getSiteSettings($site);
+        if (empty($settings['site_enabled'])) {
+            http_response_code(503);
+            echo (string) ($settings['site_offline_html'] ?? '');
+            return;
+        }
         $section = $this->resolveSectionByPath($sectionRepo, $site, $path);
 
         if ($section === null) {
@@ -81,10 +87,19 @@ final class Renderer
             }
 
             $infoblock['view_template'] = $this->resolveViewTemplate($infoblock, $component);
-            $infoblock['settings'] = $this->decodeSettings($infoblock);
+
+            $perPage = isset($infoblock['per_page']) ? (int) $infoblock['per_page'] : 0;
+            if ($perPage < 0) {
+                $perPage = 0;
+            }
+            $infoblock['per_page'] = $perPage;
 
             // Берем только опубликованные объекты сразу из БД, чтобы не гонять лишние данные.
-            $objects = $objectRepo->listForInfoblock((int) $infoblock['id'], false, 'published');
+            if ($perPage > 0) {
+                $objects = $objectRepo->listForInfoblockPaged((int) $infoblock['id'], false, 'published', $perPage, 0);
+            } else {
+                $objects = $objectRepo->listForInfoblock((int) $infoblock['id'], false, 'published');
+            }
             $infoblock['message_select'] = $objectRepo->getLastSelectQuery();
 
             $isSingle = $requestedObject && (int) $requestedObject['infoblock_id'] === (int) $infoblock['id'];
@@ -343,20 +358,6 @@ final class Renderer
         $segments = trim($path, '/') === '' ? [] : explode('/', trim($path, '/'));
         // Разрешаем путь через один запрос, чтобы не делать N+1 по дереву.
         return $repo->findByPath((int) $site['id'], $segments);
-    }
-
-    private function decodeSettings(array $row): array
-    {
-        if (isset($row['settings']) && is_array($row['settings'])) {
-            return $row['settings'];
-        }
-
-        $decoded = json_decode((string) ($row['settings_json'] ?? '{}'), true);
-        if (!is_array($decoded)) {
-            return [];
-        }
-
-        return $decoded;
     }
 
     private function templateExists(string $componentKey, string $view): bool

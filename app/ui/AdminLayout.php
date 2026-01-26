@@ -122,7 +122,7 @@ final class AdminLayout
         }
 
         echo '<div class="modal fade" id="adminModal" tabindex="-1" aria-hidden="true">';
-        echo '<div class="modal-dialog modal-lg modal-dialog-scrollable">';
+        echo '<div class="modal-dialog modal-xl modal-dialog-scrollable">';
         echo '<div class="modal-content">';
         echo '<div class="modal-header">';
         echo '<h5 class="modal-title">Загрузка...</h5>';
