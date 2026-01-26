@@ -24,14 +24,13 @@
 ### Представления компонентов (`component_views`)
 
 - Хранят пары шаблонов `list_tpl` и `single_tpl`, а также `system_tpl` для системного кода.
-- Поле `query_json` является наследием старого механизма и больше не используется в логике проекта.
 - При сохранении админка пишет файл `templates/component/<keyword>/<view>.php`.
 - При обновлении создаются бэкапы в `var/backups/templates/component/`.
 
 ### Инфоблоки (`infoblocks`)
 
 - Экземпляр компонента внутри раздела.
-- Содержит `view_template`, `settings_json` и `extra_json`.
+- Содержит `view_template`, `key`, `per_page` и `extra_json`.
 - `extra_json` поддерживает обёртки (`before_html`, `after_html`).
 
 ### Объекты (`objects`)

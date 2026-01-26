@@ -40,16 +40,6 @@ function isValidCsrfToken(?string $token): bool
     return hash_equals((string) $_SESSION['csrf_token'], (string) $token);
 }
 
-function parseJsonField(string $value, string $errorMessage): array
-{
-    $decoded = json_decode($value, true);
-    if (!is_array($decoded)) {
-        throw new InvalidArgumentException($errorMessage);
-    }
-
-    return $decoded;
-}
-
 function collectSections(SectionRepo $repo, int $parentId): array
 {
     $items = [];
@@ -78,16 +68,6 @@ function collectSectionTree(SectionRepo $repo, int $parentId, int $depth = 0): a
 function decodeExtra(array $row): array
 {
     return Utils::decodeExtra($row);
-}
-
-function decodeSettings(array $row): array
-{
-    $decoded = json_decode((string) ($row['settings_json'] ?? '{}'), true);
-    if (!is_array($decoded)) {
-        return [];
-    }
-
-    return $decoded;
 }
 
 function componentViews(array $component): array
@@ -332,7 +312,7 @@ function parseMirrorLines(string $value): array
 
 function englishNameIsValid(string $englishName): bool
 {
-    return (bool) preg_match('/^[A-Za-z0-9_-]+$/', $englishName);
+    return Utils::isUrlSafe($englishName);
 }
 
 function componentKeyIsValid(string $componentKey): bool
