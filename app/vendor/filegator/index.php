@@ -118,6 +118,31 @@ function isValidFileName(string $name): bool
     return basename($name) === $name;
 }
 
+function ensureValidName(string $name, string $label): string
+{
+    $name = trim($name);
+    if (!isValidFileName($name)) {
+        throw new RuntimeException('Некорректное имя ' . $label . '.');
+    }
+
+    return $name;
+}
+
+function resolveUniqueName(string $targetDir, string $name): string
+{
+    $dest = $targetDir . '/' . $name;
+    if (!file_exists($dest)) {
+        return $name;
+    }
+
+    $extension = pathinfo($name, PATHINFO_EXTENSION);
+    $base = pathinfo($name, PATHINFO_FILENAME);
+    $suffix = date('YmdHis') . '_' . bin2hex(random_bytes(3));
+    $candidate = $base . '_' . $suffix . ($extension !== '' ? '.' . $extension : '');
+
+    return resolveUniqueName($targetDir, $candidate);
+}
+
 /**
  * Возвращает режим подсветки CodeMirror по расширению файла.
  */
@@ -158,24 +183,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $targetPath = resolvePath($root, $target);
 
         if ($action === 'mkdir') {
-            $name = trim((string) ($_POST['name'] ?? ''));
-            if ($name === '') {
-                throw new RuntimeException('Имя папки не задано.');
-            }
-            $dest = resolvePath($root, $target . '/' . $name);
+            $name = ensureValidName((string) ($_POST['name'] ?? ''), 'папки');
+            $resolvedName = resolveUniqueName($targetPath, $name);
+            $dest = resolvePath($root, $target . '/' . $resolvedName);
             if (!is_dir($dest) && !mkdir($dest, 0770, true)) {
                 throw new RuntimeException('Не удалось создать папку.');
             }
             $messages[] = 'Папка создана.';
         } elseif ($action === 'create_file') {
-            $name = trim((string) ($_POST['name'] ?? ''));
-            if (!isValidFileName($name)) {
-                throw new RuntimeException('Некорректное имя файла.');
-            }
-            $dest = resolvePath($root, $target . '/' . $name);
-            if (file_exists($dest)) {
-                throw new RuntimeException('Файл уже существует.');
-            }
+            $name = ensureValidName((string) ($_POST['name'] ?? ''), 'файла');
+            $resolvedName = resolveUniqueName($targetPath, $name);
+            $dest = resolvePath($root, $target . '/' . $resolvedName);
             if (file_put_contents($dest, '') === false) {
                 throw new RuntimeException('Не удалось создать файл.');
             }
@@ -189,11 +207,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!is_uploaded_file($upload['tmp_name'] ?? '')) {
                 throw new RuntimeException('Невозможно прочитать загруженный файл.');
             }
-            $name = basename((string) ($upload['name'] ?? ''));
-            if ($name === '') {
-                throw new RuntimeException('Некорректное имя файла.');
-            }
-            $dest = resolvePath($root, $target . '/' . $name);
+            $name = ensureValidName(basename((string) ($upload['name'] ?? '')), 'файла');
+            $resolvedName = resolveUniqueName($targetPath, $name);
+            $dest = resolvePath($root, $target . '/' . $resolvedName);
             if (!move_uploaded_file($upload['tmp_name'], $dest)) {
                 throw new RuntimeException('Не удалось сохранить файл.');
             }
@@ -209,12 +225,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $messages[] = 'Удалено.';
         } elseif ($action === 'rename') {
             $item = normalizePath((string) ($_POST['item'] ?? ''));
-            $name = trim((string) ($_POST['name'] ?? ''));
-            if ($item === '' || $name === '') {
+            $name = ensureValidName((string) ($_POST['name'] ?? ''), 'файла');
+            if ($item === '') {
                 throw new RuntimeException('Недостаточно данных для переименования.');
             }
             $source = resolvePath($root, $item);
             $dest = resolvePath($root, dirname($item) . '/' . $name);
+            if (file_exists($dest)) {
+                throw new RuntimeException('Файл или папка с таким именем уже существует.');
+            }
             if (!rename($source, $dest)) {
                 throw new RuntimeException('Не удалось переименовать.');
             }

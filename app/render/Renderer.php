@@ -19,6 +19,12 @@ final class Renderer
     public function renderSitePath(array $site, string $path): void
     {
         $sectionRepo = new SectionRepo();
+        $settings = $sectionRepo->getSiteSettings($site);
+        if (empty($settings['site_enabled'])) {
+            http_response_code(503);
+            echo (string) ($settings['site_offline_html'] ?? '');
+            return;
+        }
         $section = $this->resolveSectionByPath($sectionRepo, $site, $path);
 
         if ($section === null) {
