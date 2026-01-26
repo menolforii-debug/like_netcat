@@ -2,6 +2,11 @@
 
 final class Utils
 {
+    public static function isUrlSafe(string $value): bool
+    {
+        return (bool) preg_match('/^[A-Za-z0-9_-]+$/', $value);
+    }
+
     public static function normalizeHost(string $host): string
     {
         $host = strtolower(trim($host));

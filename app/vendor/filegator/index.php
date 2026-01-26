@@ -20,7 +20,7 @@ if (session_status() === PHP_SESSION_NONE) {
 if (empty($_SESSION['filemanager_csrf'])) {
     $_SESSION['filemanager_csrf'] = bin2hex(random_bytes(16));
 }
-$csrfToken = (string) $_SESSION['filemanager_csrf'];
+$csrf_token = (string) $_SESSION['filemanager_csrf'];
 
 function normalizePath(string $path): string
 {
@@ -118,6 +118,31 @@ function isValidFileName(string $name): bool
     return basename($name) === $name;
 }
 
+function ensureValidName(string $name, string $label): string
+{
+    $name = trim($name);
+    if (!isValidFileName($name)) {
+        throw new RuntimeException('Некорректное имя ' . $label . '.');
+    }
+
+    return $name;
+}
+
+function resolveUniqueName(string $targetDir, string $name): string
+{
+    $dest = $targetDir . '/' . $name;
+    if (!file_exists($dest)) {
+        return $name;
+    }
+
+    $extension = pathinfo($name, PATHINFO_EXTENSION);
+    $base = pathinfo($name, PATHINFO_FILENAME);
+    $suffix = date('YmdHis') . '_' . bin2hex(random_bytes(3));
+    $candidate = $base . '_' . $suffix . ($extension !== '' ? '.' . $extension : '');
+
+    return resolveUniqueName($targetDir, $candidate);
+}
+
 /**
  * Возвращает режим подсветки CodeMirror по расширению файла.
  */
@@ -158,24 +183,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $targetPath = resolvePath($root, $target);
 
         if ($action === 'mkdir') {
-            $name = trim((string) ($_POST['name'] ?? ''));
-            if ($name === '') {
-                throw new RuntimeException('Имя папки не задано.');
-            }
-            $dest = resolvePath($root, $target . '/' . $name);
+            $name = ensureValidName((string) ($_POST['name'] ?? ''), 'папки');
+            $resolvedName = resolveUniqueName($targetPath, $name);
+            $dest = resolvePath($root, $target . '/' . $resolvedName);
             if (!is_dir($dest) && !mkdir($dest, 0770, true)) {
                 throw new RuntimeException('Не удалось создать папку.');
             }
             $messages[] = 'Папка создана.';
         } elseif ($action === 'create_file') {
-            $name = trim((string) ($_POST['name'] ?? ''));
-            if (!isValidFileName($name)) {
-                throw new RuntimeException('Некорректное имя файла.');
-            }
-            $dest = resolvePath($root, $target . '/' . $name);
-            if (file_exists($dest)) {
-                throw new RuntimeException('Файл уже существует.');
-            }
+            $name = ensureValidName((string) ($_POST['name'] ?? ''), 'файла');
+            $resolvedName = resolveUniqueName($targetPath, $name);
+            $dest = resolvePath($root, $target . '/' . $resolvedName);
             if (file_put_contents($dest, '') === false) {
                 throw new RuntimeException('Не удалось создать файл.');
             }
@@ -189,11 +207,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!is_uploaded_file($upload['tmp_name'] ?? '')) {
                 throw new RuntimeException('Невозможно прочитать загруженный файл.');
             }
-            $name = basename((string) ($upload['name'] ?? ''));
-            if ($name === '') {
-                throw new RuntimeException('Некорректное имя файла.');
-            }
-            $dest = resolvePath($root, $target . '/' . $name);
+            $name = ensureValidName(basename((string) ($upload['name'] ?? '')), 'файла');
+            $resolvedName = resolveUniqueName($targetPath, $name);
+            $dest = resolvePath($root, $target . '/' . $resolvedName);
             if (!move_uploaded_file($upload['tmp_name'], $dest)) {
                 throw new RuntimeException('Не удалось сохранить файл.');
             }
@@ -209,12 +225,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $messages[] = 'Удалено.';
         } elseif ($action === 'rename') {
             $item = normalizePath((string) ($_POST['item'] ?? ''));
-            $name = trim((string) ($_POST['name'] ?? ''));
-            if ($item === '' || $name === '') {
+            $name = ensureValidName((string) ($_POST['name'] ?? ''), 'файла');
+            if ($item === '') {
                 throw new RuntimeException('Недостаточно данных для переименования.');
             }
             $source = resolvePath($root, $item);
             $dest = resolvePath($root, dirname($item) . '/' . $name);
+            if (file_exists($dest)) {
+                throw new RuntimeException('Файл или папка с таким именем уже существует.');
+            }
             if (!rename($source, $dest)) {
                 throw new RuntimeException('Не удалось переименовать.');
             }
@@ -499,7 +518,7 @@ foreach ($segments as $segment) {
                 <div class="card-header bg-white fw-semibold">Загрузить файл</div>
                 <div class="card-body">
                     <form method="post" enctype="multipart/form-data">
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8') ?>">
                         <input type="hidden" name="action" value="upload">
                         <input type="hidden" name="target" value="<?= htmlspecialchars($current, ENT_QUOTES, 'UTF-8') ?>">
                         <input class="form-control mb-2" type="file" name="file" required>
@@ -511,7 +530,7 @@ foreach ($segments as $segment) {
                 <div class="card-header bg-white fw-semibold">Создать файл</div>
                 <div class="card-body">
                     <form method="post">
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8') ?>">
                         <input type="hidden" name="action" value="create_file">
                         <input type="hidden" name="target" value="<?= htmlspecialchars($current, ENT_QUOTES, 'UTF-8') ?>">
                         <input class="form-control mb-2" type="text" name="name" placeholder="Имя файла" required>
@@ -523,7 +542,7 @@ foreach ($segments as $segment) {
                 <div class="card-header bg-white fw-semibold">Создать папку</div>
                 <div class="card-body">
                     <form method="post">
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8') ?>">
                         <input type="hidden" name="action" value="mkdir">
                         <input type="hidden" name="target" value="<?= htmlspecialchars($current, ENT_QUOTES, 'UTF-8') ?>">
                         <input class="form-control mb-2" type="text" name="name" placeholder="Имя папки" required>
@@ -543,7 +562,7 @@ foreach ($segments as $segment) {
                 </div>
                 <div class="modal-body">
                     <form method="post" id="fileEditForm">
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8') ?>">
                         <input type="hidden" name="action" value="save">
                         <input type="hidden" name="item" id="fileEditPath" value="">
                         <textarea class="form-control mb-2 code-editor"
@@ -569,7 +588,7 @@ foreach ($segments as $segment) {
                 <div class="modal-body">
                     <div class="mb-2">Удалить: <strong id="fileDeleteName"></strong>?</div>
                     <form method="post" id="fileDeleteForm">
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8') ?>">
                         <input type="hidden" name="action" value="delete">
                         <input type="hidden" name="item" id="fileDeletePath" value="">
                         <div class="d-flex justify-content-end gap-2">
@@ -590,7 +609,7 @@ foreach ($segments as $segment) {
                 </div>
                 <div class="modal-body">
                     <form method="post" id="fileRenameForm">
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8') ?>">
                         <input type="hidden" name="action" value="rename">
                         <input type="hidden" name="item" id="fileRenamePath" value="">
                         <div class="mb-2">
@@ -627,7 +646,7 @@ foreach ($segments as $segment) {
                         <dd class="col-8" id="filePropsModified"></dd>
                     </dl>
                     <form method="post" id="filePropsForm">
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8') ?>">
                         <input type="hidden" name="action" value="chmod">
                         <input type="hidden" name="item" id="filePropsPath" value="">
                         <div class="mb-2">
