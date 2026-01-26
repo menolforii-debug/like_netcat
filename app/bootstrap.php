@@ -7,6 +7,7 @@ require $root . '/app/core/DB.php';
 require $root . '/app/core/EventBus.php';
 require $root . '/app/core/Core.php';
 require $root . '/app/core/Utils.php';
+require $root . '/app/core/Functions.php';
 require $root . '/app/core/Auth.php';
 require $root . '/app/core/AdminLog.php';
 require $root . '/app/core/Permission.php';
@@ -62,7 +63,7 @@ function usersCount(): int
     return $row ? (int) $row['cnt'] : 0;
 }
 
-function nc_objects_list(array $filters): array
+function objects_list(array $filters): array
 {
     $repo = new ObjectRepo();
 

@@ -35,7 +35,7 @@ final class FieldValidator
             }
         }
 
-        if (isset($sanitized['english_name']) && !$this->isUrlSafe((string) $sanitized['english_name'])) {
+        if (isset($sanitized['english_name']) && !Utils::isUrlSafe((string) $sanitized['english_name'])) {
             $errors[] = 'Поле "english_name" должно быть URL-безопасным.';
         }
 
@@ -134,7 +134,7 @@ final class FieldValidator
             case 'url_safe':
             case 'slug':
                 $value = (string) $value;
-                if (!$this->isUrlSafe($value)) {
+                if (!Utils::isUrlSafe($value)) {
                     $errors[] = 'Поле "' . $name . '" должно быть URL-безопасным.';
                     return null;
                 }
@@ -176,11 +176,6 @@ final class FieldValidator
         }
     }
 
-    private function isUrlSafe(string $value): bool
-    {
-        return (bool) preg_match('/^[A-Za-z0-9_-]+$/', $value);
-    }
-
     private function applySeoMapping(array $fields, array &$data): void
     {
         $seoTitle = $data['seo_title'] ?? '';
@@ -192,7 +187,7 @@ final class FieldValidator
             }
 
             $name = $field['name'];
-            if (($name === 'english_name' || $name === 'slug') && isset($data[$name]) && !$this->isUrlSafe((string) $data[$name])) {
+            if (($name === 'english_name' || $name === 'slug') && isset($data[$name]) && !Utils::isUrlSafe((string) $data[$name])) {
                 continue;
             }
             if ($name === 'title' && $seoTitle === '' && isset($data[$name])) {
