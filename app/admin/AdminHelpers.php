@@ -711,6 +711,59 @@ function stripSystemTemplateTags(string $systemTpl): string
     return trim((string) $trimmed);
 }
 
+function componentActionTemplatePath(string $componentKey): string
+{
+    return dirname(__DIR__, 2) . '/templates/component/' . $componentKey . '/actions.php';
+}
+
+function readComponentActionTemplate(string $componentKey): string
+{
+    $path = componentActionTemplatePath($componentKey);
+    if (!is_file($path)) {
+        return '';
+    }
+
+    $content = file_get_contents($path);
+    if ($content === false) {
+        return '';
+    }
+
+    return stripSystemTemplateTags($content);
+}
+
+function writeComponentActionTemplate(string $componentKey, string $template, ?string &$error = null): bool
+{
+    $template = trim(stripSystemTemplateTags($template));
+    $dir = dirname(componentActionTemplatePath($componentKey));
+    if (!is_dir($dir)) {
+        mkdir($dir, 0770, true);
+        @chmod($dir, 0770);
+    }
+
+    $path = componentActionTemplatePath($componentKey);
+    if ($template === '') {
+        if (is_file($path)) {
+            @unlink($path);
+        }
+        return true;
+    }
+
+    $content = "<?php\n" . rtrim($template) . "\n";
+    if (file_put_contents($path, $content) === false) {
+        $error = 'Не удалось сохранить шаблон действий.';
+        return false;
+    }
+    @chmod($path, 0660);
+
+    $lintOutput = @shell_exec('php -l ' . escapeshellarg($path));
+    if ($lintOutput !== null && stripos($lintOutput, 'No syntax errors detected') === false) {
+        $error = 'Синтаксическая ошибка в шаблоне действий: ' . trim((string) $lintOutput);
+        return false;
+    }
+
+    return true;
+}
+
 function layoutTemplatesDir(): string
 {
     return dirname(__DIR__, 2) . '/templates/layouts';

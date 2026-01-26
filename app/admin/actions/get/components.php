@@ -280,6 +280,10 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
     }
 
     if ($viewName !== '') {
+        $viewTab = isset($_GET['view_tab']) ? (string) $_GET['view_tab'] : 'template';
+        if (!in_array($viewTab, ['template', 'actions'], true)) {
+            $viewTab = 'template';
+        }
         $isNewView = $viewName === '_new';
         $viewRow = null;
         if (!$isNewView) {
@@ -287,10 +291,45 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
         }
 
         echo '<ul class="nav nav-tabs mb-3">';
-        echo '<li class="nav-item"><span class="nav-link active">Редактирование шаблона компонента</span></li>';
+        $templateTabLink = buildAdminUrl([
+            'action' => 'components',
+            'component_id' => (int) $selectedComponent['id'],
+            'view' => $viewName,
+            'view_tab' => 'template',
+        ]);
+        $actionsTabLink = buildAdminUrl([
+            'action' => 'components',
+            'component_id' => (int) $selectedComponent['id'],
+            'view' => $viewName,
+            'view_tab' => 'actions',
+        ]);
+        $templateActive = $viewTab === 'template' ? ' active' : '';
+        $actionsActive = $viewTab === 'actions' ? ' active' : '';
+        echo '<li class="nav-item"><a class="nav-link' . $templateActive . '" href="' . htmlspecialchars($templateTabLink, ENT_QUOTES, 'UTF-8') . '">Редактирование шаблона компонента</a></li>';
+        echo '<li class="nav-item"><a class="nav-link' . $actionsActive . '" href="' . htmlspecialchars($actionsTabLink, ENT_QUOTES, 'UTF-8') . '">Шаблоны действий</a></li>';
         echo '</ul>';
 
-        if ($isNewView) {
+        if ($viewTab === 'actions') {
+            if ($errorMessage !== '') {
+                echo '<div class="mb-3 text-danger">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
+            }
+            $actionTemplate = readComponentActionTemplate((string) $selectedComponent['keyword']);
+            echo '<form method="post" action="/admin.php?action=component_actions_update">';
+            echo csrfTokenField();
+            echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
+            echo '<input type="hidden" name="return_view" value="' . htmlspecialchars($viewName, ENT_QUOTES, 'UTF-8') . '">';
+            echo '<input type="hidden" name="return_tab" value="actions">';
+            echo '<div class="mb-3 js-code-editor-wrapper">';
+            echo '<label class="form-label">PHP-код</label>';
+            echo '<textarea class="form-control font-monospace code-editor" name="actions_tpl" rows="12">' . renderTextareaValue($actionTemplate) . '</textarea>';
+            echo '<div class="mt-2 d-flex gap-2">';
+            echo '<button class="btn btn-sm btn-outline-secondary js-code-editor-expand" type="button">Развернуть</button>';
+            echo '<button class="btn btn-sm btn-outline-secondary js-code-editor-collapse d-none" type="button">Свернуть</button>';
+            echo '</div>';
+            echo '</div>';
+            echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
+            echo '</form>';
+        } elseif ($isNewView) {
             if ($errorMessage !== '') {
                 echo '<div class="mb-3 text-danger">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
             }
