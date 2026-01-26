@@ -14,7 +14,7 @@ echo '</div>';
 echo '<div class="card shadow-sm">';
 echo '<div class="card-body">';
 echo '<form method="post" action="/admin.php?action=site_create">';
-echo csrfTokenField();
+echo csrf_token_field();
 echo '<div class="mb-3"><label class="form-label">Название сайта</label><input class="form-control" type="text" name="title" required></div>';
 echo '<div class="mb-3"><label class="form-label">Основной домен</label><input class="form-control" type="text" name="site_domain"></div>';
 echo '<div class="mb-3"><label class="form-label">Зеркала домена (по одному в строке)</label><textarea class="form-control" name="site_mirrors" rows="3"></textarea></div>';

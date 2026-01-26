@@ -21,7 +21,7 @@ echo '</div>';
 echo '<div class="card shadow-sm">';
 echo '<div class="card-body">';
 echo '<form method="post" action="/admin.php?action=user_create">';
-echo csrfTokenField();
+echo csrf_token_field();
 echo '<div class="mb-3">';
 echo '<label class="form-label">Логин</label>';
 echo '<input class="form-control" name="login" required>';

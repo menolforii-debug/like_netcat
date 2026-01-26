@@ -58,7 +58,7 @@ if (!$isAjax) {
 }
 
 echo '<form method="post" action="/admin.php?action=' . ($object ? 'object_update' : 'object_create') . '" enctype="multipart/form-data"' . ($isAjax ? ' data-ajax="true"' : '') . '>';
-echo csrfTokenField();
+echo csrf_token_field();
 if ($object) {
     echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
 } else {

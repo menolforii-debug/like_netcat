@@ -154,7 +154,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
 
         if ($isAdmin) {
             echo '<form method="post" action="/admin.php?action=site_update" enctype="multipart/form-data">';
-            echo csrfTokenField();
+            echo csrf_token_field();
             echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
             if ($siteTab !== 'settings') {
                 echo '<input type="hidden" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '">';
@@ -250,7 +250,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
             if ($isAdmin) {
                 $isSystemRoot = in_array($selected['english_name'], ['index', '404'], true);
                 echo '<form method="post" action="/admin.php?action=section_update" enctype="multipart/form-data">';
-                echo csrfTokenField();
+                echo csrf_token_field();
                 echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
                 echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" type="text" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '" required></div>';
                 $englishNameAttributes = $isSystemRoot ? ' disabled' : ' required';
@@ -314,7 +314,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
             }
             if ($isAdmin) {
                 echo '<form method="post" action="/admin.php?action=section_update" enctype="multipart/form-data">';
-                echo csrfTokenField();
+                echo csrf_token_field();
                 if ($designTab === 'visual') {
                     echo '<input type="hidden" name="return_tab" value="design">';
                     echo '<input type="hidden" name="return_design_tab" value="visual">';
@@ -350,7 +350,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
             echo '<h1 class="h5">SEO</h1>';
             if ($isAdmin) {
                 echo '<form method="post" action="/admin.php?action=seo_update">';
-                echo csrfTokenField();
+                echo csrf_token_field();
                 echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
                 echo '<div class="mb-3"><label class="form-label">SEO заголовок</label><input class="form-control" type="text" name="seo_title" value="' . htmlspecialchars((string) ($extra['seo_title'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
                 echo '<div class="mb-3"><label class="form-label">SEO описание</label><textarea class="form-control" name="seo_description" rows="3">' . htmlspecialchars((string) ($extra['seo_description'] ?? ''), ENT_QUOTES, 'UTF-8') . '</textarea></div>';
@@ -468,7 +468,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                                 if (!$isDeleted && $status === 'draft') {
                                     if ($canPublish) {
                                         echo '<form method="post" action="/admin.php?action=object_publish">';
-                                        echo csrfTokenField();
+                                        echo csrf_token_field();
                                         echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
                                         echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
                                         echo '<button class="btn btn-sm btn-success" type="submit">Опубликовать</button>';
@@ -477,7 +477,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                                 } elseif (!$isDeleted) {
                                     if ($canUnpublish) {
                                         echo '<form method="post" action="/admin.php?action=object_unpublish">';
-                                        echo csrfTokenField();
+                                        echo csrf_token_field();
                                         echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
                                         echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
                                         echo '<button class="btn btn-sm btn-warning" type="submit">Снять с публикации</button>';
@@ -489,7 +489,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                                 }
                                 if ($canDelete && !$isDeleted) {
                                     echo '<form method="post" action="/admin.php?action=object_delete" onsubmit="return confirm(\"Удалить объект?\")">';
-                                    echo csrfTokenField();
+                                    echo csrf_token_field();
                                     echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
                                     echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
                                     echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>';
@@ -498,7 +498,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                                 if ($isDeleted) {
                                     if ($canRestore) {
                                         echo '<form method="post" action="/admin.php?action=object_restore">';
-                                        echo csrfTokenField();
+                                        echo csrf_token_field();
                                         echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
                                         echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
                                         echo '<button class="btn btn-sm btn-outline-success" type="submit">Восстановить</button>';
@@ -506,7 +506,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                                     }
                                     if ($canPurge) {
                                         echo '<form method="post" action="/admin.php?action=object_purge" onsubmit="return confirm(\"Удалить объект окончательно?\")">';
-                                        echo csrfTokenField();
+                                        echo csrf_token_field();
                                         echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
                                         echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
                                         echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить навсегда</button>';
@@ -566,7 +566,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                             $editUrl = buildAdminUrl(['action' => 'infoblock_form', 'id' => (int) $infoblock['id'], 'section_id' => $selectedId]);
                             echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars($editUrl, ENT_QUOTES, 'UTF-8') . '">Редактировать</button>';
                             echo '<form method="post" action="/admin.php?action=infoblock_delete" data-ajax="true" data-confirm="Удалить инфоблок?">';
-                            echo csrfTokenField();
+                            echo csrf_token_field();
                             echo '<input type="hidden" name="id" value="' . (int) $infoblock['id'] . '">';
                             echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
                             echo '<input type="hidden" name="name" value="' . htmlspecialchars((string) $infoblock['name'], ENT_QUOTES, 'UTF-8') . '">';
