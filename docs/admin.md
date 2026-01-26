@@ -43,6 +43,61 @@
 - Экземпляры компонентов в разделе.
 - Указываются шаблон (`view_template`), настройки (`settings_json`) и обёртки (`extra_json`).
 
+#### Настройки (JSON) для инфоблока
+
+Поле **«Настройки (JSON)»** — это произвольные параметры для конкретного инфоблока.
+Они сохраняются в `infoblocks.settings_json` и передаются в шаблон компонента как массив `$settings`.
+Встроенных «обязательных» ключей нет — вы сами определяете, какие параметры использовать в шаблоне.
+
+Ниже пример JSON, в котором показаны **все возможные типы значений**, которые удобно использовать
+в шаблонах:
+
+```json
+{
+  "title": "Заголовок блока",
+  "subtitle": "Подзаголовок",
+  "limit": 12,
+  "offset": 0,
+  "show_more": true,
+  "layout": "grid",
+  "css_class": "news-grid",
+  "cta": {
+    "text": "Смотреть все",
+    "url": "/news/"
+  },
+  "filters": {
+    "status": "published",
+    "tag": "promo"
+  },
+  "order": [
+    {"field": "published_at", "direction": "desc"},
+    {"field": "title", "direction": "asc"}
+  ],
+  "ids": [1, 2, 3],
+  "feature_flags": {
+    "show_date": true,
+    "show_image": false
+  },
+  "params": {
+    "custom_key_1": "value",
+    "custom_key_2": 123
+  }
+}
+```
+
+Пример использования в шаблоне компонента:
+
+```php
+<?php if (!empty($settings['title'])): ?>
+  <h2><?= htmlspecialchars((string) $settings['title'], ENT_QUOTES, 'UTF-8') ?></h2>
+<?php endif; ?>
+<?php if (!empty($settings['show_more']) && !empty($settings['cta']['url'])): ?>
+  <a href="<?= htmlspecialchars((string) $settings['cta']['url'], ENT_QUOTES, 'UTF-8') ?>">
+    <?= htmlspecialchars((string) ($settings['cta']['text'] ?? 'Подробнее'), ENT_QUOTES, 'UTF-8') ?>
+  </a>
+<?php endif; ?>
+```
+
 ### Объекты (контент)
 
 - Создание/редактирование по схеме компонентов.
