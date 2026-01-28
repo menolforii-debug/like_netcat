@@ -18,7 +18,7 @@ echo '</div>';
 echo '<div class="card shadow-sm mb-4">';
 echo '<div class="card-body">';
 echo '<form method="post" action="/admin.php?action=sql">';
-echo csrfTokenField();
+echo csrf_token_field();
 echo '<div class="mb-3"><label class="form-label">SQL запрос</label><textarea class="form-control font-monospace" id="sqlInput" name="sql" rows="6">' . htmlspecialchars($sqlValue, ENT_QUOTES, 'UTF-8') . '</textarea></div>';
 echo '<button class="btn btn-primary" type="submit">Выполнить</button>';
 echo '</form>';

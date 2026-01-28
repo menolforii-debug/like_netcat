@@ -23,7 +23,7 @@ if ($currentLayout !== '' && !in_array($currentLayout, $layouts, true)) {
 
 echo '<span data-modal-title="' . ($site ? 'Редактировать сайт' : 'Новый сайт') . '"></span>';
 echo '<form method="post" action="/admin.php?action=' . ($site ? 'site_update' : 'site_create') . '" data-ajax="true">';
-echo csrfTokenField();
+echo csrf_token_field();
 if ($site) {
     echo '<input type="hidden" name="id" value="' . (int) $site['id'] . '">';
 }

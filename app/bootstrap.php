@@ -7,6 +7,7 @@ require $root . '/app/core/DB.php';
 require $root . '/app/core/EventBus.php';
 require $root . '/app/core/Core.php';
 require $root . '/app/core/Utils.php';
+require $root . '/app/core/Functions.php';
 require $root . '/app/core/Auth.php';
 require $root . '/app/core/AdminLog.php';
 require $root . '/app/core/Permission.php';
@@ -55,18 +56,189 @@ function core(): Core
     return $GLOBALS['core'];
 }
 
-function usersCount(): int
+function users_count(): int
 {
     $row = DB::fetchOne('SELECT COUNT(*) AS cnt FROM users');
 
     return $row ? (int) $row['cnt'] : 0;
 }
 
-function nc_objects_list(array $filters): array
+function objects_list(array $filters): array
 {
-    $repo = new ObjectRepo();
+    $infoblockId = $filters['infoblock_id'] ?? null;
+    $componentId = $filters['component_id'] ?? null;
+    if ($infoblockId === null && $componentId === null) {
+        return [];
+    }
 
-    return $repo->listByFilters($filters);
+    $infoblockRepo = new InfoblockRepo();
+    $componentRepo = new ComponentRepo();
+    $sectionRepo = new SectionRepo();
+    $viewRepo = DB::hasTable('component_views') ? new ComponentViewRepo() : null;
+    $objectRepo = new ObjectRepo();
+
+    $infoblock = $infoblockId !== null ? $infoblockRepo->findById((int) $infoblockId) : null;
+    if ($infoblock !== null) {
+        $componentId = (int) $infoblock['component_id'];
+    }
+    if ($componentId === null) {
+        return [];
+    }
+
+    $component = $componentRepo->findById((int) $componentId);
+    if ($component === null) {
+        return [];
+    }
+
+    $views = [];
+    if ($viewRepo !== null) {
+        $views = $viewRepo->listNamesForComponent((int) $component['id']);
+    }
+    if (empty($views) && isset($component['views_json'])) {
+        $decoded = json_decode((string) $component['views_json'], true);
+        if (is_array($decoded)) {
+            $views = $decoded;
+        }
+    }
+    $views = array_values(array_filter($views, static function ($view): bool {
+        return is_string($view) && trim($view) !== '';
+    }));
+
+    $template = isset($filters['template']) ? trim((string) $filters['template']) : '';
+    if ($template === '') {
+        if (in_array('list', $views, true)) {
+            $template = 'list';
+        } elseif (!empty($views)) {
+            $template = (string) $views[0];
+        } else {
+            $template = 'list';
+        }
+    }
+
+    $componentKey = (string) ($component['keyword'] ?? '');
+    $templatePath = $componentKey !== '' && $template !== ''
+        ? $root . '/templates/component/' . $componentKey . '/' . $template . '.php'
+        : '';
+    if ($templatePath === '' || !is_file($templatePath)) {
+        $template = '';
+        foreach ($views as $view) {
+            $candidate = $componentKey !== ''
+                ? $root . '/templates/component/' . $componentKey . '/' . $view . '.php'
+                : '';
+            if ($candidate !== '' && is_file($candidate)) {
+                $templatePath = $candidate;
+                $template = $view;
+                break;
+            }
+        }
+    }
+    if ($templatePath === '' || !is_file($templatePath)) {
+        return [];
+    }
+
+    $status = isset($filters['status']) ? trim((string) $filters['status']) : '';
+    $includeDeleted = !empty($filters['is_deleted']);
+    $limit = isset($filters['limit']) && is_numeric($filters['limit']) ? (int) $filters['limit'] : 0;
+    $offset = isset($filters['offset']) && is_numeric($filters['offset']) ? (int) $filters['offset'] : 0;
+    if ($offset < 0) {
+        $offset = 0;
+    }
+    $useIgnoreSub = !empty($filters['ignore_sub']) || ($infoblockId === null && $componentId !== null);
+
+    $rows = $objectRepo->listBySystemQuery([
+        'infoblock_id' => (int) ($infoblock['id'] ?? $infoblockId ?? 0),
+        'component_id' => (int) $component['id'],
+        'status' => $status,
+        'include_deleted' => $includeDeleted,
+        'per_page' => $limit,
+        'offset' => $offset,
+        'ignore_sub' => $useIgnoreSub ? 1 : 0,
+        'ignore_cc' => !empty($filters['ignore_cc']) ? 1 : 0,
+        'ignore_check' => !empty($filters['ignore_check']) ? 1 : 0,
+        'ignore_all' => !empty($filters['ignore_all']) ? 1 : 0,
+        'ignore_limit' => !empty($filters['ignore_limit']) ? 1 : 0,
+        'query_select' => $filters['query_select'] ?? '',
+        'query_from' => $filters['query_from'] ?? '',
+        'query_join' => $filters['query_join'] ?? '',
+        'query_where' => $filters['query_where'] ?? '',
+        'query_group' => $filters['query_group'] ?? '',
+        'query_having' => $filters['query_having'] ?? '',
+        'query_order' => $filters['query_order'] ?? '',
+        'query_limit' => $filters['query_limit'] ?? '',
+        'distinct' => $filters['distinct'] ?? '',
+    ]);
+
+    $items = [];
+    foreach ($rows as $row) {
+        $data = json_decode((string) $row['data_json'], true);
+        if (!is_array($data)) {
+            $data = [];
+        }
+        $items[] = [
+            'id' => $row['id'],
+            'data' => $data,
+            'status' => $row['status'] ?? 'draft',
+            'created_at' => $row['created_at'],
+            'updated_at' => $row['updated_at'],
+            'controls' => [],
+        ];
+    }
+
+    $section = null;
+    $site = null;
+    if ($infoblock !== null) {
+        $section = $sectionRepo->findById((int) $infoblock['section_id']);
+        if ($section !== null && isset($section['site_id'])) {
+            $site = $sectionRepo->findById((int) $section['site_id']);
+        }
+    }
+    $section = $section ?? [];
+    $site = $site ?? [];
+    $settings = $infoblock['settings'] ?? [];
+    $message_select = (string) ($objectRepo->getLastSelectQuery() ?? '');
+    $editMode = false;
+    $setFields = static function (array $item): void {
+        $data = $item['data'] ?? [];
+        if (!is_array($data)) {
+            return;
+        }
+        foreach ($data as $key => $value) {
+            if (!is_string($key) || $key === '') {
+                continue;
+            }
+            $GLOBALS['f_' . $key] = $value;
+        }
+    };
+
+    $result = [];
+    foreach ($items as $item) {
+        $objects = [$item];
+        $object = $item;
+        $isSingle = true;
+
+        $previousScope = $GLOBALS['_snip_scope'] ?? null;
+        $hadSystemTpl = array_key_exists('_system_tpl_executed', $GLOBALS);
+        $previousSystemTpl = $hadSystemTpl ? $GLOBALS['_system_tpl_executed'] : null;
+        $GLOBALS['_system_tpl_executed'] = true;
+        $GLOBALS['_snip_scope'] = get_defined_vars();
+
+        ob_start();
+        require $templatePath;
+        $result[] = (string) ob_get_clean();
+
+        if ($previousScope !== null) {
+            $GLOBALS['_snip_scope'] = $previousScope;
+        } else {
+            unset($GLOBALS['_snip_scope']);
+        }
+        if ($hadSystemTpl) {
+            $GLOBALS['_system_tpl_executed'] = $previousSystemTpl;
+        } else {
+            unset($GLOBALS['_system_tpl_executed']);
+        }
+    }
+
+    return $result;
 }
 
 function insert_snip(string $keyword, array $vars = []): string

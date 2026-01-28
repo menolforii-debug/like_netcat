@@ -17,6 +17,27 @@ if ($id > 0) {
         redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Недостаточно прав']));
     }
 
+    $component = $componentRepo->findById((int) $object['component_id']);
+    if ($component === null) {
+        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Компонент не найден']));
+    }
+
+    $fields = parseComponentFields($component);
+    $data = json_decode((string) $object['data_json'], true);
+    if (!is_array($data)) {
+        $data = [];
+    }
+    foreach ($fields as $field) {
+        if (($field['type'] ?? '') !== 'file') {
+            continue;
+        }
+        $name = (string) $field['name'];
+        if (!isset($data[$name]) || !is_string($data[$name]) || $data[$name] === '') {
+            continue;
+        }
+        deleteUploadedFile($data[$name]);
+    }
+
     $objectRepo->softDelete($id);
     if ($user) {
         AdminLog::log($user['id'], 'object_delete', 'object', $id, []);

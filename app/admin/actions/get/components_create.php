@@ -10,13 +10,13 @@ AdminLayout::renderHeader('Новый компонент');
 
 echo '<div class="d-flex justify-content-between align-items-center mb-3">';
 echo '<h1 class="h4 mb-0">Новый компонент</h1>';
-echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'components_list']), ENT_QUOTES, 'UTF-8') . '">Назад</a>';
+echo '<a class="btn btn-link p-0 link-dotted" href="' . htmlspecialchars(buildAdminUrl(['action' => 'components_list']), ENT_QUOTES, 'UTF-8') . '">Назад</a>';
 echo '</div>';
 
 echo '<div class="card shadow-sm">';
 echo '<div class="card-body">';
 echo '<form method="post" action="/admin.php?action=component_create">';
-echo csrfTokenField();
+echo csrf_token_field();
 echo '<div class="mb-3">';
 echo '<label class="form-label">Ключ</label>';
 echo '<input class="form-control" name="keyword" required>';
