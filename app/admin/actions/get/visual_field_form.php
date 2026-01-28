@@ -14,7 +14,7 @@ if ($id > 0 && $field === null) {
 $title = $field ? 'Редактировать поле' : 'Новое поле';
 echo '<span data-modal-title="' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '"></span>';
 echo '<form method="post" action="/admin.php?action=' . ($field ? 'visual_field_update' : 'visual_field_create') . '" data-ajax="true">';
-echo csrfTokenField();
+echo csrf_token_field();
 if ($field) {
     echo '<input type="hidden" name="id" value="' . (int) $field['id'] . '">';
 }

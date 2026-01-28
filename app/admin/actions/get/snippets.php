@@ -73,7 +73,7 @@ echo '<div class="card-body">';
 
 if ($snippetKey === '_new') {
     echo '<form method="post" action="/admin.php?action=snippet_create">';
-    echo csrfTokenField();
+    echo csrf_token_field();
     echo '<div class="mb-3"><label class="form-label">Ключ врезки</label><input class="form-control" name="keyword" required></div>';
     echo '<div class="mb-3 js-code-editor-wrapper">';
     echo '<label class="form-label">Содержимое</label>';
@@ -87,7 +87,7 @@ if ($snippetKey === '_new') {
     echo '</form>';
 } elseif ($selectedSnippet !== null) {
     echo '<form method="post" action="/admin.php?action=snippet_update">';
-    echo csrfTokenField();
+    echo csrf_token_field();
     echo '<input type="hidden" name="id" value="' . (int) $selectedSnippet['id'] . '">';
     echo '<div class="mb-3"><label class="form-label">Ключ врезки</label><input class="form-control" name="keyword" value="' . htmlspecialchars((string) $selectedSnippet['keyword'], ENT_QUOTES, 'UTF-8') . '" readonly></div>';
     echo '<div class="mb-3 js-code-editor-wrapper">';
@@ -101,7 +101,7 @@ if ($snippetKey === '_new') {
     echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
     echo '</form>';
     echo '<form class="mt-2" method="post" action="/admin.php?action=snippet_delete" onsubmit="return confirm(\'Удалить врезку?\')">';
-    echo csrfTokenField();
+    echo csrf_token_field();
     echo '<input type="hidden" name="id" value="' . (int) $selectedSnippet['id'] . '">';
     echo '<button class="btn btn-outline-danger" type="submit">Удалить</button>';
     echo '</form>';

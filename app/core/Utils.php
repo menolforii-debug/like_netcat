@@ -2,6 +2,11 @@
 
 final class Utils
 {
+    public static function isUrlSafe(string $value): bool
+    {
+        return (bool) preg_match('/^[A-Za-z0-9_-]+$/', $value);
+    }
+
     public static function normalizeHost(string $host): string
     {
         $host = strtolower(trim($host));
@@ -28,5 +33,18 @@ final class Utils
         }
 
         return $decoded;
+    }
+
+    public static function stripSystemTemplateTags(string $systemTpl): string
+    {
+        $trimmed = trim($systemTpl);
+        if ($trimmed === '') {
+            return '';
+        }
+
+        $trimmed = preg_replace('/^<\\?(php)?/i', '', $trimmed);
+        $trimmed = preg_replace('/\\?>$/', '', $trimmed);
+
+        return trim((string) $trimmed);
     }
 }

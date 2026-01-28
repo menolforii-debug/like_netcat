@@ -22,7 +22,7 @@ final class ObjectRepo
         $sql = 'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
             FROM objects
             WHERE ' . $where . '
-            ORDER BY id ASC';
+            ORDER BY id DESC';
         $this->lastSelectQuery = $this->interpolateQuery($sql, $params);
 
         return DB::fetchAll(
@@ -53,7 +53,7 @@ final class ObjectRepo
         $sql = 'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
             FROM objects
             WHERE ' . $where . '
-            ORDER BY id ASC
+            ORDER BY id DESC
             LIMIT :limit OFFSET :offset';
         $this->lastSelectQuery = $this->interpolateQuery($sql, $params);
 
@@ -109,6 +109,9 @@ final class ObjectRepo
         $order = '';
         if (!empty($override['order']) && is_string($override['order'])) {
             $order = ' ORDER BY ' . $override['order'];
+        }
+        if ($order === '') {
+            $order = ' ORDER BY id DESC';
         }
 
         $limit = '';
@@ -235,6 +238,21 @@ final class ObjectRepo
         return $this->listForInfoblockWithOverride((int) ($infoblockId ?? 0), $includeDeleted, $status, $override);
     }
 
+    public function listBySystemQuery(array $context): array
+    {
+        $query = $this->buildSystemQuery($context);
+        if ($query === null) {
+            $this->lastSelectQuery = null;
+            return [];
+        }
+
+        $sql = $query['sql'];
+        $params = $query['params'];
+        $this->lastSelectQuery = $this->interpolateQuery($sql, $params);
+
+        return DB::fetchAll($sql, $params);
+    }
+
     public function listBySql(string $sql, array $params = []): array
     {
         $this->lastSelectQuery = $this->interpolateQuery($sql, $params);
@@ -244,11 +262,12 @@ final class ObjectRepo
 
     public function findById($id): ?array
     {
-        return DB::fetchOne(
-            'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
-            FROM objects WHERE id = :id LIMIT 1',
-            ['id' => $id]
-        );
+        $sql = 'SELECT id, site_id, section_id, infoblock_id, component_id, data_json, created_at, updated_at, is_deleted, deleted_at, status, published_at
+            FROM objects WHERE id = :id LIMIT 1';
+        $params = ['id' => $id];
+        $this->lastSelectQuery = $this->interpolateQuery($sql, $params);
+
+        return DB::fetchOne($sql, $params);
     }
 
     public function create(array $data): int
@@ -366,6 +385,123 @@ final class ObjectRepo
     private function now(): string
     {
         return (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('c');
+    }
+
+    private function buildSystemQuery(array $context): ?array
+    {
+        $ignoreAll = !empty($context['ignore_all']);
+        if ($ignoreAll) {
+            return null;
+        }
+
+        $ignoreSub = !empty($context['ignore_sub']);
+        $ignoreCc = !empty($context['ignore_cc']);
+        $ignoreCheck = !empty($context['ignore_check']);
+        $ignoreLimit = !empty($context['ignore_limit']);
+
+        $distinct = $context['distinct'] ?? '';
+        $distinctSql = '';
+        if (is_string($distinct)) {
+            $distinctSql = trim($distinct);
+        }
+        if ($distinctSql === '' && !empty($distinct)) {
+            $distinctSql = 'DISTINCT';
+        }
+        if ($distinctSql !== '') {
+            $distinctSql .= ' ';
+        }
+
+        $querySelect = $this->normalizeQueryPart($context['query_select'] ?? '');
+        $queryFrom = $this->normalizeQueryPart($context['query_from'] ?? '');
+        $queryJoin = $this->normalizeQueryPart($context['query_join'] ?? '');
+        $queryWhere = $this->normalizeQueryPart($context['query_where'] ?? '');
+        $queryGroup = $this->normalizeQueryPart($context['query_group'] ?? '');
+        $queryHaving = $this->normalizeQueryPart($context['query_having'] ?? '');
+        $queryOrder = $this->normalizeQueryPart($context['query_order'] ?? '');
+        $queryLimit = $this->normalizeQueryPart($context['query_limit'] ?? '');
+
+        $infoblockId = isset($context['infoblock_id']) ? (int) $context['infoblock_id'] : 0;
+        $componentId = isset($context['component_id']) ? (int) $context['component_id'] : 0;
+        $status = isset($context['status']) ? trim((string) $context['status']) : '';
+        $includeDeleted = !empty($context['include_deleted']);
+        $perPage = isset($context['per_page']) ? (int) $context['per_page'] : 0;
+        $offset = isset($context['offset']) ? (int) $context['offset'] : 0;
+        if ($offset < 0) {
+            $offset = 0;
+        }
+
+        $fields = 'a.id, a.site_id, a.section_id, a.infoblock_id, a.component_id,'
+            . ' a.data_json, a.created_at, a.updated_at, a.is_deleted, a.deleted_at,'
+            . ' a.status, a.published_at';
+
+        $sql = 'SELECT ' . $distinctSql . $fields;
+        if ($querySelect !== '') {
+            $sql .= ' ' . $querySelect;
+        }
+        $sql .= ' FROM objects AS a';
+        if ($queryFrom !== '') {
+            $sql .= ' ' . $queryFrom;
+        }
+        if ($queryJoin !== '') {
+            $sql .= ' ' . $queryJoin;
+        }
+
+        $whereParts = [];
+        $params = [];
+
+        if (!$ignoreSub && $infoblockId > 0) {
+            $whereParts[] = 'a.infoblock_id = :infoblock_id';
+            $params['infoblock_id'] = $infoblockId;
+        }
+        if ($ignoreSub && !$ignoreCc && $componentId > 0) {
+            $whereParts[] = 'a.component_id = :component_id';
+            $params['component_id'] = $componentId;
+        }
+        if (!$includeDeleted) {
+            $whereParts[] = 'a.is_deleted = 0';
+        }
+        if (!$ignoreCheck && $status !== '') {
+            $whereParts[] = 'a.status = :status';
+            $params['status'] = $status;
+        }
+
+        $systemWhere = $whereParts !== [] ? implode(' AND ', $whereParts) : '1=1';
+        $sql .= ' WHERE (' . $systemWhere . ')';
+
+        if ($queryWhere !== '') {
+            $sql .= ' AND (' . $queryWhere . ')';
+        }
+        if ($queryGroup !== '') {
+            $sql .= ' GROUP BY ' . $queryGroup;
+        }
+        if ($queryHaving !== '') {
+            $sql .= ' HAVING ' . $queryHaving;
+        }
+
+        $order = $queryOrder !== '' ? $queryOrder : 'a.id DESC';
+        $sql .= ' ORDER BY ' . $order;
+
+        if ($queryLimit !== '') {
+            $sql .= ' LIMIT ' . $queryLimit;
+        } elseif (!$ignoreLimit && $perPage > 0) {
+            $sql .= ' LIMIT :limit OFFSET :offset';
+            $params['limit'] = $perPage;
+            $params['offset'] = $offset;
+        }
+
+        return [
+            'sql' => $sql,
+            'params' => $params,
+        ];
+    }
+
+    private function normalizeQueryPart($value): string
+    {
+        if (!is_string($value)) {
+            return '';
+        }
+
+        return trim($value);
     }
 
     private function interpolateQuery(string $sql, array $params): string

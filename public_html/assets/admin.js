@@ -66,6 +66,62 @@ function initInfoblockViewSelects(scope) {
   });
 }
 
+function slugifyInfoblockKey(value) {
+  if (!value) return '';
+  const map = {
+    а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z', и: 'i', й: 'y',
+    к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f',
+    х: 'h', ц: 'c', ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya'
+  };
+  const normalized = value
+    .toLowerCase()
+    .split('')
+    .map((char) => (map[char] !== undefined ? map[char] : char))
+    .join('');
+  return normalized
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function initInfoblockKeyAutofill(scope) {
+  const root = scope || document;
+  root.querySelectorAll('form').forEach((form) => {
+    const nameInput = form.querySelector('.js-infoblock-name');
+    const keyInput = form.querySelector('.js-infoblock-key');
+    if (!nameInput || !keyInput) return;
+
+    if (keyInput.value.trim() !== '') {
+      keyInput.dataset.manual = '1';
+    } else {
+      delete keyInput.dataset.manual;
+    }
+
+    const isManual = () => keyInput.dataset.manual === '1';
+    const setKey = () => {
+      if (isManual()) return;
+      const slug = slugifyInfoblockKey(nameInput.value);
+      keyInput.value = slug;
+    };
+
+    if (!keyInput.value.trim()) {
+      setKey();
+    }
+
+    keyInput.addEventListener('input', () => {
+      if (keyInput.value.trim() === '') {
+        delete keyInput.dataset.manual;
+        setKey();
+        return;
+      }
+      keyInput.dataset.manual = '1';
+    });
+    nameInput.addEventListener('input', () => {
+      setKey();
+    });
+  });
+}
+
 function initCodeEditorFullscreen(scope) {
   const root = scope || document;
   const wrappers = root.querySelectorAll('.js-code-editor-wrapper');
@@ -134,6 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initVisualInheritToggles(document);
   initInfoblockViewSelects(document);
+  initInfoblockKeyAutofill(document);
   initCodeEditorFullscreen(document);
 });
 
@@ -262,6 +319,7 @@ function refreshAdminBlocks(selectors) {
         target.innerHTML = html;
         initVisualInheritToggles(target);
         initInfoblockViewSelects(target);
+        initInfoblockKeyAutofill(target);
       });
   });
 }
@@ -337,7 +395,12 @@ function openAdminModal(url) {
         title.remove();
       }
       initInfoblockViewSelects(parts.contentEl || document);
+      initInfoblockKeyAutofill(parts.contentEl || document);
       initVisualInheritToggles(parts.contentEl || document);
+      initCodeEditorFullscreen(parts.contentEl || document);
+      if (window.initCodeEditors) {
+        window.initCodeEditors(parts.contentEl || document);
+      }
     })
     .catch(() => {
       showModalError('Не удалось загрузить форму.');
