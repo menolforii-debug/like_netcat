@@ -44,7 +44,7 @@ function renderVisualFieldsContent(array $visualFields): void
             echo '<div class="d-flex gap-2">';
             echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars(buildAdminUrl(['action' => 'visual_field_form', 'id' => (int) $field['id']]), ENT_QUOTES, 'UTF-8') . '">Редактировать</button>';
             echo '<form method="post" action="/admin.php?action=visual_field_delete" onsubmit="return confirm(\'Удалить поле?\')">';
-            echo csrfTokenField();
+            echo csrf_token_field();
             echo '<input type="hidden" name="id" value="' . (int) $field['id'] . '">';
             echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>';
             echo '</form>';
@@ -134,7 +134,7 @@ if ($tab === 'visual') {
         $defaultLayoutTemplate = readDefaultLayoutTemplateFile() ?? '';
         $defaultLayoutNavTemplate = readDefaultLayoutNavTemplateFile() ?? '';
         echo '<form method="post" action="/admin.php?action=layout_create">';
-        echo csrfTokenField();
+        echo csrf_token_field();
         echo '<div class="mb-3"><label class="form-label">Ключ макета</label><input class="form-control" name="layout_key" required></div>';
         echo '<div class="mb-3 js-code-editor-wrapper">';
         echo '<label class="form-label">Шаблон макета</label>';
@@ -161,7 +161,7 @@ if ($tab === 'visual') {
             echo '<div class="text-muted">Макет не найден.</div>';
         } else {
             echo '<form method="post" action="/admin.php?action=layout_update">';
-            echo csrfTokenField();
+            echo csrf_token_field();
             echo '<div class="mb-3"><label class="form-label">Ключ макета</label><input class="form-control" name="layout_key" value="' . htmlspecialchars($layoutKey, ENT_QUOTES, 'UTF-8') . '" readonly></div>';
             echo '<div class="mb-3 js-code-editor-wrapper">';
             echo '<label class="form-label">Шаблон макета</label>';
@@ -183,7 +183,7 @@ if ($tab === 'visual') {
             echo '</form>';
             if (!in_array($layoutKey, ['default', 'home'], true)) {
                 echo '<form class="mt-2" method="post" action="/admin.php?action=layout_delete" onsubmit="return confirm(\'Удалить макет?\')">';
-                echo csrfTokenField();
+                echo csrf_token_field();
                 echo '<input type="hidden" name="layout_key" value="' . htmlspecialchars($layoutKey, ENT_QUOTES, 'UTF-8') . '">';
                 echo '<button class="btn btn-outline-danger" type="submit">Удалить</button>';
                 echo '</form>';
