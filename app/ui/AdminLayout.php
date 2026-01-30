@@ -47,7 +47,6 @@ final class AdminLayout
             'logs' => ['label' => 'Логи', 'href' => '/admin.php?action=logs'],
             'users_list' => ['label' => 'Пользователи', 'href' => '/admin.php?action=users_list'],
             'components' => ['label' => 'Компоненты', 'href' => '/admin.php?action=components'],
-            'snippets' => ['label' => 'Врезки', 'href' => '/admin.php?action=snippets'],
             'layouts' => ['label' => 'Макеты дизайна', 'href' => '/admin.php?action=layouts'],
             'help' => ['label' => 'Справка', 'href' => '/admin.php?action=help'],
             'filemanager' => ['label' => 'Файлы', 'href' => '/admin.php?action=filemanager'],

@@ -16,13 +16,10 @@ require $root . '/app/core/Seo.php';
 require $root . '/app/core/FieldValidator.php';
 require $root . '/app/domain/SectionRepo.php';
 require $root . '/app/domain/ComponentRepo.php';
-require $root . '/app/domain/ComponentViewRepo.php';
 require $root . '/app/domain/InfoblockRepo.php';
 require $root . '/app/domain/ObjectRepo.php';
 require $root . '/app/domain/UserRepo.php';
 require $root . '/app/domain/VisualFieldRepo.php';
-require $root . '/app/domain/SnippetRepo.php';
-require $root . '/app/MigrationRunner.php';
 require $root . '/app/render/Renderer.php';
 require $root . '/app/ui/Layout.php';
 require $root . '/app/ui/AdminLayout.php';
@@ -35,13 +32,17 @@ if (!is_dir($varDir)) {
     mkdir($varDir, 0777, true);
 }
 
-DB::connect($varDir . '/app.sqlite');
-
-// Миграции выполняем только в CLI или в админке, чтобы не тормозить фронтенд.
-$scriptName = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
-$runMigrations = PHP_SAPI === 'cli' || $scriptName === 'admin.php';
-if ($runMigrations) {
-    MigrationRunner::run(DB::pdo(), $root . '/migrations');
+$dbPath = $varDir . '/app.sqlite';
+$isNew = !is_file($dbPath);
+DB::connect($dbPath);
+if ($isNew || !DB::hasTable('sections')) {
+    $schemaPath = $root . '/app/schema.sql';
+    if (is_file($schemaPath)) {
+        $schemaSql = file_get_contents($schemaPath);
+        if ($schemaSql !== false && trim($schemaSql) !== '') {
+            DB::pdo()->exec($schemaSql);
+        }
+    }
 }
 
 $core = new Core(DB::pdo(), new EventBus());
@@ -75,7 +76,6 @@ function objects_list(array $filters): array
     $infoblockRepo = new InfoblockRepo();
     $componentRepo = new ComponentRepo();
     $sectionRepo = new SectionRepo();
-    $viewRepo = DB::hasTable('component_views') ? new ComponentViewRepo() : null;
     $objectRepo = new ObjectRepo();
 
     $infoblock = $infoblockId !== null ? $infoblockRepo->findById((int) $infoblockId) : null;
@@ -92,10 +92,7 @@ function objects_list(array $filters): array
     }
 
     $views = [];
-    if ($viewRepo !== null) {
-        $views = $viewRepo->listNamesForComponent((int) $component['id']);
-    }
-    if (empty($views) && isset($component['views_json'])) {
+    if (isset($component['views_json'])) {
         $decoded = json_decode((string) $component['views_json'], true);
         if (is_array($decoded)) {
             $views = $decoded;
@@ -117,23 +114,23 @@ function objects_list(array $filters): array
     }
 
     $componentKey = (string) ($component['keyword'] ?? '');
-    $templatePath = $componentKey !== '' && $template !== ''
-        ? $root . '/templates/component/' . $componentKey . '/' . $template . '.php'
+    $templateDir = $componentKey !== '' && $template !== ''
+        ? $root . '/templates/component/' . $componentKey . '/' . $template
         : '';
-    if ($templatePath === '' || !is_file($templatePath)) {
+    if ($templateDir === '' || !is_dir($templateDir)) {
         $template = '';
         foreach ($views as $view) {
-            $candidate = $componentKey !== ''
-                ? $root . '/templates/component/' . $componentKey . '/' . $view . '.php'
+            $candidateDir = $componentKey !== ''
+                ? $root . '/templates/component/' . $componentKey . '/' . $view
                 : '';
-            if ($candidate !== '' && is_file($candidate)) {
-                $templatePath = $candidate;
+            if ($candidateDir !== '' && is_dir($candidateDir)) {
+                $templateDir = $candidateDir;
                 $template = $view;
                 break;
             }
         }
     }
-    if ($templatePath === '' || !is_file($templatePath)) {
+    if ($templateDir === '' || !is_dir($templateDir)) {
         return [];
     }
 
@@ -217,10 +214,14 @@ function objects_list(array $filters): array
         $object = $item;
         $isSingle = true;
 
+        $templatePath = $isSingle && is_file($templateDir . '/single.php')
+            ? $templateDir . '/single.php'
+            : $templateDir . '/list.php';
+        if (!is_file($templatePath)) {
+            continue;
+        }
+
         $previousScope = $GLOBALS['_snip_scope'] ?? null;
-        $hadSystemTpl = array_key_exists('_system_tpl_executed', $GLOBALS);
-        $previousSystemTpl = $hadSystemTpl ? $GLOBALS['_system_tpl_executed'] : null;
-        $GLOBALS['_system_tpl_executed'] = true;
         $GLOBALS['_snip_scope'] = get_defined_vars();
 
         ob_start();
@@ -231,11 +232,6 @@ function objects_list(array $filters): array
             $GLOBALS['_snip_scope'] = $previousScope;
         } else {
             unset($GLOBALS['_snip_scope']);
-        }
-        if ($hadSystemTpl) {
-            $GLOBALS['_system_tpl_executed'] = $previousSystemTpl;
-        } else {
-            unset($GLOBALS['_system_tpl_executed']);
         }
     }
 
@@ -249,13 +245,12 @@ function insert_snip(string $keyword, array $vars = []): string
         return '';
     }
 
-    $repo = new SnippetRepo();
-    $snippet = $repo->findByKeyword($keyword);
-    if ($snippet === null) {
+    $root = dirname(__DIR__);
+    $snippetPath = $root . '/templates/snippets/' . $keyword . '.php';
+    if (!is_file($snippetPath)) {
         return '';
     }
 
-    $content = isset($snippet['content']) ? (string) $snippet['content'] : '';
     if ($vars === [] && isset($GLOBALS['_snip_scope']) && is_array($GLOBALS['_snip_scope'])) {
         $vars = $GLOBALS['_snip_scope'];
     }
@@ -265,17 +260,8 @@ function insert_snip(string $keyword, array $vars = []): string
     }
 
     ob_start();
-    try {
-        eval('?>' . $content);
-    } catch (Throwable $e) {
-        ob_end_clean();
-        throw $e;
-    }
-
-    $rendered = (string) ob_get_clean();
-    echo $rendered;
-
-    return $rendered;
+    require $snippetPath;
+    return (string) ob_get_clean();
 }
 
 function ensureDefaultSite(string $host): void

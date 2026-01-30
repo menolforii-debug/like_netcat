@@ -8,7 +8,6 @@ $components = $componentRepo->listAll();
 $componentIdRaw = isset($_GET['component_id']) ? (string) $_GET['component_id'] : '';
 $isNewComponent = $componentIdRaw === '_new';
 $componentId = $isNewComponent ? 0 : (int) $componentIdRaw;
-$viewName = isset($_GET['view']) ? trim((string) $_GET['view']) : '';
 $tab = isset($_GET['tab']) ? (string) $_GET['tab'] : 'general';
 if (!in_array($tab, ['general', 'fields'], true)) {
     $tab = 'general';
@@ -22,38 +21,12 @@ function renderTextareaValue($value): string
     return $s ?? '';
 }
 
-function defaultSystemTemplate(): string
-{
-    return "<?php\n?>";
-}
-
 $selectedComponent = null;
 foreach ($components as $component) {
     if ((int) $component['id'] === $componentId) {
         $selectedComponent = $component;
         break;
     }
-}
-
-/**
- * Views: теперь собираем ДЛЯ ВСЕХ компонентов (чтобы можно было раскрывать любой)
- */
-$viewsByComponent = [];
-$viewRepo = new ComponentViewRepo();
-if (DB::hasTable('component_views')) {
-    foreach ($components as $component) {
-        $cid = (int) $component['id'];
-        $viewsByComponent[$cid] = $viewRepo->listForComponent($cid);
-    }
-} else {
-    foreach ($components as $component) {
-        $viewsByComponent[(int) $component['id']] = [];
-    }
-}
-
-$views = [];
-if ($selectedComponent !== null) {
-    $views = $viewsByComponent[(int) $selectedComponent['id']] ?? [];
 }
 
 $fields = [];
@@ -98,16 +71,13 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
     $components = $ctx['components'];
     $componentId = $ctx['componentId'];
     $tab = $ctx['tab'];
-    $viewName = $ctx['viewName'];
     $selectedComponent = $ctx['selectedComponent'];
     $fields = $ctx['fields'];
-    $viewsByComponent = $ctx['viewsByComponent'];
-    $viewRepo = $ctx['viewRepo'];
     $isNewComponent = $ctx['isNewComponent'];
     $errorMessage = $ctx['errorMessage'];
 
     if ($wrap) {
-        echo '<div id="components_block" data-refresh-url="' . htmlspecialchars(buildAdminUrl(['action' => 'components_block', 'component_id' => $componentId, 'tab' => $tab, 'view' => $viewName !== '' ? $viewName : null]), ENT_QUOTES, 'UTF-8') . '">';
+        echo '<div id="components_block" data-refresh-url="' . htmlspecialchars(buildAdminUrl(['action' => 'components_block', 'component_id' => $componentId, 'tab' => $tab]), ENT_QUOTES, 'UTF-8') . '">';
     }
 
     /**
@@ -160,9 +130,6 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
         $name = (string) $component['name'];
         $isActive = $id === $componentId;
 
-        $componentViews = $viewsByComponent[$id] ?? [];
-        $hasChildren = !empty($componentViews);
-
         $liClass = 'nav-item component-tree-item';
         if ($isActive) {
             $liClass .= ' is-active is-open';
@@ -179,54 +146,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
         echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
         echo '</a>';
 
-        echo '<div class="component-tree-right">';
-
-        if ($hasChildren) {
-            echo '<button type="button" class="btn btn-icon-square btn-outline-secondary component-tree-toggle js-component-toggle" data-component-id="' . $id . '" aria-label="Свернуть/развернуть">';
-            echo '<span class="component-tree-chevron" aria-hidden="true"></span>';
-            echo '</button>';
-        } else {
-            echo '<span class="btn-icon-square section-tree-toggle-spacer" aria-hidden="true"></span>';
-        }
-
-        echo '</div>'; // right
         echo '</div>'; // row
-
-        echo '<div class="component-tree-views">';
-
-        echo '<div class="d-flex align-items-center justify-content-between mb-1">';
-        echo '<div class="text-muted small text-uppercase" style="letter-spacing:.04em;">Шаблоны компонента</div>';
-        echo '<a class="btn btn-icon-square btn-outline-secondary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'components', 'component_id' => $id, 'view' => '_new']), ENT_QUOTES, 'UTF-8') . '" title="Добавить шаблон" aria-label="Добавить шаблон">+</a>';
-        echo '</div>';
-
-        if (empty($componentViews)) {
-            echo '<div class="text-muted small">Шаблонов нет.</div>';
-        } else {
-            echo '<ul class="nav flex-column component-tree-viewlist">';
-            foreach ($componentViews as $viewRow) {
-                $vn = (string) $viewRow['name'];
-                $isViewActive = $isActive && $viewName !== '' && $viewName === $vn;
-
-                $viewLink = buildAdminUrl(['action' => 'components', 'component_id' => $id, 'view' => $vn]);
-
-                $vClass = 'nav-item component-tree-viewitem';
-                if ($isViewActive) {
-                    $vClass .= ' is-active';
-                }
-
-                echo '<li class="' . $vClass . '">';
-                echo '<div class="component-tree-viewrow">';
-                echo '<a class="nav-link component-tree-viewlink text-decoration-none text-truncate' . ($isViewActive ? ' fw-bold' : '') . '" href="' . htmlspecialchars($viewLink, ENT_QUOTES, 'UTF-8') . '">';
-                echo htmlspecialchars($vn, ENT_QUOTES, 'UTF-8');
-                echo '</a>';
-                echo '<span class="component-tree-viewarrow" aria-hidden="true">→</span>';
-                echo '</div>';
-                echo '</li>';
-            }
-            echo '</ul>';
-        }
-
-        echo '</div>'; // views
 
         echo '</li>';
     }
@@ -270,144 +190,6 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
         echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" name="name" required></div>';
         echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
         echo '</form>';
-        echo '</div></div>';
-        AdminLayout::closeContent();
-
-        if ($wrap) {
-            echo '</div>';
-        }
-        return;
-    }
-
-    if ($viewName !== '') {
-        $viewTab = isset($_GET['view_tab']) ? (string) $_GET['view_tab'] : 'template';
-        if (!in_array($viewTab, ['template', 'actions'], true)) {
-            $viewTab = 'template';
-        }
-        $isNewView = $viewName === '_new';
-        $viewRow = null;
-        if (!$isNewView) {
-            $viewRow = $viewRepo->findByName((int) $selectedComponent['id'], $viewName);
-        }
-
-        echo '<ul class="nav nav-tabs mb-3">';
-        $templateTabLink = buildAdminUrl([
-            'action' => 'components',
-            'component_id' => (int) $selectedComponent['id'],
-            'view' => $viewName,
-            'view_tab' => 'template',
-        ]);
-        $actionsTabLink = buildAdminUrl([
-            'action' => 'components',
-            'component_id' => (int) $selectedComponent['id'],
-            'view' => $viewName,
-            'view_tab' => 'actions',
-        ]);
-        $templateActive = $viewTab === 'template' ? ' active' : '';
-        $actionsActive = $viewTab === 'actions' ? ' active' : '';
-        echo '<li class="nav-item"><a class="nav-link' . $templateActive . '" href="' . htmlspecialchars($templateTabLink, ENT_QUOTES, 'UTF-8') . '">Редактирование шаблона компонента</a></li>';
-        echo '<li class="nav-item"><a class="nav-link' . $actionsActive . '" href="' . htmlspecialchars($actionsTabLink, ENT_QUOTES, 'UTF-8') . '">Шаблоны действий</a></li>';
-        echo '</ul>';
-
-        if ($viewTab === 'actions') {
-            if ($errorMessage !== '') {
-                echo '<div class="mb-3 text-danger">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
-            }
-            $actionTemplate = readComponentActionTemplate((string) $selectedComponent['keyword']);
-            echo '<form method="post" action="/admin.php?action=component_actions_update">';
-            echo csrf_token_field();
-            echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
-            echo '<input type="hidden" name="return_view" value="' . htmlspecialchars($viewName, ENT_QUOTES, 'UTF-8') . '">';
-            echo '<input type="hidden" name="return_tab" value="actions">';
-            echo '<div class="mb-3 js-code-editor-wrapper">';
-            echo '<label class="form-label">Действия после добавления</label>';
-            echo '<textarea class="form-control font-monospace code-editor" name="actions_tpl" rows="12">' . renderTextareaValue($actionTemplate) . '</textarea>';
-            echo '<div class="mt-2 d-flex gap-2">';
-            echo '<button class="btn btn-link p-0 link-dotted js-code-editor-expand" type="button">Развернуть</button>';
-            echo '<button class="btn btn-link p-0 link-dotted js-code-editor-collapse d-none" type="button">Свернуть</button>';
-            echo '</div>';
-            echo '</div>';
-            echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
-            echo '</form>';
-        } elseif ($isNewView) {
-            if ($errorMessage !== '') {
-                echo '<div class="mb-3 text-danger">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
-            }
-            echo '<form method="post" action="/admin.php?action=component_view_create">';
-            echo csrf_token_field();
-            echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
-            echo '<div class="mb-3"><label class="form-label">Название шаблона</label><input class="form-control" name="view_name" required></div>';
-            echo '<div class="mb-3 js-code-editor-wrapper">';
-            echo '<label class="form-label">Шаблон списка</label>';
-            echo '<textarea class="form-control font-monospace code-editor" name="list_tpl" rows="10"></textarea>';
-            echo '<div class="mt-2 d-flex gap-2">';
-            echo '<button class="btn btn-link p-0 link-dotted js-code-editor-expand" type="button">Развернуть</button>';
-            echo '<button class="btn btn-link p-0 link-dotted js-code-editor-collapse d-none" type="button">Свернуть</button>';
-            echo '</div>';
-            echo '</div>';
-            echo '<div class="mb-3 js-code-editor-wrapper">';
-            echo '<label class="form-label">Шаблон объекта</label>';
-            echo '<textarea class="form-control font-monospace code-editor" name="single_tpl" rows="10"></textarea>';
-            echo '<div class="mt-2 d-flex gap-2">';
-            echo '<button class="btn btn-link p-0 link-dotted js-code-editor-expand" type="button">Развернуть</button>';
-            echo '<button class="btn btn-link p-0 link-dotted js-code-editor-collapse d-none" type="button">Свернуть</button>';
-            echo '</div>';
-            echo '</div>';
-            echo '<div class="mb-3 js-code-editor-wrapper">';
-            echo '<label class="form-label">Системные настройки</label>';
-            echo '<textarea class="form-control font-monospace code-editor" name="system_tpl" rows="10">' . renderTextareaValue(defaultSystemTemplate()) . '</textarea>';
-            echo '<div class="mt-2 d-flex gap-2">';
-            echo '<button class="btn btn-link p-0 link-dotted js-code-editor-expand" type="button">Развернуть</button>';
-            echo '<button class="btn btn-link p-0 link-dotted js-code-editor-collapse d-none" type="button">Свернуть</button>';
-            echo '</div>';
-            echo '</div>';
-            echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
-            echo '</form>';
-        } elseif ($viewRow === null) {
-            echo '<div class="text-muted">Шаблон не найден.</div>';
-        } else {
-            if ($errorMessage !== '') {
-                echo '<div class="mb-3 text-danger">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
-            }
-            echo '<form method="post" action="/admin.php?action=component_view_update">';
-            echo csrf_token_field();
-            echo '<input type="hidden" name="view_id" value="' . (int) $viewRow['id'] . '">';
-            echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
-            echo '<div class="mb-3"><label class="form-label">Название шаблона</label><input class="form-control" name="view_name" value="' . htmlspecialchars((string) $viewRow['name'], ENT_QUOTES, 'UTF-8') . '" readonly></div>';
-            echo '<div class="mb-3 js-code-editor-wrapper">';
-            echo '<label class="form-label">Шаблон списка</label>';
-            echo '<textarea class="form-control font-monospace code-editor" name="list_tpl" rows="10">' . renderTextareaValue($viewRow['list_tpl'] ?? '') . '</textarea>';
-            echo '<div class="mt-2 d-flex gap-2">';
-            echo '<button class="btn btn-link p-0 link-dotted js-code-editor-expand" type="button">Развернуть</button>';
-            echo '<button class="btn btn-link p-0 link-dotted js-code-editor-collapse d-none" type="button">Свернуть</button>';
-            echo '</div>';
-            echo '</div>';
-            echo '<div class="mb-3 js-code-editor-wrapper">';
-            echo '<label class="form-label">Шаблон объекта</label>';
-            echo '<textarea class="form-control font-monospace code-editor" name="single_tpl" rows="10">' . renderTextareaValue($viewRow['single_tpl'] ?? '') . '</textarea>';
-            echo '<div class="mt-2 d-flex gap-2">';
-            echo '<button class="btn btn-link p-0 link-dotted js-code-editor-expand" type="button">Развернуть</button>';
-            echo '<button class="btn btn-link p-0 link-dotted js-code-editor-collapse d-none" type="button">Свернуть</button>';
-            echo '</div>';
-            echo '</div>';
-            echo '<div class="mb-3 js-code-editor-wrapper">';
-            echo '<label class="form-label">Системные настройки</label>';
-            echo '<textarea class="form-control font-monospace code-editor" name="system_tpl" rows="10">' . renderTextareaValue($viewRow['system_tpl'] ?? '') . '</textarea>';
-            echo '<div class="mt-2 d-flex gap-2">';
-            echo '<button class="btn btn-link p-0 link-dotted js-code-editor-expand" type="button">Развернуть</button>';
-            echo '<button class="btn btn-link p-0 link-dotted js-code-editor-collapse d-none" type="button">Свернуть</button>';
-            echo '</div>';
-            echo '</div>';
-            echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
-            echo '</form>';
-            echo '<form class="mt-2" method="post" action="/admin.php?action=component_view_delete" onsubmit="return confirm(\'Удалить шаблон?\')">';
-            echo csrf_token_field();
-            echo '<input type="hidden" name="view_id" value="' . (int) $viewRow['id'] . '">';
-            echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
-            echo '<button class="btn btn-outline-danger" type="submit">Удалить</button>';
-            echo '</form>';
-        }
-
         echo '</div></div>';
         AdminLayout::closeContent();
 
@@ -541,11 +323,8 @@ $ctx = [
     'components' => $components,
     'componentId' => $componentId,
     'tab' => $tab,
-    'viewName' => $viewName,
     'selectedComponent' => $selectedComponent,
     'fields' => $fields,
-    'viewsByComponent' => $viewsByComponent,
-    'viewRepo' => $viewRepo,
     'isNewComponent' => $isNewComponent,
     'errorMessage' => $errorMessage,
 ];

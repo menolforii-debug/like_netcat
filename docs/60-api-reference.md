@@ -57,11 +57,11 @@ $itemsHtml = objects_list(['infoblock_id' => 10, 'query_order' => 'a.id DESC']);
 ### `insert_snip(string $keyword, array $vars = []): string`
 
 - **Где использовать:** layouts / components / snippets
-- **Что делает:** вставляет врезку по ключу и выполняет её код
-- **Возвращает:** строку HTML (и сразу печатает)
+- **Что делает:** вставляет врезку из `templates/snippets/<keyword>.php`
+- **Возвращает:** строку HTML
 - **Пример:**
   ```php
-  insert_snip('footer');
+  echo insert_snip('footer');
   ```
 
 ### `resize_image(string $sourcePath, int $maxWidth, int $maxHeight, ?string $destPath = null, int $quality = 85): string`

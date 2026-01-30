@@ -6,7 +6,7 @@
 
 ## Как это работает (кратко)
 
-Схема задаётся SQL‑миграциями (базовая — `migrations/001_init.sql`).
+Схема задаётся файлом `app/schema.sql`.
 Данные читаются через репозитории (`app/domain/*Repo.php`).
 
 ## Карта сущностей и связей
@@ -16,8 +16,6 @@ sections (site/root)
   └─ infoblocks (экземпляры компонентов)
        └─ objects (контент)
 components
-  └─ component_views
-snippets
 users
 visual_fields
 admin_log
@@ -72,28 +70,6 @@ SELECT id, keyword, name FROM components;
 **Типовой сценарий:**
 ```sql
 SELECT fields_json FROM components WHERE keyword = 'news';
-```
-
----
-
-### component_views
-
-**Назначение:** пары list/single шаблонов и системный код.
-
-**Ключевые поля:** `id`, `component_id`, `name`, `list_tpl`, `single_tpl`, `system_tpl`.
-
-**Внешние ключи:** `component_id → components.id` (CASCADE).
-
-**Индексы:** `idx_component_views_component_id`, уникальность `(component_id, name)`.
-
-**Пример:**
-```sql
-SELECT name FROM component_views WHERE component_id = 3;
-```
-
-**Типовой сценарий:**
-```sql
-SELECT list_tpl FROM component_views WHERE component_id = 3 AND name = 'list';
 ```
 
 ---
@@ -165,24 +141,6 @@ SELECT id, login, role FROM users;
 **Типовой сценарий:**
 ```sql
 SELECT COUNT(*) FROM users WHERE role = 'admin';
-```
-
----
-
-### snippets
-
-**Назначение:** врезки HTML/JS/PHP, вставляемые через `insert_snip()`.
-
-**Ключевые поля:** `id`, `keyword`, `content`.
-
-**Пример:**
-```sql
-SELECT keyword FROM snippets;
-```
-
-**Типовой сценарий:**
-```sql
-SELECT content FROM snippets WHERE keyword = 'footer';
 ```
 
 ---
