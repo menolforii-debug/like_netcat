@@ -14,6 +14,10 @@ $englishName = isset($_POST['english_name']) ? trim((string) $_POST['english_nam
 $parentId = isset($_POST['parent_id']) ? (int) $_POST['parent_id'] : 0;
 $sort = isset($_POST['sort']) ? (int) $_POST['sort'] : 0;
 $layout = isset($_POST['layout']) ? trim((string) $_POST['layout']) : '';
+$h1 = isset($_POST['h1']) ? trim((string) $_POST['h1']) : '';
+$menuTitle = isset($_POST['menu_title']) ? trim((string) $_POST['menu_title']) : '';
+$showInMenuInherit = isset($_POST['show_in_menu_inherit']) ? (int) $_POST['show_in_menu_inherit'] : 0;
+$showInMenu = isset($_POST['show_in_menu']) ? (int) $_POST['show_in_menu'] : 0;
 $visualSettingsInput = isset($_POST['visual_settings']) && is_array($_POST['visual_settings']) ? $_POST['visual_settings'] : [];
 $visualInherit = isset($_POST['visual_inherit']) && is_array($_POST['visual_inherit']) ? $_POST['visual_inherit'] : [];
 $hasVisualInput = array_key_exists('visual_settings', $_POST)
@@ -91,6 +95,18 @@ if ($layout !== '' && Layout::layoutExists($layout)) {
 } else {
     unset($extra['layout']);
 }
+if ($h1 !== '') {
+    $extra['h1'] = $h1;
+} else {
+    unset($extra['h1']);
+}
+if ($menuTitle !== '') {
+    $extra['menu_title'] = $menuTitle;
+} else {
+    unset($extra['menu_title']);
+}
+$extra['show_in_menu_inherit'] = $showInMenuInherit ? true : false;
+$extra['show_in_menu'] = $showInMenu ? true : false;
 
 if ($hasVisualInput) {
     $visualSettings = [];
@@ -197,6 +213,10 @@ if ($user) {
             'parent_id' => $parentId,
             'sort' => $sort,
             'layout' => $extra['layout'] ?? '',
+            'h1' => $extra['h1'] ?? '',
+            'menu_title' => $extra['menu_title'] ?? '',
+            'show_in_menu_inherit' => $extra['show_in_menu_inherit'] ?? true,
+            'show_in_menu' => $extra['show_in_menu'] ?? true,
         ],
     ]);
 }

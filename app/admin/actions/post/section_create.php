@@ -6,6 +6,10 @@ $englishName = isset($_POST['english_name']) ? trim((string) $_POST['english_nam
 $sort = isset($_POST['sort']) ? (int) $_POST['sort'] : 0;
 $layout = isset($_POST['layout']) ? trim((string) $_POST['layout']) : '';
 $componentId = isset($_POST['component_id']) ? (int) $_POST['component_id'] : 0;
+$h1 = isset($_POST['h1']) ? trim((string) $_POST['h1']) : '';
+$menuTitle = isset($_POST['menu_title']) ? trim((string) $_POST['menu_title']) : '';
+$showInMenuInherit = isset($_POST['show_in_menu_inherit']) ? (int) $_POST['show_in_menu_inherit'] : 1;
+$showInMenu = isset($_POST['show_in_menu']) ? (int) $_POST['show_in_menu'] : 1;
 
 if ($parentId <= 0) {
     if (isAjaxRequest()) {
@@ -48,6 +52,14 @@ $extra = [];
 if ($layout !== '' && Layout::layoutExists($layout)) {
     $extra['layout'] = $layout;
 }
+if ($h1 !== '') {
+    $extra['h1'] = $h1;
+}
+if ($menuTitle !== '') {
+    $extra['menu_title'] = $menuTitle;
+}
+$extra['show_in_menu_inherit'] = $showInMenuInherit ? true : false;
+$extra['show_in_menu'] = $showInMenu ? true : false;
 
 $sectionId = $sectionRepo->createSection($parentId, $siteId, $englishName, $title, $sort, $extra);
 if ($componentId > 0) {
@@ -63,9 +75,10 @@ if ($componentId > 0) {
         'site_id' => $siteId,
         'section_id' => $sectionId,
         'component_id' => $componentId,
+        'key' => '',
         'name' => (string) ($component['name'] ?? 'Контент'),
         'view_template' => $views[0] ?? 'list',
-        'settings' => [],
+        'per_page' => 0,
         'extra' => [],
         'sort' => 0,
         'is_enabled' => 1,
@@ -78,6 +91,10 @@ if ($user) {
         'english_name' => $englishName,
         'sort' => $sort,
         'layout' => $extra['layout'] ?? '',
+        'h1' => $extra['h1'] ?? '',
+        'menu_title' => $extra['menu_title'] ?? '',
+        'show_in_menu_inherit' => $extra['show_in_menu_inherit'] ?? true,
+        'show_in_menu' => $extra['show_in_menu'] ?? true,
         'component_id' => $componentId > 0 ? $componentId : null,
     ]);
 }

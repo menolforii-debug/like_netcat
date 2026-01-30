@@ -88,6 +88,24 @@ $objectId = $objectRepo->create([
     'status' => $status,
 ]);
 
+$actionTemplatePath = componentActionTemplatePath((string) $component['keyword']);
+if (is_file($actionTemplatePath)) {
+    $message = $objectId;
+    $object = $objectRepo->findById($objectId);
+    try {
+        require $actionTemplatePath;
+    } catch (Throwable $e) {
+        if (isAjaxRequest()) {
+            jsonResponse(['ok' => false, 'error' => 'Ошибка выполнения шаблона действий: ' . $e->getMessage()]);
+        }
+        redirectTo(buildAdminUrl([
+            'section_id' => $sectionId,
+            'tab' => 'content',
+            'error' => 'Ошибка выполнения шаблона действий: ' . $e->getMessage(),
+        ]));
+    }
+}
+
 if ($user) {
     AdminLog::log($user['id'], 'object_create', 'object', $objectId, [
         'infoblock_id' => $infoblockId,

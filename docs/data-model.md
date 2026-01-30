@@ -1,57 +1,239 @@
-# Модель данных
+# 20. Модель данных (SQLite)
 
-База данных — SQLite (`var/app.sqlite`). Схема задаётся в `migrations/001_init.sql`.
+## Зачем это существует
 
-## Основные сущности
+Документ описывает архитектурный слой БД: сущности, связи, индексы и JSON‑поля.
 
-### Сайт и разделы (`sections`)
+## Как это работает (кратко)
 
-- Сайт — это корневой раздел, у него `parent_id = NULL` и `site_id = id`.
-- Дочерние разделы имеют `site_id` корневого сайта и `english_name` для URL.
-- `extra_json` содержит настройки сайта и раздела (SEO, макеты, визуальные параметры).
+Схема задаётся SQL‑миграциями (базовая — `migrations/001_init.sql`).
+Данные читаются через репозитории (`app/domain/*Repo.php`).
 
-Системные разделы, создаваемые при первом запуске:
+## Карта сущностей и связей
 
-- `index` — «Главная» (не попадает в URL, путь `/`).
-- `404` — fallback для несуществующих страниц.
+```
+sections (site/root)
+  └─ infoblocks (экземпляры компонентов)
+       └─ objects (контент)
+components
+  └─ component_views
+snippets
+users
+visual_fields
+admin_log
+sql_history
+```
 
-### Компоненты (`components`)
+## Таблицы
 
-- `keyword` — ключ шаблонов и идентификатор компонента.
-- `fields_json` — описание полей (используется в админке и валидаторе).
-- `views_json` — список view‑шаблонов (синхронизируется с `component_views`).
+### sections
 
-### Представления компонентов (`component_views`)
+**Назначение:** дерево разделов и сайты (корневые разделы).
 
-- Хранят пары шаблонов `list_tpl` и `single_tpl`, а также `system_tpl` для системного кода.
-- Поле `query_json` является наследием старого механизма и больше не используется в логике проекта.
-- При сохранении админка пишет файл `templates/component/<keyword>/<view>.php`.
-- При обновлении создаются бэкапы в `var/backups/templates/component/`.
+**Ключевые поля:** `id`, `parent_id`, `site_id`, `english_name`, `title`, `sort`.
 
-### Инфоблоки (`infoblocks`)
+**Внешние ключи и каскады:**
+- `parent_id → sections.id` (CASCADE).
 
-- Экземпляр компонента внутри раздела.
-- Содержит `view_template`, `settings_json` и `extra_json`.
-- `extra_json` поддерживает обёртки (`before_html`, `after_html`).
+**JSON:** `extra_json` (SEO, визуальные настройки, макеты).
 
-### Объекты (`objects`)
+**Индексы:** `idx_sections_site_id`, `idx_sections_parent_id`.
 
-- Контент внутри инфоблоков.
-- `data_json` хранит значения полей.
-- Статус `draft`/`published`, поддерживается soft‑delete.
+**Пример (SQL):**
+```sql
+SELECT id, title FROM sections WHERE parent_id IS NULL;
+```
 
-### Пользователи (`users`)
+**Типовой сценарий:**
+```sql
+-- Получить дочерние разделы
+SELECT id, title FROM sections WHERE parent_id = 10 ORDER BY sort;
+```
 
-- Логин/пароль + роль (`admin` или `editor`).
-- Если таблица пуста, при заходе в админку создаётся `admin` с случайным паролем.
+---
 
-### Врезки (`snippets`)
+### components
 
-- Хранят фрагменты HTML/JS/PHP, которые можно вставлять в макеты и компоненты через `insert_snip('keyword')`.
-- Поле `keyword` используется как ключ для вставки.
+**Назначение:** описание структуры данных.
 
-### Дополнительно
+**Ключевые поля:** `id`, `keyword`, `name`, `fields_json`, `views_json`.
 
-- `visual_fields` — справочник визуальных параметров (используется в настройках макета).
-- `admin_log` — журнал действий в админке.
-- `sql_history` — история запросов SQL‑консоли.
+**JSON:**
+- `fields_json` — схема полей.
+- `views_json` — список view‑шаблонов.
+
+**Индексы:** уникальность по `keyword`.
+
+**Пример:**
+```sql
+SELECT id, keyword, name FROM components;
+```
+
+**Типовой сценарий:**
+```sql
+SELECT fields_json FROM components WHERE keyword = 'news';
+```
+
+---
+
+### component_views
+
+**Назначение:** пары list/single шаблонов и системный код.
+
+**Ключевые поля:** `id`, `component_id`, `name`, `list_tpl`, `single_tpl`, `system_tpl`.
+
+**Внешние ключи:** `component_id → components.id` (CASCADE).
+
+**Индексы:** `idx_component_views_component_id`, уникальность `(component_id, name)`.
+
+**Пример:**
+```sql
+SELECT name FROM component_views WHERE component_id = 3;
+```
+
+**Типовой сценарий:**
+```sql
+SELECT list_tpl FROM component_views WHERE component_id = 3 AND name = 'list';
+```
+
+---
+
+### infoblocks
+
+**Назначение:** экземпляры компонента в разделе.
+
+**Ключевые поля:** `id`, `section_id`, `component_id`, `key`, `name`, `view_template`, `per_page`, `sort`, `is_enabled`.
+
+**Внешние ключи:**
+- `section_id → sections.id` (CASCADE)
+- `component_id → components.id` (CASCADE)
+
+**JSON:** `extra_json` (обёртки before/after и прочее).
+
+**Индексы:** `idx_infoblocks_site_id`, `idx_infoblocks_section_id`, `idx_infoblocks_component_id`, `idx_infoblocks_key`.
+
+**Пример:**
+```sql
+SELECT id, name, key FROM infoblocks WHERE section_id = 10;
+```
+
+**Типовой сценарий:**
+```sql
+SELECT view_template, per_page FROM infoblocks WHERE id = 42;
+```
+
+---
+
+### objects
+
+**Назначение:** контент инфоблоков.
+
+**Ключевые поля:** `id`, `infoblock_id`, `data_json`, `status`, `is_deleted`.
+
+**Внешние ключи:**
+- `section_id → sections.id` (CASCADE)
+- `infoblock_id → infoblocks.id` (CASCADE)
+- `component_id → components.id` (CASCADE)
+
+**JSON:** `data_json` — поля объекта.
+
+**Индексы:** `idx_objects_site_id`, `idx_objects_section_id`, `idx_objects_infoblock_id`, `idx_objects_component_id`, `idx_objects_status`.
+
+**Пример:**
+```sql
+SELECT id, status FROM objects WHERE infoblock_id = 5;
+```
+
+**Типовой сценарий:**
+```sql
+SELECT id, data_json FROM objects WHERE infoblock_id = 5 AND status = 'published';
+```
+
+---
+
+### users
+
+**Назначение:** пользователи админки.
+
+**Ключевые поля:** `id`, `login`, `pass_hash`, `role`.
+
+**Пример:**
+```sql
+SELECT id, login, role FROM users;
+```
+
+**Типовой сценарий:**
+```sql
+SELECT COUNT(*) FROM users WHERE role = 'admin';
+```
+
+---
+
+### snippets
+
+**Назначение:** врезки HTML/JS/PHP, вставляемые через `insert_snip()`.
+
+**Ключевые поля:** `id`, `keyword`, `content`.
+
+**Пример:**
+```sql
+SELECT keyword FROM snippets;
+```
+
+**Типовой сценарий:**
+```sql
+SELECT content FROM snippets WHERE keyword = 'footer';
+```
+
+---
+
+### visual_fields
+
+**Назначение:** справочник визуальных настроек.
+
+**Ключевые поля:** `id`, `name`, `label`, `type`, `options_json`.
+
+**JSON:** `options_json` — набор опций.
+
+**Пример:**
+```sql
+SELECT name, type FROM visual_fields ORDER BY sort;
+```
+
+**Типовой сценарий:**
+```sql
+SELECT options_json FROM visual_fields WHERE name = 'header_color';
+```
+
+---
+
+### admin_log и sql_history
+
+**Назначение:** аудит действий и история SQL‑консоли.
+
+**Пример:**
+```sql
+SELECT action, created_at FROM admin_log ORDER BY id DESC LIMIT 10;
+```
+
+**Типовой сценарий:**
+```sql
+SELECT sql FROM sql_history ORDER BY id DESC LIMIT 5;
+```
+
+## Типовые диагностические SQL‑запросы
+
+```sql
+-- Объекты инфоблока
+SELECT id, data_json FROM objects WHERE infoblock_id = 10;
+
+-- Только опубликованные
+SELECT id, data_json FROM objects
+WHERE infoblock_id = 10 AND status = 'published' AND is_deleted = 0;
+
+-- Найти soft-deleted
+SELECT id, deleted_at FROM objects WHERE is_deleted = 1;
+
+-- Понять, какой шаблон используется
+SELECT view_template FROM infoblocks WHERE id = 10;
+```

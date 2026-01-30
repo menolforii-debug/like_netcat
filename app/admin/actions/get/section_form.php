@@ -56,10 +56,14 @@ $components = [];
 if ($id <= 0) {
     $components = $componentRepo->listAll();
 }
+$showInMenuInherit = !array_key_exists('show_in_menu_inherit', $extra) || !empty($extra['show_in_menu_inherit']);
+$showInMenu = !array_key_exists('show_in_menu', $extra) || !empty($extra['show_in_menu']);
+$menuTitle = isset($extra['menu_title']) ? (string) $extra['menu_title'] : '';
+$h1 = isset($extra['h1']) ? (string) $extra['h1'] : '';
 
 echo '<span data-modal-title="' . ($id > 0 ? 'Редактировать раздел' : 'Новый раздел') . '"></span>';
 echo '<form method="post" action="/admin.php?action=' . ($id > 0 ? 'section_update' : 'section_create') . '" data-ajax="true">';
-echo csrfTokenField();
+echo csrf_token_field();
 if ($id > 0) {
     echo '<input type="hidden" name="id" value="' . (int) $section['id'] . '">';
 }
@@ -93,6 +97,20 @@ foreach ($layouts as $layout) {
     echo '<option value="' . htmlspecialchars($layout, ENT_QUOTES, 'UTF-8') . '"' . $selectedAttr . '>' . htmlspecialchars($layout, ENT_QUOTES, 'UTF-8') . '</option>';
 }
 echo '</select></div>';
+echo '<div class="mb-3"><label class="form-label">H1</label><input class="form-control" type="text" name="h1" value="' . htmlspecialchars($h1, ENT_QUOTES, 'UTF-8') . '"></div>';
+echo '<div class="mb-3"><label class="form-label">Альтернативное название для меню</label><input class="form-control" type="text" name="menu_title" value="' . htmlspecialchars($menuTitle, ENT_QUOTES, 'UTF-8') . '"></div>';
+echo '<div class="mb-3"><label class="form-label">Показывать в меню</label>';
+echo '<input type="hidden" name="show_in_menu_inherit" value="0">';
+echo '<div class="form-check">';
+echo '<input class="form-check-input" type="checkbox" name="show_in_menu_inherit" value="1"' . ($showInMenuInherit ? ' checked' : '') . '>';
+echo '<label class="form-check-label">Наследовать</label>';
+echo '</div>';
+echo '<input type="hidden" name="show_in_menu" value="0">';
+echo '<div class="form-check mt-2">';
+echo '<input class="form-check-input" type="checkbox" name="show_in_menu" value="1"' . ($showInMenu ? ' checked' : '') . '>';
+echo '<label class="form-check-label">Показывать в меню</label>';
+echo '</div>';
+echo '</div>';
 if ($id <= 0) {
     echo '<div class="mb-3"><label class="form-label">Компонент</label><select class="form-select" name="component_id">';
     echo '<option value="">Без компонента</option>';
