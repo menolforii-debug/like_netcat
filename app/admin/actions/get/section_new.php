@@ -14,13 +14,13 @@ AdminLayout::renderHeader('Новый раздел');
 
 echo '<div class="d-flex justify-content-between align-items-center mb-3">';
 echo '<h1 class="h4 mb-0">Новый раздел</h1>';
-echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $parentId]), ENT_QUOTES, 'UTF-8') . '">Назад</a>';
+echo '<a class="btn btn-link p-0 link-dotted" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $parentId]), ENT_QUOTES, 'UTF-8') . '">Назад</a>';
 echo '</div>';
 
 echo '<div class="card shadow-sm">';
 echo '<div class="card-body">';
 echo '<form method="post" action="/admin.php?action=section_create">';
-echo csrfTokenField();
+echo csrf_token_field();
 echo '<input type="hidden" name="parent_id" value="' . (int) $parentId . '">';
 echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" type="text" name="title" required></div>';
 echo '<div class="mb-3"><label class="form-label">English name</label><input class="form-control" type="text" name="english_name" required></div>';
