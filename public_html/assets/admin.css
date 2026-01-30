@@ -17,6 +17,16 @@ body {
   line-height: 1.2;
 }
 
+.link-dotted {
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  padding: 0;
+}
+
+.btn.link-dotted {
+  text-decoration: underline dotted;
+}
+
 /* ---- Common: квадратные кнопки ---- */
 .btn-icon-square {
   width: 34px;

@@ -4,6 +4,7 @@ final class Core
 {
     private $db;
     private $events;
+    private $nav;
 
     public function __construct(PDO $db, EventBus $events)
     {
@@ -19,5 +20,14 @@ final class Core
     public function events(): EventBus
     {
         return $this->events;
+    }
+
+    public function nav(): Nav
+    {
+        if ($this->nav === null) {
+            $this->nav = new Nav();
+        }
+
+        return $this->nav;
     }
 }
