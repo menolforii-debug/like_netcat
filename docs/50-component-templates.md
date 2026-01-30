@@ -2,27 +2,23 @@
 
 ## Зачем это существует
 
-Документ описывает все сущности, связанные с шаблонами компонента: представления, list/single шаблоны, системные настройки и шаблоны действий.
+Документ описывает структуру шаблонов компонента: list/single, системные настройки и шаблоны действий.
 
 ## Сущности и файлы
 
-### Представление компонента (`component_views`)
+### Представление компонента (структура файлов)
 
-Представление — это запись в таблице `component_views`, которая связывает компонент и набор шаблонов.
-Она хранит:
-
-- `name` — имя представления (например, `list`, `grid`, `card`).
-- `list_tpl` — шаблон списка объектов.
-- `single_tpl` — шаблон одного объекта.
-- `system_tpl` — системные настройки (PHP‑код для логики и управления системной выборкой).
-
-На основе этих полей формируется файл:
+Представление — это подпапка внутри компонента:
 
 ```
-templates/component/<component_key>/<view>.php
+templates/component/<component_key>/<view>/
 ```
 
-Файл генерируется из админки, содержит секции list/single и помечен как `GENERATED FILE`.
+В ней находятся:
+
+- `list.php` — шаблон списка объектов.
+- `single.php` — шаблон одного объекта.
+- `system.php` — системные настройки выборки (возвращает массив).
 
 ### Шаблон действий компонента (`actions.php`)
 
@@ -50,22 +46,38 @@ templates/component/<component_key>/actions.php
 - `$settings` — настройки инфоблока (если переданы в `infoblock` как `settings`).
 - `$message_select` — последний SQL‑запрос к объектам (для отладки).
 - `$editMode` — признак режима редактирования (если используется).
+- `$helpers` — массив локальных helper‑функций из `system.php` (ключ => callable).
 
-## Системные настройки (`system_tpl`)
+## Системные настройки (`system.php`)
 
-`system_tpl` — это PHP‑код, который хранится в `component_views.system_tpl` и выполняется
-**до системной выборки объектов**. Он используется для:
+`system.php` — это PHP‑файл, который **возвращает массив** и выполняется
+до системной выборки объектов. Он используется для:
 
 - описания вспомогательных функций;
 - подготовки данных, которые нужны всем шаблонам представления;
 - диагностических действий (логирование, просмотр запроса);
 - управления системным запросом через переменные NetCat.
 
-### Перечень переменных внутри `system_tpl`
+### Перечень переменных внутри `system.php`
 
-Внутри `system_tpl` доступны те же переменные, что и в list/single шаблонах:
-`$section`, `$site`, `$infoblock`, `$component`, `$objects`, `$object`, `$isSingle`,
-`$setFields`, `$settings`, `$message_select`, `$editMode`.
+Внутри `system.php` доступны:
+`$section`, `$site`, `$infoblock`, `$component`, `$isSingle`.
+
+### Локальные helper‑функции
+
+`system.php` может вернуть ключ `helpers` — массив `['name' => callable]`, который будет доступен
+в шаблонах `list.php`/`single.php` как переменная `$helpers`.
+
+```php
+<?php
+return [
+  'helpers' => [
+    'formatDate' => static function (string $value): string {
+      return date('d.m.Y', strtotime($value));
+    },
+  ],
+];
+```
 
 ### Переменные, которые управляют системной выборкой
 
@@ -92,7 +104,7 @@ templates/component/<component_key>/actions.php
 
 - `$distinct`
 
-Если переменная не задана, считается пустой строкой/0.
+Если ключ не задан, считается пустой строкой/0.
 
 ## Системный запрос: как работает и как его менять
 
@@ -103,25 +115,27 @@ templates/component/<component_key>/actions.php
 - фильтрует по статусу `published` на фронтенде (если не задан `$ignore_check`);
 - учитывает пагинацию `per_page` (если не задан `$ignore_limit`).
 
-Менять системный запрос можно через переменные в `system_tpl`.
+Менять системный запрос можно через ключи в массиве, возвращаемом `system.php`.
 
-### Пример `system_tpl`: изменить сортировку и фильтр
+### Пример `system.php`: изменить сортировку и фильтр
 
 ```php
 <?php
-$ignore_check = 1;
-$query_where = "a.published_at IS NOT NULL";
-$query_order = "a.published_at DESC, a.id DESC";
-?>
+return [
+  'ignore_check' => 1,
+  'query_where' => 'a.published_at IS NOT NULL',
+  'query_order' => 'a.published_at DESC, a.id DESC',
+];
 ```
 
-### Пример `system_tpl`: задать лимит вручную
+### Пример `system.php`: задать лимит вручную
 
 ```php
 <?php
-$ignore_limit = 1;
-$query_limit = "5";
-?>
+return [
+  'ignore_limit' => 1,
+  'query_limit' => '5',
+];
 ```
 
 ## objects_list() и системный запрос
