@@ -10,7 +10,7 @@ final class InfoblockRepo
         }
 
         return DB::fetchAll(
-            'SELECT id, site_id, section_id, component_id, name, view_template, settings_json, extra_json, sort, is_enabled
+            'SELECT id, site_id, section_id, component_id, `key`, name, view_template, per_page, extra_json, sort, is_enabled
             FROM infoblocks
             WHERE ' . $where . '
             ORDER BY sort ASC, id ASC',
@@ -21,7 +21,7 @@ final class InfoblockRepo
     public function findById(int $id): ?array
     {
         return DB::fetchOne(
-            'SELECT id, site_id, section_id, component_id, name, view_template, settings_json, extra_json, sort, is_enabled
+            'SELECT id, site_id, section_id, component_id, `key`, name, view_template, per_page, extra_json, sort, is_enabled
             FROM infoblocks
             WHERE id = :id
             LIMIT 1',
@@ -32,16 +32,17 @@ final class InfoblockRepo
     public function create(array $data): int
     {
         $stmt = DB::pdo()->prepare(
-            'INSERT INTO infoblocks (site_id, section_id, component_id, name, view_template, settings_json, extra_json, sort, is_enabled)
-            VALUES (:site_id, :section_id, :component_id, :name, :view_template, :settings_json, :extra_json, :sort, :is_enabled)'
+            'INSERT INTO infoblocks (site_id, section_id, component_id, `key`, name, view_template, per_page, extra_json, sort, is_enabled)
+            VALUES (:site_id, :section_id, :component_id, :key, :name, :view_template, :per_page, :extra_json, :sort, :is_enabled)'
         );
         $stmt->execute([
             'site_id' => $data['site_id'],
             'section_id' => $data['section_id'],
             'component_id' => $data['component_id'],
+            'key' => $data['key'] ?? '',
             'name' => $data['name'],
             'view_template' => $data['view_template'],
-            'settings_json' => json_encode($data['settings'] ?? [], JSON_UNESCAPED_UNICODE),
+            'per_page' => $data['per_page'] ?? 0,
             'extra_json' => json_encode($data['extra'] ?? [], JSON_UNESCAPED_UNICODE),
             'sort' => $data['sort'] ?? 0,
             'is_enabled' => $data['is_enabled'] ?? 1,
@@ -60,13 +61,14 @@ final class InfoblockRepo
     {
         $stmt = DB::pdo()->prepare(
             'UPDATE infoblocks
-            SET name = :name, view_template = :view_template, settings_json = :settings_json, extra_json = :extra_json, sort = :sort, is_enabled = :is_enabled
+            SET `key` = :key, name = :name, view_template = :view_template, per_page = :per_page, extra_json = :extra_json, sort = :sort, is_enabled = :is_enabled
             WHERE id = :id'
         );
         $stmt->execute([
+            'key' => $data['key'] ?? '',
             'name' => $data['name'],
             'view_template' => $data['view_template'],
-            'settings_json' => json_encode($data['settings'] ?? [], JSON_UNESCAPED_UNICODE),
+            'per_page' => $data['per_page'] ?? 0,
             'extra_json' => json_encode($data['extra'] ?? [], JSON_UNESCAPED_UNICODE),
             'sort' => $data['sort'] ?? 0,
             'is_enabled' => $data['is_enabled'] ?? 1,

@@ -51,14 +51,14 @@ if (!$isAjax) {
     echo '<div class="card-body">';
     echo '<div class="d-flex justify-content-between align-items-center mb-3">';
     echo '<h1 class="h5 mb-0">' . ($object ? 'Редактировать объект' : 'Новый объект') . '</h1>';
-    echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']), ENT_QUOTES, 'UTF-8') . '">Назад</a>';
+    echo '<a class="btn btn-link p-0 link-dotted" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']), ENT_QUOTES, 'UTF-8') . '">Назад</a>';
     echo '</div>';
 } else {
     echo '<span data-modal-title="' . ($object ? 'Редактировать объект' : 'Новый объект') . '"></span>';
 }
 
 echo '<form method="post" action="/admin.php?action=' . ($object ? 'object_update' : 'object_create') . '" enctype="multipart/form-data"' . ($isAjax ? ' data-ajax="true"' : '') . '>';
-echo csrfTokenField();
+echo csrf_token_field();
 if ($object) {
     echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
 } else {
@@ -79,9 +79,9 @@ echo '</div>';
 echo '<div class="d-flex gap-2">';
 echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
 if ($isAjax) {
-    echo '<button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Отмена</button>';
+    echo '<button class="btn btn-link p-0 link-dotted" type="button" data-bs-dismiss="modal">Отмена</button>';
 } else {
-    echo '<a class="btn btn-outline-secondary" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']), ENT_QUOTES, 'UTF-8') . '">Отмена</a>';
+    echo '<a class="btn btn-link p-0 link-dotted" href="' . htmlspecialchars(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']), ENT_QUOTES, 'UTF-8') . '">Отмена</a>';
 }
 echo '</div>';
 echo '</form>';
