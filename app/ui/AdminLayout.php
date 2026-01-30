@@ -20,6 +20,7 @@ final class AdminLayout
         echo "    <link href=\"/assets/sow/css/core.min.css\" rel=\"stylesheet\">\n";
         echo "    <link href=\"/assets/admin.css\" rel=\"stylesheet\">\n";
         echo "    <link href=\"https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css\" rel=\"stylesheet\">\n";
+        echo "    <link href=\"https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/eclipse.min.css\" rel=\"stylesheet\">\n";
         echo "</head>\n";
 
         if (!$showSidebar) {
@@ -46,8 +47,8 @@ final class AdminLayout
             'dashboard' => ['label' => 'Разделы', 'href' => '/admin.php'],
             'logs' => ['label' => 'Логи', 'href' => '/admin.php?action=logs'],
             'users_list' => ['label' => 'Пользователи', 'href' => '/admin.php?action=users_list'],
-            'components' => ['label' => 'Компоненты', 'href' => '/admin.php?action=components'],
-            'snippets' => ['label' => 'Врезки', 'href' => '/admin.php?action=snippets'],
+            'component_editor' => ['label' => 'Компоненты', 'href' => '/admin.php?action=component_editor'],
+            'snippet_list' => ['label' => 'Врезки', 'href' => '/admin.php?action=snippet_list'],
             'layouts' => ['label' => 'Макеты дизайна', 'href' => '/admin.php?action=layouts'],
             'help' => ['label' => 'Справка', 'href' => '/admin.php?action=help'],
             'filemanager' => ['label' => 'Файлы', 'href' => '/admin.php?action=filemanager'],
