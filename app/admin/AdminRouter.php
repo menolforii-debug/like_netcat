@@ -21,7 +21,7 @@ final class AdminRouter
         }
 
         if ($isPost && $action !== 'login') {
-            if (!isValidCsrfToken($_POST['csrf_token'] ?? null)) {
+            if (!is_valid_csrf_token($_POST['csrf_token'] ?? null)) {
                 self::renderError(400, 'Неверный CSRF-токен');
                 return;
             }
@@ -98,6 +98,7 @@ final class AdminRouter
             'object_create',
             'object_update',
             'object_delete',
+            'object_delete_all',
             'object_publish',
             'object_unpublish',
             'object_restore',
