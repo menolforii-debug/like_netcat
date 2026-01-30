@@ -8,8 +8,8 @@ $layout = isset($_POST['layout']) ? trim((string) $_POST['layout']) : '';
 $componentId = isset($_POST['component_id']) ? (int) $_POST['component_id'] : 0;
 $h1 = isset($_POST['h1']) ? trim((string) $_POST['h1']) : '';
 $menuTitle = isset($_POST['menu_title']) ? trim((string) $_POST['menu_title']) : '';
-$showInMenuInherit = isset($_POST['show_in_menu_inherit']) ? (int) $_POST['show_in_menu_inherit'] : 1;
-$showInMenu = isset($_POST['show_in_menu']) ? (int) $_POST['show_in_menu'] : 1;
+$showInMenuInherit = !array_key_exists('show_in_menu_inherit', $_POST) ? true : !empty($_POST['show_in_menu_inherit']);
+$showInMenu = !array_key_exists('show_in_menu', $_POST) ? true : !empty($_POST['show_in_menu']);
 
 if ($parentId <= 0) {
     if (isAjaxRequest()) {
@@ -59,7 +59,10 @@ if ($menuTitle !== '') {
     $extra['menu_title'] = $menuTitle;
 }
 $extra['show_in_menu_inherit'] = $showInMenuInherit ? true : false;
-if (!$extra['show_in_menu_inherit']) {
+if ($extra['show_in_menu_inherit']) {
+    unset($extra['show_in_menu']);
+} else {
+    $extra['show_in_menu_inherit'] = false;
     $extra['show_in_menu'] = $showInMenu ? true : false;
 }
 

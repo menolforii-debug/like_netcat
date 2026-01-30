@@ -56,8 +56,8 @@ $components = [];
 if ($id <= 0) {
     $components = $componentRepo->listAll();
 }
-$showInMenuInherit = !array_key_exists('show_in_menu_inherit', $extra) || !empty($extra['show_in_menu_inherit']);
-$showInMenu = !array_key_exists('show_in_menu', $extra) || !empty($extra['show_in_menu']);
+$showInMenuInherit = !array_key_exists('show_in_menu_inherit', $extra) ? true : (bool) $extra['show_in_menu_inherit'];
+$showInMenuValue = array_key_exists('show_in_menu', $extra) ? (bool) $extra['show_in_menu'] : true;
 $menuTitle = isset($extra['menu_title']) ? (string) $extra['menu_title'] : '';
 $h1 = isset($extra['h1']) ? (string) $extra['h1'] : '';
 
@@ -109,7 +109,7 @@ echo '<label class="form-check-label">Наследовать</label>';
 echo '</div>';
 echo '<input type="hidden" name="show_in_menu" value="0">';
 echo '<div class="form-check mt-2">';
-echo '<input class="form-check-input js-show-in-menu" type="checkbox" name="show_in_menu" value="1"' . ($showInMenu ? ' checked' : '') . ($showInMenuInherit ? ' disabled' : '') . '>';
+echo '<input class="form-check-input js-show-in-menu" type="checkbox" name="show_in_menu" value="1"' . ($showInMenuValue ? ' checked' : '') . ($showInMenuInherit ? ' disabled' : '') . '>';
 echo '<label class="form-check-label">Показывать в меню</label>';
 echo '</div>';
 echo '</div>';

@@ -114,7 +114,7 @@ $itemsHtml = objects_list(['infoblock_id' => 10, 'query_order' => 'a.id DESC']);
 **Дополнительно в контексте раздела:**
 - `$ctx['h1']` — H1 раздела (берётся из `sections.extra_json.h1`, иначе `section.title`).
 - `sections.extra_json.menu_title` — альтернативное название для меню (если пусто, используется `section.title`).
-- `sections.extra_json.show_in_menu` / `show_in_menu_inherit` — управление видимостью раздела в меню (при наследовании локальное значение не используется).
+- `sections.extra_json.show_in_menu` / `show_in_menu_inherit` — управление видимостью раздела в меню (при наследовании локальное значение не используется; если ключи отсутствуют, считаем, что раздел показывается в меню).
 
 
 ### `DB`

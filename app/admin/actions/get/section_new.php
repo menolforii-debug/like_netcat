@@ -9,6 +9,8 @@ $parent = $parentId > 0 ? $sectionRepo->findById($parentId) : null;
 if ($parent === null) {
     redirectTo(buildAdminUrl(['error' => 'Родитель не найден']));
 }
+$showInMenuInherit = true;
+$showInMenuValue = true;
 
 AdminLayout::renderHeader('Новый раздел');
 
@@ -39,12 +41,12 @@ echo '<div class="mb-3"><label class="form-label">Альтернативное �
 echo '<div><label class="form-label">Показывать в меню</label>';
 echo '<input type="hidden" name="show_in_menu_inherit" value="0">';
 echo '<div class="form-check">';
-echo '<input class="form-check-input js-show-in-menu-inherit" type="checkbox" name="show_in_menu_inherit" value="1" checked>';
+echo '<input class="form-check-input js-show-in-menu-inherit" type="checkbox" name="show_in_menu_inherit" value="1"' . ($showInMenuInherit ? ' checked' : '') . '>';
 echo '<label class="form-check-label">Наследовать</label>';
 echo '</div>';
 echo '<input type="hidden" name="show_in_menu" value="0">';
 echo '<div class="form-check mt-2">';
-echo '<input class="form-check-input js-show-in-menu" type="checkbox" name="show_in_menu" value="1" checked disabled>';
+echo '<input class="form-check-input js-show-in-menu" type="checkbox" name="show_in_menu" value="1"' . ($showInMenuValue ? ' checked' : '') . ($showInMenuInherit ? ' disabled' : '') . '>';
 echo '<label class="form-check-label">Показывать в меню</label>';
 echo '</div>';
 echo '</div>';
