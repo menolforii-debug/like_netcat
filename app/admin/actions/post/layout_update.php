@@ -1,45 +1,62 @@
 <?php
 
+if (!Auth::isAdmin()) {
+    redirectTo(buildAdminUrl(['error' => 'Недостаточно прав']));
+}
+
 $layoutKey = isset($_POST['layout_key']) ? trim((string) $_POST['layout_key']) : '';
 $layoutTpl = isset($_POST['layout_tpl']) ? (string) $_POST['layout_tpl'] : '';
 $layoutNavTpl = isset($_POST['layout_nav_tpl']) ? (string) $_POST['layout_nav_tpl'] : '';
 
-if ($layoutKey === '') {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Макет не найден']);
-    }
-    redirectTo(buildAdminUrl(['action' => 'layouts', 'error' => 'Макет не найден']));
-}
-
-if (!layoutKeyIsValid($layoutKey)) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Некорректный ключ макета']);
-    }
-    redirectTo(buildAdminUrl(['action' => 'layouts', 'error' => 'Некорректный ключ макета']));
+if ($layoutKey === '' || !layoutKeyIsValid($layoutKey)) {
+    redirectTo(buildAdminUrl([
+        'action' => 'layouts',
+        'error' => 'Некорректный ключ макета',
+    ]));
 }
 
 if (!LayoutCatalog::layoutExists($layoutKey)) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Макет не найден']);
-    }
-    redirectTo(buildAdminUrl(['action' => 'layouts', 'error' => 'Макет не найден']));
+    redirectTo(buildAdminUrl([
+        'action' => 'layouts',
+        'error' => 'Макет не найден',
+    ]));
 }
 
+if (trim($layoutTpl) === '') {
+    redirectTo(buildAdminUrl([
+        'action' => 'layouts',
+        'layout' => $layoutKey,
+        'error' => 'Шаблон макета не может быть пустым',
+    ]));
+}
+
+$error = null;
 if (!writeLayoutTemplate($layoutKey, $layoutTpl, $error)) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => $error ?? 'Не удалось сохранить макет']);
-    }
-    redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey, 'error' => $error ?? 'Не удалось сохранить макет']));
+    redirectTo(buildAdminUrl([
+        'action' => 'layouts',
+        'layout' => $layoutKey,
+        'error' => $error ?: 'Не удалось сохранить макет',
+    ]));
 }
 
-if (!writeLayoutNavTemplate($layoutKey, $layoutNavTpl, $error)) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => $error ?? 'Не удалось сохранить шаблон навигации']);
+// nav.php — опционален: пустой => удалить, непустой => сохранить
+$navPath = layoutNavTemplatesDir() . '/' . $layoutKey . '.nav.php';
+if (trim($layoutNavTpl) === '') {
+    if (is_file($navPath)) {
+        @unlink($navPath);
     }
-    redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey, 'error' => $error ?? 'Не удалось сохранить шаблон навигации']));
+} else {
+    $navError = null;
+    if (!writeLayoutNavTemplate($layoutKey, $layoutNavTpl, $navError)) {
+        redirectTo(buildAdminUrl([
+            'action' => 'layouts',
+            'layout' => $layoutKey,
+            'error' => $navError ?: 'Не удалось сохранить шаблон навигации',
+        ]));
+    }
 }
 
-if (isAjaxRequest()) {
-    jsonResponse(['ok' => true, 'message' => 'Макет обновлен']);
-}
-redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey]));
+redirectTo(buildAdminUrl([
+    'action' => 'layouts',
+    'layout' => $layoutKey,
+]));

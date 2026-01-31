@@ -75,32 +75,24 @@ echo '</div>';
 
 if (empty($layouts)) {
     echo '<div class="text-muted">Макеты пока не созданы.</div>';
-    echo '</div></div>';
-    AdminLayout::closeSidebar();
-
-    AdminLayout::openContent();
-    echo '<div class="card shadow-sm"><div class="card-body">';
-    echo '<div class="text-muted">Создайте первый макет дизайна.</div>';
-    echo '</div></div>';
-    AdminLayout::closeContent();
-    AdminLayout::renderFooter();
-    return;
+} elseif ($layoutKey !== '_new') {
+    echo '<nav class="nav-deep nav-deep-sm nav-deep-light">';
+    echo '<ul class="nav flex-column">';
+    foreach ($layouts as $layout) {
+        $isActive = $layoutKey === $layout;
+        $link = buildAdminUrl(['action' => 'layouts', 'layout' => $layout]);
+        $activeClass = $isActive ? ' fw-bold' : '';
+        echo '<li class="nav-item">';
+        echo '<a class="nav-link text-decoration-none text-truncate' . $activeClass . '" href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">';
+        echo htmlspecialchars($layout, ENT_QUOTES, 'UTF-8');
+        echo '</a>';
+        echo '</li>';
+    }
+    echo '</ul>';
+    echo '</nav>';
+} else {
+    echo '<div class="text-muted small">Создание нового макета.</div>';
 }
-
-echo '<nav class="nav-deep nav-deep-sm nav-deep-light">';
-echo '<ul class="nav flex-column">';
-foreach ($layouts as $layout) {
-    $isActive = $layoutKey === $layout;
-    $link = buildAdminUrl(['action' => 'layouts', 'layout' => $layout]);
-    $activeClass = $isActive ? ' fw-bold' : '';
-    echo '<li class="nav-item">';
-    echo '<a class="nav-link text-decoration-none text-truncate' . $activeClass . '" href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">';
-    echo htmlspecialchars($layout, ENT_QUOTES, 'UTF-8');
-    echo '</a>';
-    echo '</li>';
-}
-echo '</ul>';
-echo '</nav>';
 echo '</div>';
 echo '</div>';
 

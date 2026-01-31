@@ -1,48 +1,62 @@
 <?php
 
+if (!Auth::isAdmin()) {
+    redirectTo(buildAdminUrl(['error' => 'Недостаточно прав']));
+}
+
 $layoutKey = isset($_POST['layout_key']) ? trim((string) $_POST['layout_key']) : '';
 
-if ($layoutKey === '') {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Макет не найден']);
-    }
-    redirectTo(buildAdminUrl(['action' => 'layouts', 'error' => 'Макет не найден']));
+if ($layoutKey === '' || !layoutKeyIsValid($layoutKey)) {
+    redirectTo(buildAdminUrl([
+        'action' => 'layouts',
+        'error' => 'Некорректный ключ макета',
+    ]));
 }
 
-if (!layoutKeyIsValid($layoutKey)) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Некорректный ключ макета']);
-    }
-    redirectTo(buildAdminUrl(['action' => 'layouts', 'error' => 'Некорректный ключ макета']));
-}
-
+// системные макеты защищаем (как и UI)
 if (in_array($layoutKey, ['default', 'home'], true)) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Системные макеты нельзя удалить']);
-    }
-    redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey, 'error' => 'Системные макеты нельзя удалить']));
+    redirectTo(buildAdminUrl([
+        'action' => 'layouts',
+        'layout' => $layoutKey,
+        'error' => 'Системный макет нельзя удалить',
+    ]));
 }
 
 if (!LayoutCatalog::layoutExists($layoutKey)) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Макет не найден']);
-    }
-    redirectTo(buildAdminUrl(['action' => 'layouts', 'error' => 'Макет не найден']));
+    redirectTo(buildAdminUrl([
+        'action' => 'layouts',
+        'error' => 'Макет не найден',
+    ]));
 }
 
-$path = layoutTemplatesDir() . '/' . $layoutKey . '.php';
+$templatesDir = realpath(layoutTemplatesDir());
+if ($templatesDir === false) {
+    $templatesDir = layoutTemplatesDir();
+}
+$templatesDir = rtrim($templatesDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+
+$layoutPath = layoutTemplatesDir() . '/' . $layoutKey . '.php';
 $navPath = layoutNavTemplatesDir() . '/' . $layoutKey . '.nav.php';
-if (!is_file($path) || !@unlink($path)) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Не удалось удалить макет']);
+
+foreach ([$layoutPath, $navPath] as $path) {
+    if (!is_file($path)) {
+        continue;
     }
-    redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey, 'error' => 'Не удалось удалить макет']));
-}
-if (is_file($navPath)) {
-    @unlink($navPath);
+    $real = realpath($path);
+    if ($real === false) {
+        continue;
+    }
+    // безопасность: удаляем только внутри templates/layouts/
+    if (!str_starts_with(rtrim($real, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR, $templatesDir)) {
+        redirectTo(buildAdminUrl([
+            'action' => 'layouts',
+            'layout' => $layoutKey,
+            'error' => 'Запрещено удалять файлы вне директории макетов',
+        ]));
+    }
+    @unlink($real);
 }
 
-if (isAjaxRequest()) {
-    jsonResponse(['ok' => true, 'message' => 'Макет удален']);
-}
-redirectTo(buildAdminUrl(['action' => 'layouts']));
+redirectTo(buildAdminUrl([
+    'action' => 'layouts',
+]));

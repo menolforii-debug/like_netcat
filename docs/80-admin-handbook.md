@@ -57,6 +57,14 @@ app/admin/actions/post/<action>.php
 - `LayoutCatalog::listLayouts()` используется для списка макетов.
 - `browse_messages()` применяется в списках объектов (см. `dashboard`).
 
+### Управление макетами в админке
+POST-действия для страницы макетов (`/admin.php?action=layouts`):
+- `layout_create` — создаёт новый макет и, при наличии, `layout.nav.php`.
+- `layout_update` — обновляет шаблон макета и опциональный шаблон навигации.
+- `layout_delete` — удаляет файлы макета (кроме системных `default` и `home`).
+
+Во всех формах используйте `csrf_token_field()` и валидируйте ключ макета через `layoutKeyIsValid()`.
+
 ### Пример `browse_messages()` в админке
 
 ```php
