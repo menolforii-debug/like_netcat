@@ -1,5 +1,8 @@
 <?php
 
+require_once __DIR__ . '/../shared/runtime_guard.php';
+assert_runtime('admin');
+
 function redirectTo(string $url): void
 {
     header('Location: ' . $url);

@@ -6,7 +6,8 @@
 
 ## Как это работает (кратко)
 
-Все функции и классы загружаются через `app/public/bootstrap.php` и доступны в шаблонах.
+В публичном runtime функции и классы загружаются через `app/public/bootstrap.php` и доступны в шаблонах.
+В админке — через `app/admin/bootstrap.php`.
 
 ## Примеры
 
@@ -28,6 +29,16 @@ $itemsHtml = objects_list(['infoblock_id' => 10, 'query_order' => 'a.id DESC']);
 - **Пример:**
   ```php
   $pdo = core()->db();
+  ```
+
+### `assert_runtime(string $expected): void`
+
+- **Где использовать:** admin/public bootstrap и admin-only файлы
+- **Что делает:** проверяет, что приложение запущено в ожидаемом runtime (`APP_RUNTIME`)
+- **Возвращает:** `void`
+- **Пример:**
+  ```php
+  assert_runtime('admin');
   ```
 
 ### `users_count(): int`

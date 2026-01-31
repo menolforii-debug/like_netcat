@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../shared/runtime_guard.php';
+assert_runtime('admin');
+
 // ...
 final class AdminRouter
 {

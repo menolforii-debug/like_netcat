@@ -1,5 +1,10 @@
 <?php
 
+if (!defined('APP_RUNTIME')) {
+    define('APP_RUNTIME', 'admin');
+}
+require __DIR__ . '/../shared/runtime_guard.php';
+
 // shared runtime
 require __DIR__ . '/../shared/bootstrap.php';
 require __DIR__ . '/../shared/core/Auth.php';

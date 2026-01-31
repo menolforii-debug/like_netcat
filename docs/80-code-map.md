@@ -28,7 +28,7 @@
 - **Public runtime** стартует из `app/public/bootstrap.php` и подключает только `app/shared/*` + `app/public/*`.
 - **Admin runtime** стартует из `app/admin/bootstrap.php` и подключает только `app/shared/*` + `app/admin/*`.
 - **Shared** — общий код (core, domain, ui), который можно безопасно использовать в обоих runtime.
-- Напрямую подключать public-файлы из admin и admin-файлы из public нельзя.
+- Напрямую подключать public-файлы из admin и admin-файлы из public нельзя — для жёсткой проверки используется `app/shared/runtime_guard.php`.
 - Если логика нужна обеим сторонам — переносим её в `app/shared/*`, не меняя поведение.
 
 ---
@@ -38,6 +38,7 @@
 | Файл | Роль | Когда трогать |
 | --- | --- | --- |
 | `app/shared/bootstrap.php` | Базовая инициализация (DB, Core, repo, events). | Общие зависимости/инициализация. |
+| `app/shared/runtime_guard.php` | Проверка корректного runtime (`APP_RUNTIME`). | Защита границ public/admin. |
 | `app/public/bootstrap.php` | Публичные helpers и default-данные. | Публичные helper-функции, дефолты. |
 | `app/public/render/Renderer.php` | Публичный рендер и системные выборки. | Менять системные запросы, пагинацию, контекст шаблонов. |
 | `app/shared/nav/Nav.php` | Навигация `core()->nav()`. | Логика меню, active/current, фильтры. |
