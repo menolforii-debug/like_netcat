@@ -1,5 +1,7 @@
 <?php
+declare(strict_types=1);
 
+// ...
 final class AdminRouter
 {
     public static function run(): void
@@ -57,8 +59,23 @@ final class AdminRouter
             return;
         }
 
+        // Передаём контекст в action-файл (репозитории, user, selectedId, tab и т.п.)
+        $context = compact(
+            'action',
+            'isPost',
+            'user',
+            'selectedId',
+            'tab',
+            'sectionRepo',
+            'infoblockRepo',
+            'componentRepo',
+            'objectRepo',
+            'userRepo',
+            'visualFieldRepo'
+        );
+
         try {
-            $result = self::executeActionFile($realFile);
+            $result = self::executeActionFile($realFile, $context);
         } catch (Throwable $e) {
             self::logActionError($action, $isPost, $user, $e);
             self::renderError(500, 'Внутренняя ошибка');
@@ -71,10 +88,15 @@ final class AdminRouter
 
     /**
      * Выполняет action-файл в изолированном замыкании и возвращает его результат.
+     *
+     * @param array $context Переменные, которые должны быть доступны action-файлу.
      */
-    private static function executeActionFile(string $realFile): mixed
+    private static function executeActionFile(string $realFile, array $context = []): mixed
     {
-        return (static function () use ($realFile) {
+        return (static function () use ($realFile, $context) {
+            // Делаем переменные доступными внутри action-файла
+            // ($sectionRepo, $componentRepo, $user, $selectedId, $tab, ...)
+            extract($context, EXTR_SKIP);
             return require $realFile;
         })();
     }
