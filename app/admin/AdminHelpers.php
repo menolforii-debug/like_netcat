@@ -624,81 +624,6 @@ function normalizeComponentFieldsInput(array $fieldsInput): array
     return $normalized;
 }
 
-function renderComponentViewTemplate(string $listTpl, string $singleTpl, string $systemTpl): string
-{
-    $systemTpl = trim(stripSystemTemplateTags($systemTpl));
-    $content = "<?php\n";
-    $content .= "/** GENERATED FILE. Do not edit manually. */\n";
-    $content .= "if (!isset(\$isSingle)) { \$isSingle = false; }\n";
-    $content .= "if (\$isSingle && isset(\$object) && is_array(\$object)) {\n";
-    $content .= "?>\n";
-    $content .= $singleTpl . "\n";
-    $content .= "<?php\n";
-    $content .= "} else {\n";
-    $content .= "?>\n";
-    $content .= $listTpl . "\n";
-    $content .= "<?php\n";
-    $content .= "}\n";
-
-    if ($systemTpl !== '') {
-        $content .= "if (empty(\$GLOBALS['_system_tpl_executed'])) {\n";
-        $content .= "    \$GLOBALS['_system_tpl_executed'] = true;\n";
-        $content .= rtrim($systemTpl) . "\n";
-        $content .= "}\n";
-        $content .= "?>\n";
-    }
-
-    return $content;
-}
-
-function writeComponentViewTemplate(string $componentKey, string $viewName, string $listTpl, string $singleTpl, string $systemTpl, ?string &$error = null): bool
-{
-    $root = dirname(__DIR__, 2);
-    $templatesDir = $root . '/templates/component/' . $componentKey;
-    if (!is_dir($templatesDir)) {
-        mkdir($templatesDir, 0770, true);
-        @chmod($templatesDir, 0770);
-    }
-
-    $finalPath = $templatesDir . '/' . $viewName . '.php';
-    $tmpPath = $finalPath . '.tmp';
-    $content = renderComponentViewTemplate($listTpl, $singleTpl, $systemTpl);
-
-    if (file_put_contents($tmpPath, $content) === false) {
-        $error = 'Не удалось сохранить шаблон.';
-        return false;
-    }
-    @chmod($tmpPath, 0660);
-
-    $lintOutput = @shell_exec('php -l ' . escapeshellarg($tmpPath));
-    if ($lintOutput !== null && stripos($lintOutput, 'No syntax errors detected') === false) {
-        @unlink($tmpPath);
-        $error = 'Синтаксическая ошибка в шаблоне: ' . trim((string) $lintOutput);
-        return false;
-    }
-
-    if (is_file($finalPath)) {
-        $backupDir = $root . '/var/backups/templates/component/' . $componentKey;
-        if (!is_dir($backupDir)) {
-            mkdir($backupDir, 0770, true);
-            @chmod($backupDir, 0770);
-        }
-        $backupPath = $backupDir . '/' . $viewName . '.php.' . date('YmdHis') . '.bak';
-        if (@copy($finalPath, $backupPath)) {
-            @chmod($backupPath, 0660);
-        }
-    }
-
-    if (!rename($tmpPath, $finalPath)) {
-        @unlink($tmpPath);
-        $error = 'Не удалось обновить шаблон.';
-        return false;
-    }
-    @chmod($finalPath, 0660);
-
-    return true;
-}
-
 function stripSystemTemplateTags(string $systemTpl): string
 {
     $trimmed = trim($systemTpl);
@@ -927,19 +852,4 @@ function writeLayoutNavTemplate(string $layoutKey, string $content, ?string &$er
     @chmod($finalPath, 0660);
 
     return true;
-}
-
-function syncComponentViewsJson(int $componentId): void
-{
-    if (!DB::hasTable('component_views')) {
-        return;
-    }
-
-    $viewRepo = new ComponentViewRepo();
-    $views = $viewRepo->listNamesForComponent($componentId);
-    $stmt = DB::pdo()->prepare('UPDATE components SET views_json = :views_json WHERE id = :id');
-    $stmt->execute([
-        'views_json' => json_encode($views, JSON_UNESCAPED_UNICODE),
-        'id' => $componentId,
-    ]);
 }

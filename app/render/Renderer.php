@@ -52,8 +52,6 @@ final class Renderer
         $infoblockRepo = new InfoblockRepo();
         $componentRepo = new ComponentRepo();
         $objectRepo = new ObjectRepo();
-        $viewRepo = DB::hasTable('component_views') ? new ComponentViewRepo() : null;
-
         $infoblocks = $infoblockRepo->listForSection((int) $section['id'], true);
         $requestedObjectId = isset($_GET['object_id']) ? (int) $_GET['object_id'] : 0;
         $previewAllowed = $this->isPreviewAllowed($requestedObjectId);
@@ -93,11 +91,6 @@ final class Renderer
 
             $infoblock['view_template'] = $this->resolveViewTemplate($infoblock, $component);
             $isSingle = $requestedObject && (int) $requestedObject['infoblock_id'] === (int) $infoblock['id'];
-            $viewRow = null;
-            if ($viewRepo !== null) {
-                $viewRow = $viewRepo->findByName((int) $component['id'], (string) $infoblock['view_template']);
-            }
-            $this->ensureComponentViewTemplateFile($component, (string) $infoblock['view_template'], $viewRow);
 
             $perPage = isset($infoblock['per_page']) ? (int) $infoblock['per_page'] : 0;
             if ($perPage < 0) {
@@ -107,14 +100,19 @@ final class Renderer
             $currentPage = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
             $offset = $perPage > 0 ? ($currentPage - 1) * $perPage : 0;
 
-            $systemSettings = $this->executeSystemSettings(
-                $viewRow['system_tpl'] ?? '',
+            $systemSettings = $this->loadSystemSettings(
+                (string) ($component['keyword'] ?? ''),
+                (string) $infoblock['view_template'],
                 $section,
                 $site,
                 $infoblock,
                 $component,
                 $isSingle
             );
+            $helpers = $systemSettings['helpers'] ?? [];
+            if (!is_array($helpers)) {
+                $helpers = [];
+            }
 
             $objects = [];
             $messageSelect = '';
@@ -192,7 +190,7 @@ final class Renderer
                 'total_items' => $totalItems,
             ];
 
-            $infoblocksHtml .= $this->renderInfoblockWithWrappers($section, $site, $infoblock, $component, $items, $isSingle, false);
+            $infoblocksHtml .= $this->renderInfoblockWithWrappers($section, $site, $infoblock, $component, $items, $isSingle, false, $helpers);
             $infoblockViews[] = [
                 'infoblock' => $infoblock,
                 'component' => $component,
@@ -227,7 +225,7 @@ final class Renderer
         });
     }
 
-    private function renderInfoblockWithWrappers(array $section, array $site, array $infoblock, array $component, array $items, bool $isSingle, $editMode): string
+    private function renderInfoblockWithWrappers(array $section, array $site, array $infoblock, array $component, array $items, bool $isSingle, $editMode, array $helpers): string
     {
         $extra = Utils::decodeExtra($infoblock);
         $beforeImage = isset($extra['before_image']) ? trim((string) $extra['before_image']) : '';
@@ -243,7 +241,7 @@ final class Renderer
             $html .= $beforeHtml;
         }
 
-        $html .= $this->renderInfoblock($section, $site, $infoblock, $component, $items, $isSingle, $editMode);
+        $html .= $this->renderInfoblock($section, $site, $infoblock, $component, $items, $isSingle, $editMode, $helpers);
 
         if ($afterHtml !== '') {
             $html .= $afterHtml;
@@ -255,7 +253,7 @@ final class Renderer
         return $html;
     }
 
-    private function renderInfoblock(array $section, array $site, array $infoblock, array $component, array $items, bool $isSingle, $editMode): string
+    private function renderInfoblock(array $section, array $site, array $infoblock, array $component, array $items, bool $isSingle, $editMode, array $helpers): string
     {
         $core = [];
         $objects = $items;
@@ -280,14 +278,16 @@ final class Renderer
             $setFields($object);
         }
 
-        $templatePath = __DIR__ . '/../../templates/component/' . $component['keyword'] . '/' . $infoblock['view_template'] . '.php';
-        if (!is_file($templatePath)) {
+        $templatePath = $this->resolveTemplatePath(
+            (string) ($component['keyword'] ?? ''),
+            (string) $infoblock['view_template'],
+            $isSingle
+        );
+        if ($templatePath === '') {
             return '';
         }
 
         $previousScope = $GLOBALS['_snip_scope'] ?? null;
-        $hadSystemTpl = array_key_exists('_system_tpl_executed', $GLOBALS);
-        $previousSystemTpl = $hadSystemTpl ? $GLOBALS['_system_tpl_executed'] : null;
         $GLOBALS['_snip_scope'] = get_defined_vars();
 
         ob_start();
@@ -299,162 +299,44 @@ final class Renderer
         } else {
             unset($GLOBALS['_snip_scope']);
         }
-        if ($hadSystemTpl) {
-            $GLOBALS['_system_tpl_executed'] = $previousSystemTpl;
-        } else {
-            unset($GLOBALS['_system_tpl_executed']);
-        }
-
         return $output;
     }
 
-    private function executeSystemSettings(string $systemTpl, array $section, array $site, array $infoblock, array $component, bool $isSingle): array
+    private function loadSystemSettings(string $componentKey, string $viewName, array $section, array $site, array $infoblock, array $component, bool $isSingle): array
     {
-        $ignore_sub = 0;
-        $ignore_cc = 0;
-        $ignore_check = 0;
-        $ignore_all = 0;
-        $ignore_limit = 0;
-        $query_select = '';
-        $query_from = '';
-        $query_join = '';
-        $query_where = '';
-        $query_group = '';
-        $query_having = '';
-        $query_order = '';
-        $query_limit = '';
-        $distinct = '';
-
-        $objects = [];
-        $object = null;
-        $settings = $infoblock['settings'] ?? [];
-        $message_select = '';
-        $editMode = false;
-        $setFields = static function (array $item): void {
-            $data = $item['data'] ?? [];
-            if (!is_array($data)) {
-                return;
-            }
-            foreach ($data as $key => $value) {
-                if (!is_string($key) || $key === '') {
-                    continue;
-                }
-                $GLOBALS['f_' . $key] = $value;
-            }
-        };
-
-        $systemTpl = Utils::stripSystemTemplateTags((string) $systemTpl);
-        if ($systemTpl !== '') {
-            $GLOBALS['_system_tpl_executed'] = true;
-            eval($systemTpl);
-        } else {
-            unset($GLOBALS['_system_tpl_executed']);
+        $systemPath = $this->resolveSystemPath($componentKey, $viewName);
+        if ($systemPath === '') {
+            return $this->normalizeSystemSettings([]);
         }
 
-        $distinctValue = '';
-        if (isset($distinct) && is_string($distinct)) {
-            $distinctValue = trim($distinct);
-        } elseif (!empty($distinct)) {
-            $distinctValue = 'DISTINCT';
-        }
-
-        return [
-            'ignore_sub' => !empty($ignore_sub) ? 1 : 0,
-            'ignore_cc' => !empty($ignore_cc) ? 1 : 0,
-            'ignore_check' => !empty($ignore_check) ? 1 : 0,
-            'ignore_all' => !empty($ignore_all) ? 1 : 0,
-            'ignore_limit' => !empty($ignore_limit) ? 1 : 0,
-            'query_select' => is_string($query_select) ? trim($query_select) : '',
-            'query_from' => is_string($query_from) ? trim($query_from) : '',
-            'query_join' => is_string($query_join) ? trim($query_join) : '',
-            'query_where' => is_string($query_where) ? trim($query_where) : '',
-            'query_group' => is_string($query_group) ? trim($query_group) : '',
-            'query_having' => is_string($query_having) ? trim($query_having) : '',
-            'query_order' => is_string($query_order) ? trim($query_order) : '',
-            'query_limit' => is_string($query_limit) ? trim($query_limit) : '',
-            'distinct' => $distinctValue,
+        $context = [
+            'section' => $section,
+            'site' => $site,
+            'infoblock' => $infoblock,
+            'component' => $component,
+            'isSingle' => $isSingle,
         ];
-    }
-
-    private function ensureComponentViewTemplateFile(array $component, string $viewName, ?array $viewRow): void
-    {
-        if ($viewRow === null) {
-            return;
+        extract($context, EXTR_SKIP);
+        $result = require $systemPath;
+        if (!is_array($result)) {
+            throw new RuntimeException('system.php must return an array.');
         }
 
-        $componentKey = (string) ($component['keyword'] ?? '');
-        if ($componentKey === '' || $viewName === '') {
-            return;
+        $helpers = [];
+        if (isset($result['helpers']) && is_array($result['helpers'])) {
+            $helpers = $result['helpers'];
         }
 
-        $templatesDir = dirname(__DIR__, 2) . '/templates/component/' . $componentKey;
-        $templatePath = $templatesDir . '/' . $viewName . '.php';
-        $systemTpl = (string) ($viewRow['system_tpl'] ?? '');
-        $needsGuard = trim($systemTpl) !== '';
+        $normalized = $this->normalizeSystemSettings($result);
+        $normalized['helpers'] = $helpers;
 
-        $shouldWrite = !is_file($templatePath);
-        if (!$shouldWrite && $needsGuard) {
-            $current = file_get_contents($templatePath);
-            if ($current === false || strpos($current, '_system_tpl_executed') === false) {
-                $shouldWrite = true;
-            }
-        }
-
-        if (!$shouldWrite) {
-            return;
-        }
-
-        if (!is_dir($templatesDir)) {
-            mkdir($templatesDir, 0770, true);
-            @chmod($templatesDir, 0770);
-        }
-
-        $content = $this->renderComponentViewTemplate(
-            (string) ($viewRow['list_tpl'] ?? ''),
-            (string) ($viewRow['single_tpl'] ?? ''),
-            (string) ($viewRow['system_tpl'] ?? '')
-        );
-
-        file_put_contents($templatePath, $content);
-        @chmod($templatePath, 0660);
-    }
-
-    private function renderComponentViewTemplate(string $listTpl, string $singleTpl, string $systemTpl): string
-    {
-        $systemTpl = trim(Utils::stripSystemTemplateTags($systemTpl));
-        $content = "<?php\n";
-        $content .= "/** GENERATED FILE. Do not edit manually. */\n";
-        $content .= "if (!isset(\$isSingle)) { \$isSingle = false; }\n";
-        $content .= "if (\$isSingle && isset(\$object) && is_array(\$object)) {\n";
-        $content .= "?>\n";
-        $content .= $singleTpl . "\n";
-        $content .= "<?php\n";
-        $content .= "} else {\n";
-        $content .= "?>\n";
-        $content .= $listTpl . "\n";
-        $content .= "<?php\n";
-        $content .= "}\n";
-
-        if ($systemTpl !== '') {
-            $content .= "if (empty(\$GLOBALS['_system_tpl_executed'])) {\n";
-            $content .= "    \$GLOBALS['_system_tpl_executed'] = true;\n";
-            $content .= rtrim($systemTpl) . "\n";
-            $content .= "}\n";
-            $content .= "?>\n";
-        }
-
-        return $content;
+        return $normalized;
     }
 
     private function resolveViewTemplate(array $infoblock, array $component): string
     {
         $views = [];
-        if (DB::hasTable('component_views')) {
-            $viewRepo = new ComponentViewRepo();
-            $views = $viewRepo->listNamesForComponent((int) ($component['id'] ?? 0));
-        }
-
-        if (empty($views) && isset($component['views_json'])) {
+        if (isset($component['views_json'])) {
             $decoded = json_decode((string) $component['views_json'], true);
             if (is_array($decoded)) {
                 $views = $decoded;
@@ -614,9 +496,75 @@ final class Renderer
             return false;
         }
 
-        $templatePath = __DIR__ . '/../../templates/component/' . $componentKey . '/' . $view . '.php';
+        $dir = __DIR__ . '/../../templates/component/' . $componentKey . '/' . $view;
+        if (!is_dir($dir)) {
+            return false;
+        }
 
-        return is_file($templatePath);
+        return is_file($dir . '/list.php') || is_file($dir . '/single.php');
+    }
+
+    private function resolveTemplatePath(string $componentKey, string $view, bool $isSingle): string
+    {
+        if ($componentKey === '' || $view === '') {
+            return '';
+        }
+
+        $dir = __DIR__ . '/../../templates/component/' . $componentKey . '/' . $view;
+        if (!is_dir($dir)) {
+            return '';
+        }
+
+        $singlePath = $dir . '/single.php';
+        $listPath = $dir . '/list.php';
+        if ($isSingle && is_file($singlePath)) {
+            return $singlePath;
+        }
+        if (is_file($listPath)) {
+            return $listPath;
+        }
+        if (is_file($singlePath)) {
+            return $singlePath;
+        }
+
+        return '';
+    }
+
+    private function resolveSystemPath(string $componentKey, string $view): string
+    {
+        if ($componentKey === '' || $view === '') {
+            return '';
+        }
+
+        $path = __DIR__ . '/../../templates/component/' . $componentKey . '/' . $view . '/system.php';
+        return is_file($path) ? $path : '';
+    }
+
+    private function normalizeSystemSettings(array $settings): array
+    {
+        $distinctValue = '';
+        if (isset($settings['distinct']) && is_string($settings['distinct'])) {
+            $distinctValue = trim($settings['distinct']);
+        } elseif (!empty($settings['distinct'])) {
+            $distinctValue = 'DISTINCT';
+        }
+
+        return [
+            'ignore_sub' => !empty($settings['ignore_sub']) ? 1 : 0,
+            'ignore_cc' => !empty($settings['ignore_cc']) ? 1 : 0,
+            'ignore_check' => !empty($settings['ignore_check']) ? 1 : 0,
+            'ignore_all' => !empty($settings['ignore_all']) ? 1 : 0,
+            'ignore_limit' => !empty($settings['ignore_limit']) ? 1 : 0,
+            'query_select' => isset($settings['query_select']) && is_string($settings['query_select']) ? trim($settings['query_select']) : '',
+            'query_from' => isset($settings['query_from']) && is_string($settings['query_from']) ? trim($settings['query_from']) : '',
+            'query_join' => isset($settings['query_join']) && is_string($settings['query_join']) ? trim($settings['query_join']) : '',
+            'query_where' => isset($settings['query_where']) && is_string($settings['query_where']) ? trim($settings['query_where']) : '',
+            'query_group' => isset($settings['query_group']) && is_string($settings['query_group']) ? trim($settings['query_group']) : '',
+            'query_having' => isset($settings['query_having']) && is_string($settings['query_having']) ? trim($settings['query_having']) : '',
+            'query_order' => isset($settings['query_order']) && is_string($settings['query_order']) ? trim($settings['query_order']) : '',
+            'query_limit' => isset($settings['query_limit']) && is_string($settings['query_limit']) ? trim($settings['query_limit']) : '',
+            'distinct' => $distinctValue,
+        ];
     }
 
     private function resolveLayoutKey(string $path, array $section, array $site): string
