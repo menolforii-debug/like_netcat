@@ -20,7 +20,8 @@ final class AdminRouter
             return;
         }
 
-        if ($isPost && $action !== 'login') {
+        $csrfRequired = $isPost && $action !== 'login';
+        if ($csrfRequired) {
             if (!is_valid_csrf_token($_POST['csrf_token'] ?? null)) {
                 self::renderError(400, 'Неверный CSRF-токен');
                 return;

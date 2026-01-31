@@ -1,18 +1,18 @@
 <?php
 
+// Важно: requireLogin() уже сработал в AdminRouter (кроме login/logout),
+// но embed должен быть строго admin-only.
 if (!Auth::isAdmin()) {
     http_response_code(403);
     echo 'Недостаточно прав';
-    exit;
+    return;
 }
 
-$managerPath = dirname(__DIR__, 4) . '/app/vendor/tinyfilemanager/tinyfilemanager.php';
+$managerPath = __DIR__ . '/../../../vendor/filegator/index.php';
 if (!is_file($managerPath)) {
     http_response_code(500);
-    echo 'File manager not found';
-    exit;
+    echo 'Filegator not found';
+    return;
 }
-
-define('FM_EMBED', true);
 
 require $managerPath;
