@@ -6,13 +6,13 @@
 
 ## Архитектура и поток запросов
 
-1. Вход: `public_html/index.php` подключает `app/bootstrap.php` и запускает рендеринг через `Renderer::renderSitePath()`.
+1. Вход: `public_html/index.php` подключает `app/public/bootstrap.php` и запускает рендеринг через `Renderer::renderSitePath()`.
 2. `Renderer` выбирает сайт по `HTTP_HOST`, определяет раздел по пути, загружает инфоблоки, выполняет системную выборку объектов и рендерит шаблоны компонентов.
 3. Макет страницы определяется по `sections.extra_json.layout` (раздел), затем по `site` и с откатом на `default`.
 
 ## Слой данных (SQLite)
 
-Схема хранится в `app/schema.sql`. Основные сущности: `sections`, `components`, `infoblocks`, `objects`, `users`, `admin_log`, `visual_fields`, `sql_history`, `snippet`. Данные читаются через репозитории в `app/domain/*Repo.php`.
+Схема хранится в `app/shared/schema.sql`. Основные сущности: `sections`, `components`, `infoblocks`, `objects`, `users`, `admin_log`, `visual_fields`, `sql_history`, `snippet`. Данные читаются через репозитории в `app/shared/domain/*Repo.php`.
 
 ## Шаблоны и макеты
 
@@ -32,7 +32,7 @@
 - Шаблоны компонентов (`templates/component/...`).
 - Макеты и nav‑файлы (`templates/layouts/...`).
 - Врезки (`templates/snippets/*.php`) через `insert_snip()`.
-- События домена в `app/events.php`.
+- События домена в `app/shared/events.php`.
 
 ## Рекомендации для дальнейшей работы
 
@@ -56,35 +56,35 @@
 
 ### Меню
 
-- `Layout::getMainMenuItems()` использует `Nav` как единый источник данных меню и строит дерево на основе `core()->nav()` вместо прямого обращения к `SectionRepo`.【F:app/ui/Layout.php†L196-L310】【F:app/nav/Nav.php†L40-L114】
+- `Layout::getMainMenuItems()` использует `Nav` как единый источник данных меню и строит дерево на основе `core()->nav()` вместо прямого обращения к `SectionRepo`.【F:app/shared/ui/Layout.php†L196-L310】【F:app/shared/nav/Nav.php†L40-L114】
 
 ### Пагинация
 
-- Для пагинации используется `Layout::renderPagination()` и `Layout::getPaginationItems()` как единый механизм.【F:app/ui/Layout.php†L87-L194】
+- Для пагинации используется `Layout::renderPagination()` и `Layout::getPaginationItems()` как единый механизм.【F:app/shared/ui/Layout.php†L87-L194】
 
 ### Парсинг шаблонных тегов
 
-- Используется единая реализация `Utils::stripSystemTemplateTags()` без дублирующих функций в админке.【F:app/core/Utils.php†L38-L48】【F:app/admin/AdminHelpers.php†L620-L673】
+- Используется единая реализация `Utils::stripSystemTemplateTags()` без дублирующих функций в админке.【F:app/shared/core/Utils.php†L38-L48】【F:app/admin/AdminHelpers.php†L620-L673】
 
 ### decodeExtra и построение пути раздела
 
-- Для декодирования `extra_json` используется `Utils::decodeExtra()` без промежуточных обёрток в `AdminHelpers`.【F:app/core/Utils.php†L24-L35】
-- Построение пути раздела выполняется через `SectionRepo::buildPath()` напрямую.【F:app/domain/SectionRepo.php†L356-L382】
+- Для декодирования `extra_json` используется `Utils::decodeExtra()` без промежуточных обёрток в `AdminHelpers`.【F:app/shared/core/Utils.php†L24-L35】
+- Построение пути раздела выполняется через `SectionRepo::buildPath()` напрямую.【F:app/shared/domain/SectionRepo.php†L356-L382】
 
 ## Предложения по удалению дублей
 
 ### 1) Меню: единый источник (Nav)
 
-Меню унифицировано через `Nav`: `Layout::getMainMenuItems()` использует `core()->nav()` и больше не строит дерево через `SectionRepo`. Это устраняет дублирование источников данных для меню.【F:app/ui/Layout.php†L196-L310】【F:app/nav/Nav.php†L40-L114】
+Меню унифицировано через `Nav`: `Layout::getMainMenuItems()` использует `core()->nav()` и больше не строит дерево через `SectionRepo`. Это устраняет дублирование источников данных для меню.【F:app/shared/ui/Layout.php†L196-L310】【F:app/shared/nav/Nav.php†L40-L114】
 
 ### 2) Пагинация: единый механизм
 
-Постраничная навигация унифицирована через `Layout::renderPagination()` и `Layout::getPaginationItems()` (без альтернативных функций).【F:app/ui/Layout.php†L87-L194】
+Постраничная навигация унифицирована через `Layout::renderPagination()` и `Layout::getPaginationItems()` (без альтернативных функций).【F:app/shared/ui/Layout.php†L87-L194】
 
 ### 3) `stripSystemTemplateTags`: единая реализация
 
-Единственным источником остаётся `Utils::stripSystemTemplateTags()`, локальная функция в `AdminHelpers` удалена, вызовы переведены на `Utils` напрямую.【F:app/core/Utils.php†L38-L48】【F:app/admin/AdminHelpers.php†L620-L673】
+Единственным источником остаётся `Utils::stripSystemTemplateTags()`, локальная функция в `AdminHelpers` удалена, вызовы переведены на `Utils` напрямую.【F:app/shared/core/Utils.php†L38-L48】【F:app/admin/AdminHelpers.php†L620-L673】
 
 ### 4) `decodeExtra` и `buildSectionPathFromId`: обёртки удалены
 
-Вызовы переведены на `Utils::decodeExtra()` и `SectionRepo::buildPath()` напрямую, обёртки в `AdminHelpers` больше не используются.【F:app/core/Utils.php†L24-L35】【F:app/domain/SectionRepo.php†L356-L382】
+Вызовы переведены на `Utils::decodeExtra()` и `SectionRepo::buildPath()` напрямую, обёртки в `AdminHelpers` больше не используются.【F:app/shared/core/Utils.php†L24-L35】【F:app/shared/domain/SectionRepo.php†L356-L382】

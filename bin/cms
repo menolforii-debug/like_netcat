@@ -7,7 +7,6 @@ declare(strict_types=1);
  * Optional tool: site must not depend on it.
  *
  * Usage:
- *   php bin/cms migrate
  *   php bin/cms sections:list
  *   php bin/cms sections:add --parent-id=1 --english-name=news --title="Новости" [--sort=0]
  *   php bin/cms sections:add --title="Новый сайт"
@@ -24,7 +23,8 @@ if ($root === false) {
     exit(1);
 }
 
-require $root . '/app/bootstrap.php'; // provides $core, runs migrations already (idempotent)
+require $root . '/app/shared/bootstrap.php';
+require $root . '/app/shared/core/Auth.php';
 
 $args = $argv;
 array_shift($args);
@@ -44,7 +44,6 @@ function parse_kv_args(array $args): array {
 function help(): void {
     echo "cms.devel9.ru CLI\n\n";
     echo "Commands:\n";
-    echo "  migrate\n";
     echo "  sections:list\n";
     echo "  sections:add --parent-id=1 --english-name=news --title=\"Новости\" [--sort=0]\n";
     echo "  sections:add --title=\"Новый сайт\" (creates site)\n";
@@ -61,11 +60,6 @@ switch ($cmd) {
     case '--help':
     case '-h':
         help();
-        exit(0);
-
-    case 'migrate':
-        // migrations run in bootstrap.php; just confirm
-        echo "Migrations OK\n";
         exit(0);
 
     case 'sections:list': {

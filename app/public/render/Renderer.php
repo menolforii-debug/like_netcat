@@ -496,7 +496,7 @@ final class Renderer
             return false;
         }
 
-        $dir = __DIR__ . '/../../templates/component/' . $componentKey . '/' . $view;
+        $dir = __DIR__ . '/../../../templates/component/' . $componentKey . '/' . $view;
         if (!is_dir($dir)) {
             return false;
         }
@@ -517,7 +517,7 @@ final class Renderer
             return '';
         }
 
-        $baseDir = __DIR__ . '/../../templates/component';
+        $baseDir = __DIR__ . '/../../../templates/component';
         $baseReal = realpath($baseDir);
         if ($baseReal === false) {
             return '';
@@ -558,7 +558,7 @@ final class Renderer
             return '';
         }
 
-        $baseDir = __DIR__ . '/../../templates/component';
+        $baseDir = __DIR__ . '/../../../templates/component';
         $baseReal = realpath($baseDir);
         if ($baseReal === false) {
             return '';
