@@ -4,6 +4,8 @@ if (!Auth::isAdmin()) {
     redirectTo(buildAdminUrl(['error' => 'Недостаточно прав']));
 }
 
+$flash = adminFlashConsume();
+
 $layouts = LayoutCatalog::listLayouts();
 $layoutKey = isset($_GET['layout']) ? trim((string) $_GET['layout']) : '';
 $tab = isset($_GET['tab']) ? (string) $_GET['tab'] : 'layout';
@@ -101,6 +103,22 @@ AdminLayout::closeSidebar();
 AdminLayout::openContent();
 echo '<div class="card shadow-sm">';
 echo '<div class="card-body">';
+
+// Flash messages (errors/success)
+if (!empty($flash)) {
+    foreach ($flash as $item) {
+        if (!is_array($item)) {
+            continue;
+        }
+        $type = (string) ($item['type'] ?? '');
+        $msg = (string) ($item['message'] ?? '');
+        if ($msg === '') {
+            continue;
+        }
+        $class = $type === 'success' ? 'alert alert-success' : 'alert alert-danger';
+        echo '<div class="' . $class . '">' . htmlspecialchars($msg, ENT_QUOTES, 'UTF-8') . '</div>';
+    }
+}
 
 echo '<ul class="nav nav-tabs mb-3">';
 $layoutTabLabel = $layoutKey === '_new' ? 'Новый макет' : 'Редактирование макета';

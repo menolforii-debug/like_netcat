@@ -38,6 +38,7 @@ app/admin/actions/post/<action>.php
 - `jsonResponse($payload, $status)`
 - `redirectTo($url)`
 - `csrf_token_field()`
+- `adminFlashSet($type, $message)` и `adminFlashConsume()` — краткоживущие сообщения об успехе/ошибке между редиректами.
 
 ## `CSRF`
 Для `POST`‑действий (кроме `login`) проверяется `csrf_token`:
@@ -64,6 +65,13 @@ POST-действия для страницы макетов (`/admin.php?action
 - `layout_delete` — удаляет файлы макета (кроме системных `default` и `home`).
 
 Во всех формах используйте `csrf_token_field()` и валидируйте ключ макета через `layoutKeyIsValid()`.
+
+Для пользовательского фидбэка используйте флеш-сообщения:
+- перед редиректом зовите `adminFlashSet('success'|'error', 'Сообщение')`;
+- на странице `GET`‑формы выводите `adminFlashConsume()` и отображайте список сообщений.
+
+`writeLayoutTemplate()` и `writeLayoutNavTemplate()` дополнительно проверяют доступность директории
+`templates/layouts/` для записи и возвращают текст ошибки через `$error`, если папка недоступна.
 
 ### Пример `browse_messages()` в админке
 

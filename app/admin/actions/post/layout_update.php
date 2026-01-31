@@ -1,7 +1,8 @@
 <?php
 
 if (!Auth::isAdmin()) {
-    redirectTo(buildAdminUrl(['error' => 'Недостаточно прав']));
+    adminFlashSet('error', 'Недостаточно прав');
+    redirectTo(buildAdminUrl(['action' => 'layouts']));
 }
 
 $layoutKey = isset($_POST['layout_key']) ? trim((string) $_POST['layout_key']) : '';
@@ -9,37 +10,26 @@ $layoutTpl = isset($_POST['layout_tpl']) ? (string) $_POST['layout_tpl'] : '';
 $layoutNavTpl = isset($_POST['layout_nav_tpl']) ? (string) $_POST['layout_nav_tpl'] : '';
 
 if ($layoutKey === '' || !layoutKeyIsValid($layoutKey)) {
-    redirectTo(buildAdminUrl([
-        'action' => 'layouts',
-        'error' => 'Некорректный ключ макета',
-    ]));
+    adminFlashSet('error', 'Некорректный ключ макета');
+    redirectTo(buildAdminUrl(['action' => 'layouts']));
 }
 
 if (!LayoutCatalog::layoutExists($layoutKey)) {
-    redirectTo(buildAdminUrl([
-        'action' => 'layouts',
-        'error' => 'Макет не найден',
-    ]));
+    adminFlashSet('error', 'Макет не найден');
+    redirectTo(buildAdminUrl(['action' => 'layouts']));
 }
 
 if (trim($layoutTpl) === '') {
-    redirectTo(buildAdminUrl([
-        'action' => 'layouts',
-        'layout' => $layoutKey,
-        'error' => 'Шаблон макета не может быть пустым',
-    ]));
+    adminFlashSet('error', 'Шаблон макета не может быть пустым');
+    redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey]));
 }
 
 $error = null;
 if (!writeLayoutTemplate($layoutKey, $layoutTpl, $error)) {
-    redirectTo(buildAdminUrl([
-        'action' => 'layouts',
-        'layout' => $layoutKey,
-        'error' => $error ?: 'Не удалось сохранить макет',
-    ]));
+    adminFlashSet('error', $error ?: 'Не удалось сохранить макет');
+    redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey]));
 }
 
-// nav.php — опционален: пустой => удалить, непустой => сохранить
 $navPath = layoutNavTemplatesDir() . '/' . $layoutKey . '.nav.php';
 if (trim($layoutNavTpl) === '') {
     if (is_file($navPath)) {
@@ -48,15 +38,10 @@ if (trim($layoutNavTpl) === '') {
 } else {
     $navError = null;
     if (!writeLayoutNavTemplate($layoutKey, $layoutNavTpl, $navError)) {
-        redirectTo(buildAdminUrl([
-            'action' => 'layouts',
-            'layout' => $layoutKey,
-            'error' => $navError ?: 'Не удалось сохранить шаблон навигации',
-        ]));
+        adminFlashSet('error', $navError ?: 'Не удалось сохранить шаблон навигации');
+        redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey]));
     }
 }
 
-redirectTo(buildAdminUrl([
-    'action' => 'layouts',
-    'layout' => $layoutKey,
-]));
+adminFlashSet('success', 'Изменения сохранены');
+redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey]));

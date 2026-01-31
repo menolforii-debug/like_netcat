@@ -3,6 +3,28 @@
 require_once __DIR__ . '/../shared/runtime_guard.php';
 assert_runtime('admin');
 
+// ---------------- Flash messages (admin) ----------------
+function adminFlashSet(string $type, string $message): void
+{
+    if (!isset($_SESSION)) {
+        return;
+    }
+    if (!isset($_SESSION['admin_flash']) || !is_array($_SESSION['admin_flash'])) {
+        $_SESSION['admin_flash'] = [];
+    }
+    $_SESSION['admin_flash'][] = ['type' => $type, 'message' => $message];
+}
+
+function adminFlashConsume(): array
+{
+    if (!isset($_SESSION) || empty($_SESSION['admin_flash']) || !is_array($_SESSION['admin_flash'])) {
+        return [];
+    }
+    $items = $_SESSION['admin_flash'];
+    unset($_SESSION['admin_flash']);
+    return is_array($items) ? $items : [];
+}
+
 function redirectTo(string $url): void
 {
     header('Location: ' . $url);
@@ -741,18 +763,28 @@ function writeLayoutTemplate(string $layoutKey, string $content, ?string &$error
 
     $templatesDir = layoutTemplatesDir();
     if (!is_dir($templatesDir)) {
-        mkdir($templatesDir, 0770, true);
-        @chmod($templatesDir, 0770);
+        mkdir($templatesDir, 0775, true);
+        @chmod($templatesDir, 0775);
+    }
+
+    if (!is_writable($templatesDir)) {
+        $error = 'Папка макетов недоступна для записи: ' . $templatesDir;
+        return false;
     }
 
     $finalPath = $templatesDir . '/' . $layoutKey . '.php';
     $tmpPath = $finalPath . '.tmp';
 
-    if (file_put_contents($tmpPath, $content) === false) {
-        $error = 'Не удалось сохранить макет.';
+    $bytes = @file_put_contents($tmpPath, $content);
+    if ($bytes === false) {
+        $permsDir = @substr(sprintf('%o', @fileperms($templatesDir)), -4);
+        $ownerDir = function_exists('posix_getpwuid') ? @posix_getpwuid(@fileowner($templatesDir)) : null;
+        $ownerName = is_array($ownerDir) && isset($ownerDir['name']) ? $ownerDir['name'] : 'unknown';
+        $error = 'Не удалось сохранить макет. Проверь права на запись. ' .
+            'dir_perms=' . ($permsDir ?: '????') . ', dir_owner=' . $ownerName . ', dir=' . $templatesDir;
         return false;
     }
-    @chmod($tmpPath, 0660);
+    @chmod($tmpPath, 0664);
 
     $lintOutput = @shell_exec('php -l ' . escapeshellarg($tmpPath));
     if ($lintOutput !== null && stripos($lintOutput, 'No syntax errors detected') === false) {
@@ -778,7 +810,7 @@ function writeLayoutTemplate(string $layoutKey, string $content, ?string &$error
         $error = 'Не удалось обновить макет.';
         return false;
     }
-    @chmod($finalPath, 0660);
+    @chmod($finalPath, 0664);
 
     return true;
 }
@@ -792,18 +824,28 @@ function writeLayoutNavTemplate(string $layoutKey, string $content, ?string &$er
 
     $templatesDir = layoutNavTemplatesDir();
     if (!is_dir($templatesDir)) {
-        mkdir($templatesDir, 0770, true);
-        @chmod($templatesDir, 0770);
+        mkdir($templatesDir, 0775, true);
+        @chmod($templatesDir, 0775);
+    }
+
+    if (!is_writable($templatesDir)) {
+        $error = 'Папка макетов недоступна для записи: ' . $templatesDir;
+        return false;
     }
 
     $finalPath = $templatesDir . '/' . $layoutKey . '.nav.php';
     $tmpPath = $finalPath . '.tmp';
 
-    if (file_put_contents($tmpPath, $content) === false) {
-        $error = 'Не удалось сохранить шаблон навигации.';
+    $bytes = @file_put_contents($tmpPath, $content);
+    if ($bytes === false) {
+        $permsDir = @substr(sprintf('%o', @fileperms($templatesDir)), -4);
+        $ownerDir = function_exists('posix_getpwuid') ? @posix_getpwuid(@fileowner($templatesDir)) : null;
+        $ownerName = is_array($ownerDir) && isset($ownerDir['name']) ? $ownerDir['name'] : 'unknown';
+        $error = 'Не удалось сохранить шаблон навигации. Проверь права на запись. ' .
+            'dir_perms=' . ($permsDir ?: '????') . ', dir_owner=' . $ownerName . ', dir=' . $templatesDir;
         return false;
     }
-    @chmod($tmpPath, 0660);
+    @chmod($tmpPath, 0664);
 
     $lintOutput = @shell_exec('php -l ' . escapeshellarg($tmpPath));
     if ($lintOutput !== null && stripos($lintOutput, 'No syntax errors detected') === false) {
@@ -829,7 +871,7 @@ function writeLayoutNavTemplate(string $layoutKey, string $content, ?string &$er
         $error = 'Не удалось обновить шаблон навигации.';
         return false;
     }
-    @chmod($finalPath, 0660);
+    @chmod($finalPath, 0664);
 
     return true;
 }

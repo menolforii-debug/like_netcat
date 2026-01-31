@@ -1,32 +1,25 @@
 <?php
 
 if (!Auth::isAdmin()) {
-    redirectTo(buildAdminUrl(['error' => 'Недостаточно прав']));
+    adminFlashSet('error', 'Недостаточно прав');
+    redirectTo(buildAdminUrl(['action' => 'layouts']));
 }
 
 $layoutKey = isset($_POST['layout_key']) ? trim((string) $_POST['layout_key']) : '';
 
 if ($layoutKey === '' || !layoutKeyIsValid($layoutKey)) {
-    redirectTo(buildAdminUrl([
-        'action' => 'layouts',
-        'error' => 'Некорректный ключ макета',
-    ]));
+    adminFlashSet('error', 'Некорректный ключ макета');
+    redirectTo(buildAdminUrl(['action' => 'layouts']));
 }
 
-// системные макеты защищаем (как и UI)
 if (in_array($layoutKey, ['default', 'home'], true)) {
-    redirectTo(buildAdminUrl([
-        'action' => 'layouts',
-        'layout' => $layoutKey,
-        'error' => 'Системный макет нельзя удалить',
-    ]));
+    adminFlashSet('error', 'Системный макет нельзя удалить');
+    redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey]));
 }
 
 if (!LayoutCatalog::layoutExists($layoutKey)) {
-    redirectTo(buildAdminUrl([
-        'action' => 'layouts',
-        'error' => 'Макет не найден',
-    ]));
+    adminFlashSet('error', 'Макет не найден');
+    redirectTo(buildAdminUrl(['action' => 'layouts']));
 }
 
 $templatesDir = realpath(layoutTemplatesDir());
@@ -46,17 +39,12 @@ foreach ([$layoutPath, $navPath] as $path) {
     if ($real === false) {
         continue;
     }
-    // безопасность: удаляем только внутри templates/layouts/
     if (!str_starts_with(rtrim($real, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR, $templatesDir)) {
-        redirectTo(buildAdminUrl([
-            'action' => 'layouts',
-            'layout' => $layoutKey,
-            'error' => 'Запрещено удалять файлы вне директории макетов',
-        ]));
+        adminFlashSet('error', 'Запрещено удалять файлы вне директории макетов');
+        redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey]));
     }
     @unlink($real);
 }
 
-redirectTo(buildAdminUrl([
-    'action' => 'layouts',
-]));
+adminFlashSet('success', 'Макет удалён');
+redirectTo(buildAdminUrl(['action' => 'layouts']));
