@@ -1,7 +1,6 @@
 <?php
 
-require __DIR__ . '/../app/bootstrap.php';
-require __DIR__ . '/../app/admin/AdminHelpers.php';
+require __DIR__ . '/../app/admin/bootstrap.php';
 
 if (!Auth::isAdmin()) {
     http_response_code(403);

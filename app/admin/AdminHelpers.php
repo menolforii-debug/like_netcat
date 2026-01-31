@@ -268,7 +268,7 @@ function deleteUploadedFile(string $publicPath): void
     error_log('deleteUploadedFile: normalized=' . $path);
 
     // Поднимаемся из app/admin в корень проекта, чтобы удалить файл из public_html.
-    $root = dirname(__DIR__, 2);
+    $root = dirname(__DIR__, 3);
     $fullPath = $root . '/public_html' . $path;
     if (!file_exists($fullPath)) {
         error_log('deleteUploadedFile: not found fullPath=' . $fullPath);
@@ -616,7 +616,7 @@ function normalizeComponentFieldsInput(array $fieldsInput): array
 
 function componentActionTemplatePath(string $componentKey): string
 {
-    return dirname(__DIR__, 2) . '/templates/component/' . $componentKey . '/actions.php';
+    return dirname(__DIR__, 3) . '/templates/component/' . $componentKey . '/actions.php';
 }
 
 function readComponentActionTemplate(string $componentKey): string
@@ -669,12 +669,12 @@ function writeComponentActionTemplate(string $componentKey, string $template, ?s
 
 function layoutTemplatesDir(): string
 {
-    return dirname(__DIR__, 2) . '/templates/layouts';
+    return dirname(__DIR__, 3) . '/templates/layouts';
 }
 
 function layoutNavTemplatesDir(): string
 {
-    return dirname(__DIR__, 2) . '/templates/layouts';
+    return dirname(__DIR__, 3) . '/templates/layouts';
 }
 
 function readLayoutTemplate(string $layoutKey): ?string
@@ -759,7 +759,7 @@ function writeLayoutTemplate(string $layoutKey, string $content, ?string &$error
     }
 
     if (is_file($finalPath)) {
-        $backupDir = dirname(__DIR__, 2) . '/var/backups/layouts';
+        $backupDir = dirname(__DIR__, 3) . '/var/backups/layouts';
         if (!is_dir($backupDir)) {
             mkdir($backupDir, 0770, true);
             @chmod($backupDir, 0770);
@@ -810,7 +810,7 @@ function writeLayoutNavTemplate(string $layoutKey, string $content, ?string &$er
     }
 
     if (is_file($finalPath)) {
-        $backupDir = dirname(__DIR__, 2) . '/var/backups/layouts';
+        $backupDir = dirname(__DIR__, 3) . '/var/backups/layouts';
         if (!is_dir($backupDir)) {
             mkdir($backupDir, 0770, true);
             @chmod($backupDir, 0770);

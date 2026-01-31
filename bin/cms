@@ -24,7 +24,8 @@ if ($root === false) {
     exit(1);
 }
 
-require $root . '/app/bootstrap.php'; // provides $core, runs migrations already (idempotent)
+require $root . '/app/shared/bootstrap.php';
+require $root . '/app/shared/core/Auth.php';
 
 $args = $argv;
 array_shift($args);

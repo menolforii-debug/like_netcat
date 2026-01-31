@@ -1,7 +1,5 @@
 <?php
 
-require __DIR__ . '/../app/bootstrap.php';
-require __DIR__ . '/../app/admin/AdminHelpers.php';
-require __DIR__ . '/../app/admin/AdminRouter.php';
+require __DIR__ . '/../app/admin/bootstrap.php';
 
 AdminRouter::run();

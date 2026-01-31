@@ -243,7 +243,7 @@ final class Layout
 
     public static function listLayouts(): array
     {
-        $path = dirname(__DIR__, 2) . '/templates/layouts/*.php';
+        $path = dirname(__DIR__, 3) . '/templates/layouts/*.php';
         $files = glob($path) ?: [];
         $layouts = [];
         foreach ($files as $file) {
@@ -262,12 +262,12 @@ final class Layout
 
     private static function layoutPath(string $layoutKey): string
     {
-        return dirname(__DIR__, 2) . '/templates/layouts/' . $layoutKey . '.php';
+        return dirname(__DIR__, 3) . '/templates/layouts/' . $layoutKey . '.php';
     }
 
     private static function layoutNavPath(string $layoutKey): string
     {
-        return dirname(__DIR__, 2) . '/templates/layouts/' . $layoutKey . '.nav.php';
+        return dirname(__DIR__, 3) . '/templates/layouts/' . $layoutKey . '.nav.php';
     }
 
     private static function buildMenuItemsFromNav(Nav $nav, array $items, int $currentId, int $depth, int $maxDepth): array

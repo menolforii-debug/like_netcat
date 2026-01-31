@@ -10,7 +10,7 @@
 ## 1) Архитектура: краткая схема
 
 - `public_html/index.php`
-  → `app/bootstrap.php`
+  → `app/public/bootstrap.php`
   → `Renderer::renderSitePath()`
   → `SectionRepo::findByPath()`
   → инфоблоки/компоненты/objects
@@ -27,11 +27,12 @@
 
 | Файл | Роль | Когда трогать |
 | --- | --- | --- |
-| `app/bootstrap.php` | Инициализация ядра, глобальные функции, default-данные. | Добавлять/менять глобальные helpers, дефолты. |
-| `app/render/Renderer.php` | Публичный рендер и системные выборки. | Менять системные запросы, пагинацию, контекст шаблонов. |
-| `app/nav/Nav.php` | Навигация `core()->nav()`. | Логика меню, active/current, фильтры. |
-| `app/ui/Layout.php` | Макеты, nav-файлы, helpers (меню/пагинация). | Развитие layout-ов и меню. |
-| `app/domain/*Repo.php` | Репозитории (CRUD/выборки). | Расширение CRUD или поиск. |
+| `app/shared/bootstrap.php` | Базовая инициализация (DB, Core, repo, events). | Общие зависимости/инициализация. |
+| `app/public/bootstrap.php` | Публичные helpers и default-данные. | Публичные helper-функции, дефолты. |
+| `app/public/render/Renderer.php` | Публичный рендер и системные выборки. | Менять системные запросы, пагинацию, контекст шаблонов. |
+| `app/shared/nav/Nav.php` | Навигация `core()->nav()`. | Логика меню, active/current, фильтры. |
+| `app/shared/ui/Layout.php` | Макеты, nav-файлы, helpers (меню/пагинация). | Развитие layout-ов и меню. |
+| `app/shared/domain/*Repo.php` | Репозитории (CRUD/выборки). | Расширение CRUD или поиск. |
 | `templates/layouts/*` | Макеты и nav-файлы. | UI/верстка, меню, общие блоки. |
 | `templates/component/*` | Шаблоны компонентов. | Вывод list/single. |
 
