@@ -26,6 +26,8 @@
 - Точка входа: `public_html/admin.php`, маршрутизация через `AdminRouter`.
 - CSRF‑проверка для POST‑запросов.
 - Роли: `admin` и `editor` (ограничения определены в `AdminRouter` и `Permission`).
+- Action‑файлы исполняются через единый executor в `AdminRouter` с централизованным обработчиком ошибок.
+- Для POST‑actions (кроме `login`) ведётся минимальный audit‑лог (action + method) без изменения бизнес‑логики.
 
 ## Точки расширения
 
