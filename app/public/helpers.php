@@ -171,20 +171,11 @@ function objects_list(array $filters): array
             unset($GLOBALS['_snip_scope']);
         }
 
-        $result[] = [
-            'data' => $item,
-            'content' => $rendered,
-        ];
+        // ✅ Сохраняем старый контракт: массив HTML-строк
+        $result[] = $rendered;
     }
 
-    return [
-        'items' => $result,
-        'section' => $section,
-        'site' => $site,
-        'settings' => $settings,
-        'message_select' => $message_select,
-        'edit_mode' => $editMode,
-    ];
+    return $result;
 }
 
 function insert_snip(string $keyword, array $vars = []): string
