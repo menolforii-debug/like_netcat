@@ -515,8 +515,11 @@ document.addEventListener('click', (e) => {
   const btn = e.target.closest('.js-component-toggle');
   if (!btn) return;
 
-  e.preventDefault();
-  e.stopPropagation();
+  const isLink = btn.tagName === 'A';
+  if (!isLink) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
 
   const compId = btn.getAttribute('data-component-id');
   if (!compId) return;

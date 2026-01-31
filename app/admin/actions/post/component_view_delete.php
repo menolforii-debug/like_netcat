@@ -4,14 +4,22 @@ if (!Auth::isAdmin()) {
     redirectTo(buildAdminUrl(['error' => 'Недостаточно прав']));
 }
 
-$viewId = isset($_POST['view_id']) ? (int) $_POST['view_id'] : 0;
 $componentId = isset($_POST['component_id']) ? (int) $_POST['component_id'] : 0;
+$view = isset($_POST['view']) ? trim((string) $_POST['view']) : '';
 
-if ($viewId <= 0 || $componentId <= 0) {
+if ($componentId <= 0) {
     if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Шаблон не найден']);
+        jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
     }
-    redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Шаблон не найден']));
+    redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Компонент не найден']));
+}
+
+if ($view === '' || !preg_match('/^[A-Za-z0-9_-]+$/', $view)) {
+    $message = 'Некорректное имя шаблона';
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => $message]);
+    }
+    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => 'templates', 'error' => $message]));
 }
 
 $component = $componentRepo->findById($componentId);
@@ -22,38 +30,61 @@ if ($component === null) {
     redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Компонент не найден']));
 }
 
-$viewRepo = new ComponentViewRepo();
-$viewRow = $viewRepo->findById($viewId);
-if ($viewRow === null || (int) $viewRow['component_id'] !== $componentId) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Шаблон не найден']);
+$views = [];
+$decodedViews = json_decode((string) ($component['views_json'] ?? ''), true);
+if (is_array($decodedViews)) {
+    foreach ($decodedViews as $existingView) {
+        if (is_string($existingView) && $existingView !== '') {
+            $views[] = $existingView;
+        }
     }
-    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'error' => 'Шаблон не найден']));
 }
 
-if ($viewRepo->countForComponent($componentId) <= 1) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Нельзя удалить последний шаблон']);
+$views = array_values(array_filter($views, static function ($item) use ($view): bool {
+    return $item !== $view;
+}));
+
+$fields = [];
+$decodedFields = json_decode((string) ($component['fields_json'] ?? '[]'), true);
+if (is_array($decodedFields)) {
+    $fields = $decodedFields['fields'] ?? $decodedFields;
+    if (!is_array($fields)) {
+        $fields = [];
     }
-    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'view' => (string) $viewRow['name'], 'error' => 'Нельзя удалить последний шаблон']));
 }
 
-$viewName = (string) $viewRow['name'];
-$viewRepo->delete($viewId);
-syncComponentViewsJson($componentId);
+$componentRepo->update($componentId, (string) ($component['keyword'] ?? ''), (string) ($component['name'] ?? ''), $fields, $views);
 
-$templatePath = dirname(__DIR__, 3) . '/templates/component/' . (string) $component['keyword'] . '/' . $viewName . '.php';
-if (is_file($templatePath)) {
-    @unlink($templatePath);
+$root = dirname(__DIR__, 4);
+$baseDir = $root . '/templates/component';
+$baseReal = realpath($baseDir);
+if ($baseReal !== false) {
+    $baseReal = rtrim($baseReal, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+    $componentKey = (string) ($component['keyword'] ?? '');
+    if ($componentKey !== '' && preg_match('/^[A-Za-z0-9_-]+$/', $componentKey)) {
+        $viewDir = $baseReal . $componentKey . '/' . $view;
+        $realViewDir = realpath($viewDir);
+        if ($realViewDir !== false && strpos($realViewDir . DIRECTORY_SEPARATOR, $baseReal) === 0) {
+            foreach (['list.php', 'single.php', 'system.php'] as $fileName) {
+                $filePath = $realViewDir . '/' . $fileName;
+                if (is_file($filePath)) {
+                    unlink($filePath);
+                }
+            }
+            @rmdir($realViewDir);
+        }
+    }
 }
 
 if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
         'message' => 'Шаблон удален',
-        'refresh' => ['#componentsSidebar', '#componentsContent'],
-        'focus' => ['component_id' => $componentId],
+        'refresh' => ['#components_block'],
     ]);
 }
-
-redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId]));
+redirectTo(buildAdminUrl([
+    'action' => 'components',
+    'component_id' => $componentId,
+    'tab' => 'templates',
+]));

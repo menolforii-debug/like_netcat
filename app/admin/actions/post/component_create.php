@@ -94,7 +94,7 @@ foreach ($fieldsInput as $row) {
     ];
 }
 
-$views = [];
+$views = ['list'];
 
 $existing = $componentRepo->findByKeyword($keyword);
 if ($existing !== null) {
@@ -105,22 +105,6 @@ if ($existing !== null) {
 }
 
 $componentId = $componentRepo->create($keyword, $name, $fields, $views);
-
-$viewRepo = new ComponentViewRepo();
-$defaultListTpl = "<?php foreach (\$objects as \$obj): ?>\n<div><?= htmlspecialchars(\$obj['data']['title'] ?? 'Без заголовка', ENT_QUOTES, 'UTF-8') ?></div>\n<?php endforeach; ?>";
-$defaultSingleTpl = "<?php if (!empty(\$object['data']['title'])): ?>\n<h1><?= htmlspecialchars(\$object['data']['title'], ENT_QUOTES, 'UTF-8') ?></h1>\n<?php endif; ?>";
-$defaultSystemTpl = "<?php\n?>";
-$viewId = $viewRepo->create($componentId, 'list', $defaultListTpl, $defaultSingleTpl, $defaultSystemTpl);
-$error = null;
-if (!writeComponentViewTemplate($keyword, 'list', $defaultListTpl, $defaultSingleTpl, $defaultSystemTpl, $error)) {
-    $viewRepo->delete($viewId);
-    $componentRepo->delete($componentId);
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => $error ?? 'Не удалось создать шаблон']);
-    }
-    redirectTo(buildAdminUrl(['action' => 'component_new', 'error' => $error ?? 'Не удалось создать шаблон']));
-}
-syncComponentViewsJson($componentId);
 
 if ($user) {
     AdminLog::log($user['id'], 'component_create', 'component', $componentId, [
