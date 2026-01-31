@@ -182,11 +182,34 @@ if ($tab === 'visual') {
             echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
             echo '</form>';
             if (!in_array($layoutKey, ['default', 'home'], true)) {
-                echo '<form class="mt-2" method="post" action="/admin.php?action=layout_delete" onsubmit="return confirm(\'Удалить макет?\')">';
-                echo csrf_token_field();
-                echo '<input type="hidden" name="layout_key" value="' . htmlspecialchars($layoutKey, ENT_QUOTES, 'UTF-8') . '">';
-                echo '<button class="btn btn-outline-danger" type="submit">Удалить</button>';
-                echo '</form>';
+                echo '<div class="mt-2">';
+                echo '<button class="btn btn-outline-danger" type="button" data-bs-toggle="modal" data-bs-target="#deleteLayoutModal">';
+                echo 'Удалить';
+                echo '</button>';
+                echo '</div>';
+
+                // Modal confirmation
+                echo '<div class="modal fade" id="deleteLayoutModal" tabindex="-1" aria-hidden="true">';
+                echo '  <div class="modal-dialog">';
+                echo '    <div class="modal-content">';
+                echo '      <div class="modal-header">';
+                echo '        <h5 class="modal-title">Удалить макет?</h5>';
+                echo '        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>';
+                echo '      </div>';
+                echo '      <div class="modal-body">';
+                echo '        Макет <strong>' . htmlspecialchars($layoutKey, ENT_QUOTES, 'UTF-8') . '</strong> будет удалён безвозвратно.';
+                echo '      </div>';
+                echo '      <div class="modal-footer">';
+                echo '        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>';
+                echo '        <form method="post" action="/admin.php?action=layout_delete">';
+                echo              csrf_token_field();
+                echo '          <input type="hidden" name="layout_key" value="' . htmlspecialchars($layoutKey, ENT_QUOTES, 'UTF-8') . '">';
+                echo '          <button class="btn btn-danger" type="submit">Удалить</button>';
+                echo '        </form>';
+                echo '      </div>';
+                echo '    </div>';
+                echo '  </div>';
+                echo '</div>';
             } else {
                 echo '<div class="text-muted small mt-2">Системные макеты нельзя удалить.</div>';
             }

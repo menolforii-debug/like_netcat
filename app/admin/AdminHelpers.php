@@ -712,7 +712,7 @@ function readLayoutNavTemplate(string $layoutKey): ?string
 
 function readDefaultLayoutTemplateFile(): ?string
 {
-    $path = layoutTemplatesDir() . '/default/layout.tpl.php';
+    $path = layoutTemplatesDir() . '/default/default.php';
     if (!is_file($path)) {
         return null;
     }
@@ -723,7 +723,7 @@ function readDefaultLayoutTemplateFile(): ?string
 
 function readDefaultLayoutNavTemplateFile(): ?string
 {
-    $path = layoutNavTemplatesDir() . '/default/nav.tpl.php';
+    $path = layoutNavTemplatesDir() . '/default/default.nav.php';
     if (!is_file($path)) {
         return null;
     }

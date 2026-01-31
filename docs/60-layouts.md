@@ -12,6 +12,14 @@
 
 `Layout::render()` сначала подключает `<layout>.nav.php` (если есть), затем `<layout>.php`.
 
+### Источники шаблона по умолчанию
+Для первичной инициализации используются канонические шаблоны:
+- `templates/layouts/default/default.php`
+- `templates/layouts/default/default.nav.php`
+
+При старте приложения они копируются в `templates/layouts/default.php` и
+`templates/layouts/default.nav.php`, если эти файлы отсутствуют.
+
 ## Контекст `Layout::render()`
 `Renderer` вызывает:
 

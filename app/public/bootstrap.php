@@ -72,25 +72,56 @@ function ensureDefaultLayoutTemplates(string $root): void
         @chmod($templatesDir, 0770);
     }
 
+    // Ensure default layout source directory exists.
+    $defaultSourceDir = $templatesDir . '/default';
+    if (!is_dir($defaultSourceDir)) {
+        mkdir($defaultSourceDir, 0770, true);
+        @chmod($defaultSourceDir, 0770);
+    }
+
+    // New canonical sources:
+    $canonicalLayoutSource = $defaultSourceDir . '/default.php';
+    $canonicalNavSource = $defaultSourceDir . '/default.nav.php';
+
+    // Backward fallback sources (older branches):
+    $legacyLayoutSource = $defaultSourceDir . '/layout.tpl.php';
+    $legacyNavSource = $defaultSourceDir . '/nav.tpl.php';
+
+    // If canonical sources are missing, create them from legacy sources (or empty).
+    if (!is_file($canonicalLayoutSource)) {
+        $content = is_file($legacyLayoutSource) ? file_get_contents($legacyLayoutSource) : '';
+        if ($content === false || $content === null) {
+            $content = '';
+        }
+        file_put_contents($canonicalLayoutSource, (string) $content);
+        @chmod($canonicalLayoutSource, 0660);
+    }
+    if (!is_file($canonicalNavSource)) {
+        $content = is_file($legacyNavSource) ? file_get_contents($legacyNavSource) : '';
+        if ($content === false || $content === null) {
+            $content = '';
+        }
+        file_put_contents($canonicalNavSource, (string) $content);
+        @chmod($canonicalNavSource, 0660);
+    }
+
     $defaultLayoutPath = $templatesDir . '/default.php';
     if (!is_file($defaultLayoutPath)) {
-        $defaultLayoutSource = $templatesDir . '/default/layout.tpl.php';
-        $defaultLayout = is_file($defaultLayoutSource) ? file_get_contents($defaultLayoutSource) : null;
+        $defaultLayout = file_get_contents($canonicalLayoutSource);
         if ($defaultLayout === false || $defaultLayout === null) {
             $defaultLayout = '';
         }
-        file_put_contents($defaultLayoutPath, $defaultLayout);
+        file_put_contents($defaultLayoutPath, (string) $defaultLayout);
         @chmod($defaultLayoutPath, 0660);
     }
 
     $defaultNavPath = $templatesDir . '/default.nav.php';
     if (!is_file($defaultNavPath)) {
-        $defaultNavSource = $templatesDir . '/default/nav.tpl.php';
-        $defaultNav = is_file($defaultNavSource) ? file_get_contents($defaultNavSource) : null;
+        $defaultNav = file_get_contents($canonicalNavSource);
         if ($defaultNav === false || $defaultNav === null) {
             $defaultNav = '';
         }
-        file_put_contents($defaultNavPath, $defaultNav);
+        file_put_contents($defaultNavPath, (string) $defaultNav);
         @chmod($defaultNavPath, 0660);
     }
 }
