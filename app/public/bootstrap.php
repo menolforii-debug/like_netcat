@@ -1,7 +1,10 @@
 <?php
 
+// shared runtime
 require __DIR__ . '/../shared/bootstrap.php';
 require __DIR__ . '/../shared/core/Auth.php';
+
+// public runtime
 require __DIR__ . '/render/Renderer.php';
 require __DIR__ . '/ui/Layout.php';
 require __DIR__ . '/helpers.php';

@@ -23,6 +23,16 @@
 
 ---
 
+## 1.1) Границы runtime (public/admin/shared)
+
+- **Public runtime** стартует из `app/public/bootstrap.php` и подключает только `app/shared/*` + `app/public/*`.
+- **Admin runtime** стартует из `app/admin/bootstrap.php` и подключает только `app/shared/*` + `app/admin/*`.
+- **Shared** — общий код (core, domain, ui), который можно безопасно использовать в обоих runtime.
+- Напрямую подключать public-файлы из admin и admin-файлы из public нельзя.
+- Если логика нужна обеим сторонам — переносим её в `app/shared/*`, не меняя поведение.
+
+---
+
 ## 2) Главные файлы и роли
 
 | Файл | Роль | Когда трогать |
