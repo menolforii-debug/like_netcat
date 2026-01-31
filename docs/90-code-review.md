@@ -18,6 +18,7 @@
 
 - Компоненты: `templates/component/<component_key>/<view>/list.php`, `single.php`, `system.php`.
 - Системные настройки выборки задаются в `system.php` через `ignore_*` и `query_*`.
+- `system.php` может быть пустым (без `return`), тогда настройки считаются пустыми; любые не-массивы логируются и игнорируются в публичном рендере.
 - Макеты: `templates/layouts/<layout>.php` и опционально `<layout>.nav.php`.
 - Дефолтный view при пустом `views_json` — `default`.
 

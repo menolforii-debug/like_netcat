@@ -318,8 +318,22 @@ final class Renderer
         ];
         extract($context, EXTR_SKIP);
         $result = require $systemPath;
+
+        // system.php может быть пустым (без return) — тогда require вернёт 1.
+        // Это валидный кейс: считаем настройки пустыми.
+        if ($result === 1 || $result === null) {
+            $result = [];
+        }
+
+        // Любые другие типы — не валим публичку, но логируем для отладки.
         if (!is_array($result)) {
-            throw new RuntimeException('system.php must return an array.');
+            error_log(sprintf(
+                'Renderer: system.php must return array, got %s (%s) at %s',
+                gettype($result),
+                is_scalar($result) ? (string) $result : 'non-scalar',
+                $systemPath
+            ));
+            $result = [];
         }
 
         $helpers = [];
