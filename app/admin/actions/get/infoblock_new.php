@@ -81,8 +81,6 @@ echo '<button class="btn btn-link p-0 link-dotted js-code-editor-collapse d-none
 echo '</div>';
 echo '</div>';
 echo '</div>';
-echo '<div class="col-md-6"><label class="form-label">Картинка до</label><input class="form-control" type="text" name="before_image"></div>';
-echo '<div class="col-md-6"><label class="form-label">Картинка после</label><input class="form-control" type="text" name="after_image"></div>';
 echo '</div>';
 echo '<div class="mt-3"><button class="btn btn-primary" type="submit">Сохранить</button></div>';
 echo '</form>';

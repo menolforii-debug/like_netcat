@@ -10,8 +10,6 @@ $sort = isset($_POST['sort']) ? (int) $_POST['sort'] : 0;
 $isEnabled = isset($_POST['is_enabled']) ? 1 : 0;
 $beforeHtml = isset($_POST['before_html']) ? (string) $_POST['before_html'] : '';
 $afterHtml = isset($_POST['after_html']) ? (string) $_POST['after_html'] : '';
-$beforeImage = isset($_POST['before_image']) ? (string) $_POST['before_image'] : '';
-$afterImage = isset($_POST['after_image']) ? (string) $_POST['after_image'] : '';
 
 if ($id === 0 || $name === '' || $key === '') {
     if (isAjaxRequest()) {
@@ -47,8 +45,6 @@ if ($existing !== null && (int) $existing['id'] !== $id) {
 $extra = [
     'before_html' => $beforeHtml,
     'after_html' => $afterHtml,
-    'before_image' => $beforeImage,
-    'after_image' => $afterImage,
 ];
 
 $infoblockRepo->update($id, [

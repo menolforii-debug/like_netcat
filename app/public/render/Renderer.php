@@ -228,15 +228,10 @@ final class Renderer
     private function renderInfoblockWithWrappers(array $section, array $site, array $infoblock, array $component, array $items, bool $isSingle, $editMode, array $helpers): string
     {
         $extra = Utils::decodeExtra($infoblock);
-        $beforeImage = isset($extra['before_image']) ? trim((string) $extra['before_image']) : '';
-        $afterImage = isset($extra['after_image']) ? trim((string) $extra['after_image']) : '';
         $beforeHtml = isset($extra['before_html']) ? (string) $extra['before_html'] : '';
         $afterHtml = isset($extra['after_html']) ? (string) $extra['after_html'] : '';
 
         $html = '';
-        if ($beforeImage !== '') {
-            $html .= '<img src="' . htmlspecialchars($beforeImage, ENT_QUOTES, 'UTF-8') . '">';
-        }
         if ($beforeHtml !== '') {
             $html .= $beforeHtml;
         }
@@ -245,9 +240,6 @@ final class Renderer
 
         if ($afterHtml !== '') {
             $html .= $afterHtml;
-        }
-        if ($afterImage !== '') {
-            $html .= '<img src="' . htmlspecialchars($afterImage, ENT_QUOTES, 'UTF-8') . '">';
         }
 
         return $html;

@@ -5,9 +5,14 @@ if (!defined('APP_RUNTIME')) {
 }
 require __DIR__ . '/../shared/runtime_guard.php';
 
+$root = dirname(__DIR__, 2);
+$dbPath = $root . '/var/app.sqlite';
+$isDbNew = !is_file($dbPath);
+
 // shared runtime
 require __DIR__ . '/../shared/bootstrap.php';
 require __DIR__ . '/../shared/core/Auth.php';
+require __DIR__ . '/../shared/ui/Pagination.php';
 
 // public runtime
 require __DIR__ . '/render/Renderer.php';
@@ -16,10 +21,11 @@ require __DIR__ . '/helpers.php';
 
 Auth::start();
 
-$root = dirname(__DIR__, 2);
-ensureDefaultLayoutTemplates($root);
-ensureDefaultSite(isset($_SERVER['HTTP_HOST']) ? (string) $_SERVER['HTTP_HOST'] : '');
-ensureDefaultVisualFields();
+if ($isDbNew) {
+    ensureDefaultLayoutTemplates($root);
+    ensureDefaultSite(isset($_SERVER['HTTP_HOST']) ? (string) $_SERVER['HTTP_HOST'] : '');
+    ensureDefaultVisualFields();
+}
 
 function ensureDefaultSite(string $host): void
 {
