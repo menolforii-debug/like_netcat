@@ -12,7 +12,6 @@ $isDbNew = !is_file($dbPath);
 // shared runtime
 require __DIR__ . '/../shared/bootstrap.php';
 require __DIR__ . '/../shared/core/Auth.php';
-require __DIR__ . '/../shared/ui/Pagination.php';
 
 // public runtime
 require __DIR__ . '/render/Renderer.php';

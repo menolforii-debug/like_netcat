@@ -93,7 +93,7 @@ Layout::renderDocumentStart((string) ($ctx['title'] ?? ''), $ctx['meta'] ?? []);
 <?php Layout::renderDocumentEnd(); ?>
 ```
 
-## Пагинация — отдельный класс
-`Layout` не содержит методов пагинации. Используйте `Pagination::render()` из `app/shared/ui/Pagination.php` прямо в шаблоне компонента.
+## Пагинация — общая функция
+`Layout` не содержит методов пагинации. Используйте `browse_messages()` из `app/shared/core/functions.php` прямо в шаблоне компонента.
 
 Пример см. в `docs/40-templates-and-components.md` и `docs/30-request-flow.md`.

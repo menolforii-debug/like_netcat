@@ -8,7 +8,7 @@ require $root . '/app/shared/core/EventBus.php';
 require $root . '/app/shared/nav/Nav.php';
 require $root . '/app/shared/core/Core.php';
 require $root . '/app/shared/core/Utils.php';
-require $root . '/app/shared/core/Functions.php';
+require $root . '/app/shared/core/functions.php';
 require $root . '/app/shared/core/FieldValidator.php';
 require $root . '/app/shared/core/Seo.php';
 require $root . '/app/shared/domain/SectionRepo.php';

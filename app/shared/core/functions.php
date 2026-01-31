@@ -113,9 +113,15 @@ function browse_messages(array $cc_env, int $range, $user_template = false): str
         'active' => $templates['active'] ?? '%PAGE',
         'unactive' => $templates['unactive'] ?? '<a href="%URL">%PAGE</a>',
         'divider' => $templates['divider'] ?? ' ',
+        'first' => $templates['first'] ?? '<a href="%URL">«</a>',
+        'last' => $templates['last'] ?? '<a href="%URL">»</a>',
+        'prev' => $templates['prev'] ?? '<a href="%URL">‹</a>',
+        'next' => $templates['next'] ?? '<a href="%URL">›</a>',
+        'ellipsis' => $templates['ellipsis'] ?? '...',
     ];
 
     $currentPage = max(1, $currentPage);
+    $totalPages = max(1, $totalPages);
     $range = max(1, $range);
 
     $start = 1;
@@ -134,28 +140,74 @@ function browse_messages(array $cc_env, int $range, $user_template = false): str
         }
     }
 
-    $parts = [];
-    for ($page = $start; $page <= $end; $page++) {
-        $params = $queryParams;
-        $params['page'] = $page;
+    $buildUrl = static function (string $baseUrl, array $params): string {
         $query = http_build_query($params);
-        $url = $baseUrl;
-        if ($query !== '') {
-            $url .= '?' . $query;
+        if ($query === '') {
+            return $baseUrl;
         }
+        $delimiter = str_contains($baseUrl, '?') ? '&' : '?';
+        return $baseUrl . $delimiter . $query;
+    };
 
+    $renderTemplate = static function (string $template, int $page, string $url, int $perPage, int $totalItems): string {
         $from = $perPage > 0 ? (($page - 1) * $perPage + 1) : 0;
         $to = $perPage > 0 ? min($page * $perPage, $totalItems) : 0;
-
-        $replace = [
+        return strtr($template, [
             '%PAGE' => (string) $page,
             '%URL' => $url,
             '%FROM' => (string) $from,
             '%TO' => (string) $to,
-        ];
+        ]);
+    };
+
+    $parts = [];
+    if ($currentPage > 1) {
+        $parts[] = $renderTemplate(
+            $browseMsg['first'],
+            1,
+            $buildUrl($baseUrl, array_merge($queryParams, ['page' => 1])),
+            $perPage,
+            $totalItems
+        );
+        $parts[] = $renderTemplate(
+            $browseMsg['prev'],
+            $currentPage - 1,
+            $buildUrl($baseUrl, array_merge($queryParams, ['page' => $currentPage - 1])),
+            $perPage,
+            $totalItems
+        );
+    }
+
+    if ($start > 1) {
+        $parts[] = $browseMsg['ellipsis'];
+    }
+
+    for ($page = $start; $page <= $end; $page++) {
+        $url = $buildUrl($baseUrl, array_merge($queryParams, ['page' => $page]));
 
         $template = $page === $currentPage ? $browseMsg['active'] : $browseMsg['unactive'];
-        $parts[] = strtr($template, $replace);
+        $parts[] = $renderTemplate($template, $page, $url, $perPage, $totalItems);
+    }
+
+    if ($end < $totalPages) {
+        $parts[] = $browseMsg['ellipsis'];
+    }
+
+    if ($currentPage < $totalPages) {
+        $parts[] = $renderTemplate(
+            $browseMsg['next'],
+            $currentPage + 1,
+            $buildUrl($baseUrl, array_merge($queryParams, ['page' => $currentPage + 1])),
+            $perPage,
+            $totalItems
+        );
+        $parts[] = $renderTemplate(
+            $browseMsg['last'],
+            $totalPages,
+            $buildUrl($baseUrl, array_merge($queryParams, ['page' => $totalPages])),
+            $perPage,
+            $totalItems
+        );
     }
 
     return $browseMsg['prefix'] . implode($browseMsg['divider'], $parts) . $browseMsg['suffix'];

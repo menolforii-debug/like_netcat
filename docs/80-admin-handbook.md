@@ -55,7 +55,25 @@ app/admin/actions/post/<action>.php
 
 ## `LayoutCatalog` и пагинация в админке
 - `LayoutCatalog::listLayouts()` используется для списка макетов.
-- `Pagination::render()` применяется в списках объектов (см. `dashboard`).
+- `browse_messages()` применяется в списках объектов (см. `dashboard`).
+
+### Пример `browse_messages()` в админке
+
+```php
+<?php
+$ccEnv = [
+    'current_page' => $page,
+    'total_pages' => $totalPages,
+    'base_url' => '/admin.php',
+    'query_params' => [
+        'section_id' => $selectedId,
+        'tab' => 'content',
+    ],
+    'per_page' => $perPage,
+    'total_items' => $totalItems,
+];
+echo browse_messages($ccEnv, 10);
+```
 
 ## Файловый менеджер и загрузки
 Админка отображает файловый менеджер через `filemanager` и `filemanager_embed`:

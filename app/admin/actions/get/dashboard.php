@@ -553,12 +553,20 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                         echo '</tbody></table></div>';
                     }
 
-                        Pagination::render($page, $totalPages, '/admin.php', [
-                            'section_id' => $selectedId,
-                            'tab' => 'content',
-                            'content_infoblock_id' => (int) $infoblock['id'],
-                            'show_deleted' => $showDeleted ? 1 : null,
-                        ]);
+                        $ccEnv = [
+                            'current_page' => $page,
+                            'total_pages' => $totalPages,
+                            'base_url' => '/admin.php',
+                            'query_params' => [
+                                'section_id' => $selectedId,
+                                'tab' => 'content',
+                                'content_infoblock_id' => (int) $infoblock['id'],
+                                'show_deleted' => $showDeleted ? 1 : null,
+                            ],
+                            'per_page' => $perPage,
+                            'total_items' => $totalObjects,
+                        ];
+                        echo browse_messages($ccEnv, 10);
 
                         if ($canDelete) {
                             echo '<div class="d-flex justify-content-end mt-3">';

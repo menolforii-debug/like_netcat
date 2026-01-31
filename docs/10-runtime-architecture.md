@@ -28,7 +28,7 @@
 - Затем запускается `AdminRouter::run()`.
 
 ### Инициализационные файлы
-- `app/public/bootstrap.php` — публичный рантайм + базовые зависимости (`Renderer`, `Layout`, `Pagination`, хелперы).
+- `app/public/bootstrap.php` — публичный рантайм + базовые зависимости (`Renderer`, `Layout`, общие функции, хелперы).
 - `app/admin/bootstrap.php` — админский рантайм + админ‑интерфейс.
 - `app/shared/bootstrap.php` — общая инициализация БД, объект ядра, события.
 

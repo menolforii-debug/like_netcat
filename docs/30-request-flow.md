@@ -70,7 +70,7 @@
 - `base_url` (путь текущего раздела);
 - `query_params` — текущие `$_GET` без `page`, `object_id`, `preview_token`.
 
-Эти данные доступны в шаблоне как `$cc_env` и используются с `Pagination::render()` или `browse_messages()`.
+Эти данные доступны в шаблоне как `$cc_env` и используются с `browse_messages()`.
 
 ## Выбор макета
 `Renderer::resolveLayoutKey()`:

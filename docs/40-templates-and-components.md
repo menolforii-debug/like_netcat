@@ -98,17 +98,31 @@ return [
 
 Подробный контракт `system.php` — в `docs/50-system-php-contract.md`.
 
-## Пример пагинации через `Pagination::render()`
+## Пример пагинации через `browse_messages()`
 
 ```php
 <?php
 /** @var array $cc_env */
-Pagination::render(
-    $cc_env['current_page'] ?? null,
-    $cc_env['total_pages'] ?? null,
-    $cc_env['base_url'] ?? null,
-    $cc_env['query_params'] ?? []
-);
+echo browse_messages($cc_env, 7);
+```
+
+### Кастомные шаблоны для пагинации
+
+```php
+<?php
+/** @var array $cc_env */
+echo browse_messages($cc_env, 7, [
+    'prefix' => '<nav class="pagination">',
+    'suffix' => '</nav>',
+    'active' => '<span class="current">%PAGE</span>',
+    'unactive' => '<a href="%URL">%PAGE</a>',
+    'divider' => ' ',
+    'first' => '<a href="%URL">«</a>',
+    'last' => '<a href="%URL">»</a>',
+    'prev' => '<a href="%URL">‹</a>',
+    'next' => '<a href="%URL">›</a>',
+    'ellipsis' => '...',
+]);
 ```
 
 ## Дополнительная точка расширения: `actions.php`
