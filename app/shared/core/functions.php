@@ -145,7 +145,7 @@ function browse_messages(array $cc_env, int $range, $user_template = false): str
         if ($query === '') {
             return $baseUrl;
         }
-        $delimiter = str_contains($baseUrl, '?') ? '&' : '?';
+        $delimiter = (strpos($baseUrl, '?') !== false) ? '&' : '?';
         return $baseUrl . $delimiter . $query;
     };
 
