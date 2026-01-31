@@ -109,11 +109,7 @@ final class AdminRouter
         if (strtolower((string) $requestedWith) === 'xmlhttprequest') {
             return true;
         }
-
-        $ajaxPost = $_POST['ajax'] ?? null;
-        $ajaxGet = $_GET['ajax'] ?? null;
-
-        return (string) $ajaxPost === '1' || (string) $ajaxGet === '1';
+        return false;
     }
 
     /**
@@ -172,6 +168,12 @@ final class AdminRouter
     private static function auditAction(string $action, bool $isPost, ?array $user): void
     {
         if (!$isPost || $action === 'login') {
+            return;
+        }
+
+        // Если action уже сделал редирект/отправил заголовки — не пишем audit,
+        // чтобы не фиксировать "успех" до завершения ответа.
+        if (headers_sent() || self::hasRedirectHeader()) {
             return;
         }
 
