@@ -233,6 +233,10 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
 
             echo '<h1 class="h5 mb-3">Настройки раздела</h1>';
             $extra = decodeExtra($selected);
+            $showInMenuInherit = !array_key_exists('show_in_menu_inherit', $extra) ? true : (bool) $extra['show_in_menu_inherit'];
+            $showInMenuValue = array_key_exists('show_in_menu', $extra) ? (bool) $extra['show_in_menu'] : true;
+            $menuTitle = isset($extra['menu_title']) ? (string) $extra['menu_title'] : '';
+            $h1 = isset($extra['h1']) ? (string) $extra['h1'] : '';
             $siteExtra = $site ? decodeExtra($site) : [];
             $sectionLayout = isset($extra['layout']) ? (string) $extra['layout'] : '';
             $siteLayout = isset($siteExtra['layout']) ? (string) $siteExtra['layout'] : '';
@@ -277,11 +281,41 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                     echo '</select></div>';
                 }
                 echo '<div class="mb-3"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="' . htmlspecialchars((string) ($selected['sort'] ?? 0), ENT_QUOTES, 'UTF-8') . '"></div>';
+                echo '<div class="mb-3">';
+                echo '<div class="fw-semibold mb-2">Публичные настройки</div>';
+                echo '<div class="mb-3"><label class="form-label">H1</label><input class="form-control" type="text" name="h1" value="' . htmlspecialchars($h1, ENT_QUOTES, 'UTF-8') . '"></div>';
+                echo '<div class="mb-3"><label class="form-label">Альтернативное название для меню</label><input class="form-control" type="text" name="menu_title" value="' . htmlspecialchars($menuTitle, ENT_QUOTES, 'UTF-8') . '"></div>';
+                echo '<div><label class="form-label">Показывать в меню</label>';
+                echo '<input type="hidden" name="show_in_menu_inherit" value="0">';
+                echo '<div class="form-check">';
+                echo '<input class="form-check-input js-show-in-menu-inherit" type="checkbox" name="show_in_menu_inherit" value="1"' . ($showInMenuInherit ? ' checked' : '') . '>';
+                echo '<label class="form-check-label">Наследовать</label>';
+                echo '</div>';
+                echo '<input type="hidden" name="show_in_menu" value="0">';
+                echo '<div class="form-check mt-2">';
+                echo '<input class="form-check-input js-show-in-menu" type="checkbox" name="show_in_menu" value="1"' . ($showInMenuValue ? ' checked' : '') . ($showInMenuInherit ? ' disabled' : '') . '>';
+                echo '<label class="form-check-label">Показывать в меню</label>';
+                echo '</div>';
+                echo '</div>';
+                echo '</div>';
 
                 echo '<div class="d-flex justify-content-end gap-2 mt-3">';
                 echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
                 echo '</div>';
                 echo '</form>';
+                echo '<script>';
+                echo 'document.querySelectorAll(\'.js-show-in-menu-inherit\').forEach(function (checkbox) {';
+                echo '  var form = checkbox.closest(\'form\');';
+                echo '  if (!form) return;';
+                echo '  var target = form.querySelector(\'.js-show-in-menu\');';
+                echo '  if (!target) return;';
+                echo '  var applyState = function () {';
+                echo '    target.disabled = checkbox.checked;';
+                echo '  };';
+                echo '  checkbox.addEventListener(\'change\', applyState);';
+                echo '  applyState();';
+                echo '});';
+                echo '</script>';
             } else {
                 echo '<div class="alert alert-light border">Редактирование доступно только для администратора.</div>';
             }

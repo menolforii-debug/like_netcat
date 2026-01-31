@@ -13,4 +13,5 @@
 7. `docs/55-layouts.md` — макеты.
 8. `docs/60-api-reference.md` — полный список API.
 9. `docs/70-scenarios-pitfalls.md` — типовые сценарии.
-10. `docs/cli.md` — CLI утилита.
+10. `docs/80-code-map.md` — карта проекта и рекомендации.
+11. `docs/cli.md` — CLI утилита.
