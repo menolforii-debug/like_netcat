@@ -19,11 +19,6 @@ if (LayoutCatalog::layoutExists($layoutKey)) {
     redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => '_new']));
 }
 
-if (trim($layoutTpl) === '') {
-    adminFlashSet('error', 'Шаблон макета не может быть пустым');
-    redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => '_new']));
-}
-
 $error = null;
 if (!writeLayoutTemplate($layoutKey, $layoutTpl, $error)) {
     adminFlashSet('error', $error ?: 'Не удалось сохранить макет');
