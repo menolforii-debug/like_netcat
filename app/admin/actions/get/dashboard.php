@@ -128,7 +128,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
         $isSite = $selected['parent_id'] === null;
 
         if ($isSite) {
-        $extra = decodeExtra($selected);
+        $extra = Utils::decodeExtra($selected);
         $mirrorsText = isset($extra['site_mirrors']) && is_array($extra['site_mirrors']) ? implode("\n", $extra['site_mirrors']) : '';
         $enabled = !empty($extra['site_enabled']);
         $offlineHtml = isset($extra['site_offline_html']) ? (string) $extra['site_offline_html'] : '';
@@ -232,12 +232,12 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
             }
 
             echo '<h1 class="h5 mb-3">Настройки раздела</h1>';
-            $extra = decodeExtra($selected);
+            $extra = Utils::decodeExtra($selected);
             $showInMenuInherit = !array_key_exists('show_in_menu_inherit', $extra) ? true : (bool) $extra['show_in_menu_inherit'];
             $showInMenuValue = array_key_exists('show_in_menu', $extra) ? (bool) $extra['show_in_menu'] : true;
             $menuTitle = isset($extra['menu_title']) ? (string) $extra['menu_title'] : '';
             $h1 = isset($extra['h1']) ? (string) $extra['h1'] : '';
-            $siteExtra = $site ? decodeExtra($site) : [];
+            $siteExtra = $site ? Utils::decodeExtra($site) : [];
             $sectionLayout = isset($extra['layout']) ? (string) $extra['layout'] : '';
             $siteLayout = isset($siteExtra['layout']) ? (string) $siteExtra['layout'] : '';
             $currentLayout = '';
@@ -331,8 +331,8 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
 
             $siteId = (int) $selected['site_id'];
             $site = $sectionRepo->findById($siteId);
-            $extra = decodeExtra($selected);
-            $siteExtra = $site ? decodeExtra($site) : [];
+            $extra = Utils::decodeExtra($selected);
+            $siteExtra = $site ? Utils::decodeExtra($site) : [];
             $sectionLayout = isset($extra['layout']) ? (string) $extra['layout'] : '';
             $siteLayout = isset($siteExtra['layout']) ? (string) $siteExtra['layout'] : '';
             $currentLayout = '';
@@ -380,7 +380,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                 echo '<div class="alert alert-light border">Редактирование доступно только для администратора.</div>';
             }
         } elseif ($tab === 'seo') {
-            $extra = decodeExtra($selected);
+            $extra = Utils::decodeExtra($selected);
             echo '<h1 class="h5">SEO</h1>';
             if ($isAdmin) {
                 echo '<form method="post" action="/admin.php?action=seo_update">';
@@ -410,7 +410,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                 $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
                 $perPage = 20;
                 $previewToken = ensurePreviewToken();
-                $sectionPath = buildSectionPathFromId($sectionRepo, (int) $selected['id']);
+                $sectionPath = $sectionRepo->buildPath((int) $selected['id']);
 
                 echo '<h2 class="h6">Контент</h2>';
                 if (empty($infoblocks)) {

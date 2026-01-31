@@ -89,7 +89,7 @@ $before = [
     'sort' => $section['sort'],
 ];
 
-$extra = decodeExtra($section);
+$extra = Utils::decodeExtra($section);
 if ($layout !== '' && Layout::layoutExists($layout)) {
     $extra['layout'] = $layout;
 } else {
@@ -122,7 +122,7 @@ if ($hasVisualInput) {
         ? $_POST['visual_settings_delete']
         : [];
     $site = $sectionRepo->findById($siteId);
-    $siteExtra = $site !== null ? decodeExtra($site) : [];
+    $siteExtra = $site !== null ? Utils::decodeExtra($site) : [];
     $layoutKey = 'default';
     if (isset($extra['layout']) && Layout::layoutExists((string) $extra['layout'])) {
         $layoutKey = (string) $extra['layout'];

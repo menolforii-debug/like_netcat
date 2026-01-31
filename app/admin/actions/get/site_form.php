@@ -11,7 +11,7 @@ if ($id > 0 && ($site === null || $site['parent_id'] !== null)) {
     exit;
 }
 
-$extra = $site ? decodeExtra($site) : [];
+$extra = $site ? Utils::decodeExtra($site) : [];
 $mirrorsText = isset($extra['site_mirrors']) && is_array($extra['site_mirrors']) ? implode("\n", $extra['site_mirrors']) : '';
 $enabled = $site ? !empty($extra['site_enabled']) : true;
 $offlineHtml = isset($extra['site_offline_html']) ? (string) $extra['site_offline_html'] : '';

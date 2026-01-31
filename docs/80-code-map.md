@@ -97,7 +97,7 @@ objects_list(['infoblock_id' => 5, 'query_order' => 'a.id DESC']);
 
 - `per_page` — берётся из инфоблока.
 - `page` — из query-string.
-- `$cc_env` передаётся в шаблон и используется в `browse_messages()`.
+- `$cc_env` передаётся в шаблон и может использоваться для пагинации через `Layout::renderPagination()` или `Layout::getPaginationItems()`.
 
 ---
 

@@ -11,7 +11,7 @@ if ($site === null || $site['parent_id'] !== null) {
 
 $before = [
     'title' => $site['title'],
-    'extra' => decodeExtra($site),
+    'extra' => Utils::decodeExtra($site),
 ];
 
 $title = isset($_POST['title']) ? trim((string) $_POST['title']) : '';
@@ -47,7 +47,7 @@ foreach ($candidates as $candidate) {
     }
 }
 
-$extra = decodeExtra($site);
+$extra = Utils::decodeExtra($site);
 $extra['site_domain'] = $normalizedDomain;
 $extra['site_mirrors'] = $normalizedMirrors;
 $extra['site_enabled'] = $siteEnabled;

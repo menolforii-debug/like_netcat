@@ -65,11 +65,6 @@ function collectSectionTree(SectionRepo $repo, int $parentId, int $depth = 0): a
     return $items;
 }
 
-function decodeExtra(array $row): array
-{
-    return Utils::decodeExtra($row);
-}
-
 function componentViews(array $component): array
 {
     if (isset($component['views_json'])) {
@@ -234,11 +229,6 @@ function renderFieldInput(array $field, array $data, array $uploadContext = []):
     }
 
     return '<div class="mb-3">' . $html . '</div>';
-}
-
-function buildSectionPathFromId(SectionRepo $repo, int $sectionId): string
-{
-    return $repo->buildPath($sectionId);
 }
 
 function ensurePreviewToken(): string
@@ -624,19 +614,6 @@ function normalizeComponentFieldsInput(array $fieldsInput): array
     return $normalized;
 }
 
-function stripSystemTemplateTags(string $systemTpl): string
-{
-    $trimmed = trim($systemTpl);
-    if ($trimmed === '') {
-        return '';
-    }
-
-    $trimmed = preg_replace('/^<\\?(php)?/i', '', $trimmed);
-    $trimmed = preg_replace('/\\?>$/', '', $trimmed);
-
-    return trim((string) $trimmed);
-}
-
 function componentActionTemplatePath(string $componentKey): string
 {
     return dirname(__DIR__, 2) . '/templates/component/' . $componentKey . '/actions.php';
@@ -654,12 +631,12 @@ function readComponentActionTemplate(string $componentKey): string
         return '';
     }
 
-    return stripSystemTemplateTags($content);
+    return Utils::stripSystemTemplateTags($content);
 }
 
 function writeComponentActionTemplate(string $componentKey, string $template, ?string &$error = null): bool
 {
-    $template = trim(stripSystemTemplateTags($template));
+    $template = trim(Utils::stripSystemTemplateTags($template));
     $dir = dirname(componentActionTemplatePath($componentKey));
     if (!is_dir($dir)) {
         mkdir($dir, 0770, true);
