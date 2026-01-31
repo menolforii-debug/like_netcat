@@ -11,9 +11,7 @@ final class AdminRouter
 
         $isPost = isset($_SERVER['REQUEST_METHOD']) && strtoupper((string) $_SERVER['REQUEST_METHOD']) === 'POST';
 
-        if ($action !== 'login' && $action !== 'logout') {
-            self::requireLogin();
-        }
+        self::requireLogin($action, $isPost);
 
         if (!preg_match('/^[A-Za-z0-9_]+$/', $action)) {
             self::renderError(400, 'Bad action');
@@ -62,8 +60,13 @@ final class AdminRouter
         require $realFile;
     }
 
-    private static function requireLogin(): void
+    private static function requireLogin(string $action, bool $isPost): void
     {
+        $policy = self::actionPolicy($isPost ? 'POST' : 'GET', $action);
+        if ($policy['role'] === 'guest') {
+            return;
+        }
+
         if (!Auth::canEdit()) {
             redirectTo('/admin.php?action=login');
         }
@@ -81,7 +84,10 @@ final class AdminRouter
 
     private static function requirePermission(string $action, bool $isPost, ?array $user): void
     {
-        if ($action === 'login' || $action === 'logout') {
+        $policy = self::actionPolicy($isPost ? 'POST' : 'GET', $action);
+        $role = $policy['role'];
+
+        if ($role === 'guest') {
             return;
         }
 
@@ -89,32 +95,46 @@ final class AdminRouter
             return;
         }
 
-        if (Auth::isAdmin()) {
+        if ($role === 'editor' && Auth::canEdit()) {
             return;
         }
 
-        $editorPostActions = [
-            'object_create',
-            'object_update',
-            'object_delete',
-            'object_delete_all',
-            'object_publish',
-            'object_unpublish',
-            'object_restore',
-            'object_purge',
-        ];
-
-        // Разрешаем редактору только экраны и действия, связанные с объектами.
-        $editorGetActions = [
-            'dashboard',
-            'object_form',
-        ];
-
-        $allowed = $isPost ? $editorPostActions : $editorGetActions;
-
-        if (!in_array($action, $allowed, true)) {
-            self::renderError(403, 'Недостаточно прав');
-            exit;
+        if ($role === 'admin' && Auth::isAdmin()) {
+            return;
         }
+
+        self::renderError(403, 'Недостаточно прав');
+        exit;
+    }
+
+    private static function actionPolicy(string $method, string $action): array
+    {
+        $method = strtoupper($method);
+        $policies = [
+            'GET' => [
+                'login' => 'guest',
+                'logout' => 'editor',
+                'dashboard' => 'editor',
+                'object_form' => 'editor',
+            ],
+            'POST' => [
+                'login' => 'guest',
+                'logout' => 'editor',
+                'object_create' => 'editor',
+                'object_update' => 'editor',
+                'object_delete' => 'editor',
+                'object_delete_all' => 'editor',
+                'object_publish' => 'editor',
+                'object_unpublish' => 'editor',
+                'object_restore' => 'editor',
+                'object_purge' => 'editor',
+            ],
+        ];
+
+        $role = $policies[$method][$action] ?? 'admin';
+
+        return [
+            'role' => $role,
+        ];
     }
 }
