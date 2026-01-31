@@ -18,7 +18,7 @@ if (!layoutKeyIsValid($layoutKey)) {
     redirectTo(buildAdminUrl(['action' => 'layouts', 'error' => 'Некорректный ключ макета']));
 }
 
-if (!Layout::layoutExists($layoutKey)) {
+if (!LayoutCatalog::layoutExists($layoutKey)) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Макет не найден']);
     }

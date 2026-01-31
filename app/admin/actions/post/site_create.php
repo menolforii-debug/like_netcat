@@ -44,7 +44,7 @@ $extra = [
     'site_enabled' => $siteEnabled,
     'site_offline_html' => $offlineHtml,
 ];
-if ($layout !== '' && Layout::layoutExists($layout)) {
+if ($layout !== '' && LayoutCatalog::layoutExists($layout)) {
     $extra['layout'] = $layout;
 }
 

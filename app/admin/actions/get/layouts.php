@@ -4,7 +4,7 @@ if (!Auth::isAdmin()) {
     redirectTo(buildAdminUrl(['error' => 'Недостаточно прав']));
 }
 
-$layouts = Layout::listLayouts();
+$layouts = LayoutCatalog::listLayouts();
 $layoutKey = isset($_GET['layout']) ? trim((string) $_GET['layout']) : '';
 $tab = isset($_GET['tab']) ? (string) $_GET['tab'] : 'layout';
 if (!in_array($tab, ['layout', 'visual'], true)) {

@@ -23,7 +23,7 @@ if (in_array($layoutKey, ['default', 'home'], true)) {
     redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey, 'error' => 'Системные макеты нельзя удалить']));
 }
 
-if (!Layout::layoutExists($layoutKey)) {
+if (!LayoutCatalog::layoutExists($layoutKey)) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Макет не найден']);
     }

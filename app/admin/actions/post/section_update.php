@@ -90,7 +90,7 @@ $before = [
 ];
 
 $extra = Utils::decodeExtra($section);
-if ($layout !== '' && Layout::layoutExists($layout)) {
+if ($layout !== '' && LayoutCatalog::layoutExists($layout)) {
     $extra['layout'] = $layout;
 } else {
     unset($extra['layout']);
@@ -124,9 +124,9 @@ if ($hasVisualInput) {
     $site = $sectionRepo->findById($siteId);
     $siteExtra = $site !== null ? Utils::decodeExtra($site) : [];
     $layoutKey = 'default';
-    if (isset($extra['layout']) && Layout::layoutExists((string) $extra['layout'])) {
+    if (isset($extra['layout']) && LayoutCatalog::layoutExists((string) $extra['layout'])) {
         $layoutKey = (string) $extra['layout'];
-    } elseif (isset($siteExtra['layout']) && Layout::layoutExists((string) $siteExtra['layout'])) {
+    } elseif (isset($siteExtra['layout']) && LayoutCatalog::layoutExists((string) $siteExtra['layout'])) {
         $layoutKey = (string) $siteExtra['layout'];
     }
     foreach ($visualFields as $field) {

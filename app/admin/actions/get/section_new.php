@@ -27,7 +27,7 @@ echo '<input type="hidden" name="parent_id" value="' . (int) $parentId . '">';
 echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" type="text" name="title" required></div>';
 echo '<div class="mb-3"><label class="form-label">English name</label><input class="form-control" type="text" name="english_name" required></div>';
 echo '<div class="mb-3"><label class="form-label">Сортировка</label><input class="form-control" type="number" name="sort" value="0"></div>';
-$layouts = Layout::listLayouts();
+$layouts = LayoutCatalog::listLayouts();
 echo '<div class="mb-3"><label class="form-label">Макет дизайна</label><select class="form-select" name="layout">';
 echo '<option value="">Наследовать макет сайта</option>';
 foreach ($layouts as $layout) {

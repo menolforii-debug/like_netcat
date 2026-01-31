@@ -132,7 +132,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
         $mirrorsText = isset($extra['site_mirrors']) && is_array($extra['site_mirrors']) ? implode("\n", $extra['site_mirrors']) : '';
         $enabled = !empty($extra['site_enabled']);
         $offlineHtml = isset($extra['site_offline_html']) ? (string) $extra['site_offline_html'] : '';
-        $layouts = Layout::listLayouts();
+        $layouts = LayoutCatalog::listLayouts();
         $currentLayout = isset($extra['layout']) ? (string) $extra['layout'] : '';
         if ($currentLayout !== '' && !in_array($currentLayout, $layouts, true)) {
             $currentLayout = '';
@@ -242,9 +242,9 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
             $siteLayout = isset($siteExtra['layout']) ? (string) $siteExtra['layout'] : '';
             $currentLayout = '';
             $layoutNote = '';
-            if ($sectionLayout !== '' && Layout::layoutExists($sectionLayout)) {
+            if ($sectionLayout !== '' && LayoutCatalog::layoutExists($sectionLayout)) {
                 $currentLayout = $sectionLayout;
-            } elseif ($siteLayout !== '' && Layout::layoutExists($siteLayout)) {
+            } elseif ($siteLayout !== '' && LayoutCatalog::layoutExists($siteLayout)) {
                 $currentLayout = $siteLayout;
                 $layoutNote = ' (наследуется от сайта)';
             } else {
@@ -337,9 +337,9 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
             $siteLayout = isset($siteExtra['layout']) ? (string) $siteExtra['layout'] : '';
             $currentLayout = '';
             $layoutNote = '';
-            if ($sectionLayout !== '' && Layout::layoutExists($sectionLayout)) {
+            if ($sectionLayout !== '' && LayoutCatalog::layoutExists($sectionLayout)) {
                 $currentLayout = $sectionLayout;
-            } elseif ($siteLayout !== '' && Layout::layoutExists($siteLayout)) {
+            } elseif ($siteLayout !== '' && LayoutCatalog::layoutExists($siteLayout)) {
                 $currentLayout = $siteLayout;
                 $layoutNote = ' (наследуется от сайта)';
             } else {
@@ -361,7 +361,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                 if ($designTab === 'layout') {
                     echo '<div class="mb-3"><label class="form-label">Макет дизайна</label><select class="form-select" name="layout">';
                     echo '<option value="">Наследовать макет сайта</option>';
-                    foreach (Layout::listLayouts() as $layout) {
+                    foreach (LayoutCatalog::listLayouts() as $layout) {
                         $selectedAttr = $sectionLayout === $layout ? ' selected' : '';
                         echo '<option value="' . htmlspecialchars($layout, ENT_QUOTES, 'UTF-8') . '"' . $selectedAttr . '>' . htmlspecialchars($layout, ENT_QUOTES, 'UTF-8') . '</option>';
                     }
@@ -553,7 +553,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                         echo '</tbody></table></div>';
                     }
 
-                        Layout::renderPagination($page, $totalPages, '/admin.php', [
+                        Pagination::render($page, $totalPages, '/admin.php', [
                             'section_id' => $selectedId,
                             'tab' => 'content',
                             'content_infoblock_id' => (int) $infoblock['id'],
