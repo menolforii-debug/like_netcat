@@ -113,13 +113,13 @@ final class AdminRouter
         $policies = [
             'GET' => [
                 'login' => 'guest',
-                'logout' => 'editor',
+                'logout' => 'guest',
                 'dashboard' => 'editor',
                 'object_form' => 'editor',
             ],
             'POST' => [
                 'login' => 'guest',
-                'logout' => 'editor',
+                'logout' => 'guest',
                 'object_create' => 'editor',
                 'object_update' => 'editor',
                 'object_delete' => 'editor',
