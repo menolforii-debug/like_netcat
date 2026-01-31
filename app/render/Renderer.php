@@ -348,7 +348,7 @@ final class Renderer
         }));
 
         if ($views === []) {
-            return 'list';
+            return 'default';
         }
 
         $keyword = (string) ($component['keyword'] ?? '');
@@ -363,7 +363,7 @@ final class Renderer
             }
         }
 
-        return 'list';
+        return 'default';
     }
 
     private function decodeItems(array $objects): array
@@ -510,13 +510,28 @@ final class Renderer
             return '';
         }
 
-        $dir = __DIR__ . '/../../templates/component/' . $componentKey . '/' . $view;
-        if (!is_dir($dir)) {
+        if (!preg_match('/^[A-Za-z0-9_-]+$/', $componentKey)) {
+            return '';
+        }
+        if (!preg_match('/^[A-Za-z0-9_-]+$/', $view)) {
             return '';
         }
 
-        $singlePath = $dir . '/single.php';
-        $listPath = $dir . '/list.php';
+        $baseDir = __DIR__ . '/../../templates/component';
+        $baseReal = realpath($baseDir);
+        if ($baseReal === false) {
+            return '';
+        }
+        $baseReal = rtrim($baseReal, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+
+        $dir = $baseReal . $componentKey . '/' . $view;
+        $realDir = realpath($dir);
+        if ($realDir === false || strpos($realDir . DIRECTORY_SEPARATOR, $baseReal) !== 0) {
+            return '';
+        }
+
+        $singlePath = $realDir . '/single.php';
+        $listPath = $realDir . '/list.php';
         if ($isSingle && is_file($singlePath)) {
             return $singlePath;
         }
@@ -536,8 +551,26 @@ final class Renderer
             return '';
         }
 
-        $path = __DIR__ . '/../../templates/component/' . $componentKey . '/' . $view . '/system.php';
-        return is_file($path) ? $path : '';
+        if (!preg_match('/^[A-Za-z0-9_-]+$/', $componentKey)) {
+            return '';
+        }
+        if (!preg_match('/^[A-Za-z0-9_-]+$/', $view)) {
+            return '';
+        }
+
+        $baseDir = __DIR__ . '/../../templates/component';
+        $baseReal = realpath($baseDir);
+        if ($baseReal === false) {
+            return '';
+        }
+        $baseReal = rtrim($baseReal, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+
+        $path = $baseReal . $componentKey . '/' . $view . '/system.php';
+        $realPath = realpath($path);
+        if ($realPath === false || strpos($realPath, $baseReal) !== 0) {
+            return '';
+        }
+        return is_file($realPath) ? $realPath : '';
     }
 
     private function normalizeSystemSettings(array $settings): array

@@ -104,12 +104,12 @@ function objects_list(array $filters): array
 
     $template = isset($filters['template']) ? trim((string) $filters['template']) : '';
     if ($template === '') {
-        if (in_array('list', $views, true)) {
-            $template = 'list';
+        if (in_array('default', $views, true)) {
+            $template = 'default';
         } elseif (!empty($views)) {
             $template = (string) $views[0];
         } else {
-            $template = 'list';
+            $template = 'default';
         }
     }
 

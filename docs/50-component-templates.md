@@ -20,6 +20,8 @@ templates/component/<component_key>/<view>/
 - `single.php` — шаблон одного объекта.
 - `system.php` — системные настройки выборки (возвращает массив).
 
+Если `views_json` пустой, то системный дефолтный view — `default` (ожидается папка `templates/component/<component_key>/default/`). 
+
 ### Шаблон действий компонента (`actions.php`)
 
 Отдельный файл:
