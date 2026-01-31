@@ -1,0 +1,140 @@
+# Шаблоны компонентов
+
+О чём документ: структура шаблонов компонентов, доступные переменные и примеры.
+Когда читать: после понимания потока запроса и перед написанием своих шаблонов.
+Кому полезно: разработчикам, которые пишут `list.php`/`single.php`/`system.php`.
+Связанные документы: `docs/30-request-flow.md`, `docs/50-system-php-contract.md`.
+
+## Структура каталогов
+Шаблоны компонентов располагаются по пути:
+
+```
+templates/component/<keyword>/<view>/
+```
+
+Внутри папки представления (`view`) используются файлы:
+- `list.php` — вывод списка объектов.
+- `single.php` — вывод одного объекта.
+- `system.php` — настройки выборки и `helpers` (опционально).
+
+`<keyword>` — ключ компонента (только `A-Za-z0-9_-`).
+`<view>` — имя представления (`view`, только `A-Za-z0-9_-`).
+
+## Как выбирается файл шаблона
+- Если включён `single`‑режим (`?object_id=`) и существует `single.php` — используется он.
+- Иначе используется `list.php`.
+- Если `list.php` отсутствует, но есть `single.php` — он используется и в списке.
+
+## Доступные переменные в шаблоне
+`Renderer` передаёт в `list.php`/`single.php` следующий контекст:
+
+- `$section` — текущий раздел.
+- `$site` — текущий сайт.
+- `$infoblock` — инфоблок (в т.ч. `view_template`, `per_page`, `extra_json`).
+- `$component` — компонент (в т.ч. `keyword`, `fields_json`, `views_json`).
+- `$items` — список объектов (`['id','data','status','created_at','updated_at','controls']`).
+- `$objects` — алиас `$items`.
+- `$object` — первый объект в `single`‑режиме или `null`.
+- `$isSingle` — режим отображения (`true/false`).
+- `$editMode` — зарезервировано (по умолчанию `false`).
+- `$settings` — `infoblock['settings']` или пустой массив.
+- `$cc_env` — параметры пагинации (`current_page`, `total_pages`, `base_url`, `query_params`, `per_page`, `total_items`).
+- `$message_select` — `SQL`‑текст последней выборки (для отладки).
+- `$helpers` — массив `helpers` из `system.php`.
+- `$setFields` — функция для назначения `$GLOBALS['f_*']`.
+
+### Переменные `f_*`
+Функция `$setFields($item)` записывает данные объекта в глобальные переменные `$f_<field>`.
+`Renderer` вызывает `$setFields()` автоматически для объекта в `single`‑режиме.
+
+## Пример компонента `news`: список (`list.php`)
+
+```php
+<?php
+/** @var array $items */
+?>
+<div class="news-list">
+    <?php foreach ($items as $item): ?>
+        <?php $title = (string) ($item['data']['title'] ?? ''); ?>
+        <?php $text = (string) ($item['data']['text'] ?? ''); ?>
+        <article class="news-item">
+            <h3>
+                <a href="?object_id=<?php echo (int) $item['id']; ?>">
+                    <?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?>
+                </a>
+            </h3>
+            <p><?php echo nl2br(htmlspecialchars($text, ENT_QUOTES, 'UTF-8')); ?></p>
+        </article>
+    <?php endforeach; ?>
+</div>
+```
+
+## Пример компонента `news`: `single.php`
+
+```php
+<?php
+/** @var array|null $object */
+if ($object === null) {
+    return;
+}
+$title = (string) ($object['data']['title'] ?? '');
+$text = (string) ($object['data']['text'] ?? '');
+?>
+<article class="news-single">
+    <h1><?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?></h1>
+    <div class="content"><?php echo nl2br(htmlspecialchars($text, ENT_QUOTES, 'UTF-8')); ?></div>
+</article>
+```
+
+## Пример компонента `news`: `system.php` (минимальный)
+
+```php
+<?php
+// Доступны переменные: $section, $site, $infoblock, $component, $isSingle
+return [
+    'query_order' => 'a.created_at DESC',
+];
+```
+
+Подробный контракт `system.php` — в `docs/50-system-php-contract.md`.
+
+## Пример пагинации через `Pagination::render()`
+
+```php
+<?php
+/** @var array $cc_env */
+Pagination::render(
+    $cc_env['current_page'] ?? null,
+    $cc_env['total_pages'] ?? null,
+    $cc_env['base_url'] ?? null,
+    $cc_env['query_params'] ?? []
+);
+```
+
+## Дополнительная точка расширения: `actions.php`
+Если существует файл `templates/component/<keyword>/actions.php`, он будет выполнен
+после создания объекта в админке. Контекст: `$message` (ID объекта), `$object` (запись объекта).
+
+## Хелпер `objects_list()`
+Функция `objects_list()` из `app/public/helpers.php` рендерит шаблоны компонента вручную.
+Минимальные входные параметры — `infoblock_id` или `component_id`.
+
+Пример:
+
+```php
+<?php
+$htmlItems = objects_list([
+    'infoblock_id' => 5,
+    'template' => 'default',
+    'limit' => 3,
+    'query_order' => 'a.id DESC',
+]);
+foreach ($htmlItems as $html) {
+    echo $html;
+}
+```
+
+## Безопасность и экранирование
+- Всегда экранируйте пользовательский контент: `htmlspecialchars()`.
+- Для многострочного текста используйте `nl2br(htmlspecialchars(...))`.
+- Не включайте файлы динамически — путь шаблона проверяется через `realpath` и regex.

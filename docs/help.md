@@ -1,17 +1,20 @@
-# Справка
+# Справка по документации
 
-Документы отображаются в админке из папки `docs/`.
+О чём документ: оглавление и навигация по руководству.
+Когда читать: если нужно быстро найти нужный раздел.
+Кому полезно: всем пользователям админки и разработчикам.
+Связанные документы: `docs/00-overview.md`.
 
 ## Рекомендуемый порядок чтения
-
-1. `docs/00-introduction.md` — вход и терминология.
-2. `docs/10-request-flow.md` — путь запроса.
-3. `docs/data-model.md` — структура БД.
-4. `docs/30-content.md` — контентные сущности.
-5. `docs/40-components.md` — компоненты и представления.
-6. `docs/50-component-templates.md` — шаблоны компонента.
-7. `docs/55-layouts.md` — макеты.
-8. `docs/60-api-reference.md` — полный список API.
-9. `docs/70-scenarios-pitfalls.md` — типовые сценарии.
-10. `docs/80-code-map.md` — карта проекта и рекомендации.
-11. `docs/cli.md` — CLI утилита.
+1. `docs/00-overview.md` — обзор системы и терминология.
+2. `docs/10-runtime-architecture.md` — рантаймы и точки входа.
+3. `docs/20-bootstrap-and-install.md` — запуск, БД, права на запись.
+4. `docs/30-request-flow.md` — поток запроса на фронте.
+5. `docs/40-templates-and-components.md` — шаблоны и переменные.
+6. `docs/50-system-php-contract.md` — контракт `system.php`.
+7. `docs/60-layouts.md` — макеты страниц.
+8. `docs/70-snippets.md` — врезки.
+9. `docs/80-admin-handbook.md` — админка.
+10. `docs/90-database.md` — база данных.
+11. `docs/95-security.md` — безопасность.
+12. `docs/99-known-issues-and-todos.md` — известные проблемы.
