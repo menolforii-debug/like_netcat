@@ -195,16 +195,14 @@ final class Layout
 
     public static function getMainMenuItems(array $ctx, int $maxDepth = 2): array
     {
-        $site = $ctx['site'] ?? [];
-        $section = $ctx['section'] ?? [];
-        $siteId = (int) ($site['id'] ?? 0);
-        if ($siteId <= 0) {
+        $nav = core()->nav()->as_array();
+        $items = $nav->get_by_level(0);
+        if ($items === []) {
             return [];
         }
 
-        $currentId = (int) ($section['id'] ?? 0);
-        $repo = new SectionRepo();
-        return self::buildMenuItems($repo, $siteId, $siteId, $currentId, 1, $maxDepth);
+        $currentId = (int) (($ctx['section']['id'] ?? 0));
+        return self::buildMenuItemsFromNav($nav, $items, $currentId, 1, $maxDepth);
     }
 
     public static function render(string $layoutKey, array $ctx, callable $body): void
@@ -272,36 +270,41 @@ final class Layout
         return dirname(__DIR__, 2) . '/templates/layouts/' . $layoutKey . '.nav.php';
     }
 
-    private static function buildMenuItems(SectionRepo $repo, int $siteId, int $parentId, int $currentId, int $depth, int $maxDepth): array
+    private static function buildMenuItemsFromNav(Nav $nav, array $items, int $currentId, int $depth, int $maxDepth): array
     {
         if ($depth > $maxDepth) {
             return [];
         }
 
-        $children = $repo->listChildren($parentId);
-        $items = [];
-        foreach ($children as $child) {
+        $result = [];
+        foreach ($items as $child) {
             $englishName = (string) ($child['english_name'] ?? '');
             if ($englishName === '404') {
                 continue;
             }
 
             $itemId = (int) ($child['id'] ?? 0);
-            $name = (string) ($child['title'] ?? $englishName);
+            $name = (string) ($child['name'] ?? $child['title'] ?? $englishName);
             if ($name === '') {
                 continue;
             }
 
-            $items[] = [
+            $children = [];
+            if ($depth < $maxDepth) {
+                $children = $nav->as_array()->get_sub($itemId);
+                $children = self::buildMenuItemsFromNav($nav, $children, $currentId, $depth + 1, $maxDepth);
+            }
+
+            $result[] = [
                 'id' => $itemId,
                 'name' => $name,
-                'url' => $repo->buildPath($itemId),
-                'active' => $itemId === $currentId || ($currentId > 0 && $repo->isDescendant($currentId, $itemId)),
-                'children' => $depth < $maxDepth ? self::buildMenuItems($repo, $siteId, $itemId, $currentId, $depth + 1, $maxDepth) : [],
+                'url' => (string) ($child['url'] ?? ''),
+                'active' => !empty($child['active']),
+                'children' => $children,
             ];
         }
 
-        return $items;
+        return $result;
     }
 
     private static function paginationUrl(string $baseUrl, array $params, int $page): string

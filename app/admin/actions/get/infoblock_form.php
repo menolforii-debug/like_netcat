@@ -24,7 +24,7 @@ if ($section === null) {
 }
 
 $components = $componentRepo->listAll();
-$extra = $infoblock ? decodeExtra($infoblock) : [];
+$extra = $infoblock ? Utils::decodeExtra($infoblock) : [];
 $viewsByComponent = [];
 foreach ($components as $component) {
     $viewsByComponent[(int) $component['id']] = componentViews($component);

@@ -77,21 +77,6 @@ $itemsHtml = objects_list(['infoblock_id' => 10, 'query_order' => 'a.id DESC']);
   $thumb = resize_image($path, 800, 600);
 ```
 
-### `browse_messages(array $cc_env, int $range, array|false $user_template = false): string`
-
-- **Где использовать:** layouts / components / snippets
-- **Что делает:** формирует постраничную навигацию как в NetCat.
-- **Возвращает:** HTML‑строку (можно сразу `echo`)
-- **Пример:**
-  ```php
-  $browse_msg = [
-    'active' => '%PAGE',
-    'unactive' => '<a href="%URL">%PAGE</a>',
-    'divider' => ' ',
-  ];
-  echo browse_messages($cc_env, 15, $browse_msg);
-  ```
-
 ---
 
 ## B) Классы и методы

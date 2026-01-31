@@ -44,7 +44,7 @@ if ($site !== null) {
     $options = array_merge($options, collectSections($sectionRepo, $siteId));
 }
 
-$extra = $section ? decodeExtra($section) : [];
+$extra = $section ? Utils::decodeExtra($section) : [];
 $layouts = Layout::listLayouts();
 $currentLayout = isset($extra['layout']) ? (string) $extra['layout'] : '';
 if ($currentLayout !== '' && !in_array($currentLayout, $layouts, true)) {

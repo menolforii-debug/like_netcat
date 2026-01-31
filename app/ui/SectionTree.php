@@ -71,7 +71,7 @@ final class SectionTree
         $expanded = ($isActive || $hasSelected || $forceExpanded);
 
         $repo = new SectionRepo();
-        $sitePath = buildSectionPathFromId($repo, $id);
+        $sitePath = $repo->buildPath($id);
 
         $isSystemRoot = isset($node['english_name'])
             && in_array($node['english_name'], ['index', '404'], true);

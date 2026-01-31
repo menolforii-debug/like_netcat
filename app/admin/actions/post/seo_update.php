@@ -6,7 +6,7 @@ if ($section === null || $section['parent_id'] === null) {
     redirectTo(buildAdminUrl(['error' => 'Раздел не найден']));
 }
 
-$before = decodeExtra($section);
+$before = Utils::decodeExtra($section);
 
 $extra = $before;
 $extra['seo_title'] = isset($_POST['seo_title']) ? trim((string) $_POST['seo_title']) : '';
