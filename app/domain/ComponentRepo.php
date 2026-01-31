@@ -86,11 +86,6 @@ final class ComponentRepo
 
     public function deleteWithViews(int $id): void
     {
-        if (DB::hasTable('component_views')) {
-            $stmt = DB::pdo()->prepare('DELETE FROM component_views WHERE component_id = :id');
-            $stmt->execute(['id' => $id]);
-        }
-
         $this->delete($id);
     }
 }

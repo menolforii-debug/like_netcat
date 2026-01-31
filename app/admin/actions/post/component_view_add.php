@@ -30,9 +30,9 @@ if (is_array($decodedViews)) {
     }
 }
 
-$views = array_values(array_filter($views, static function ($item) use ($view): bool {
-    return $item !== $view;
-}));
+if (!in_array($view, $views, true)) {
+    $views[] = $view;
+}
 
 $fields = [];
 $decodedFields = json_decode((string) ($component['fields_json'] ?? '[]'), true);
@@ -45,29 +45,9 @@ if (is_array($decodedFields)) {
 
 $componentRepo->update($componentId, (string) ($component['keyword'] ?? ''), (string) ($component['name'] ?? ''), $fields, $views);
 
-$root = dirname(__DIR__, 4);
-$baseDir = $root . '/templates/component';
-$baseReal = realpath($baseDir);
-if ($baseReal !== false) {
-    $baseReal = rtrim($baseReal, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
-    $componentKey = (string) ($component['keyword'] ?? '');
-    if ($componentKey !== '' && preg_match('/^[A-Za-z0-9_-]+$/', $componentKey)) {
-        $viewDir = $baseReal . $componentKey . '/' . $view;
-        $realViewDir = realpath($viewDir);
-        if ($realViewDir !== false && strpos($realViewDir . DIRECTORY_SEPARATOR, $baseReal) === 0) {
-            foreach (['list.php', 'single.php', 'system.php'] as $fileName) {
-                $filePath = $realViewDir . '/' . $fileName;
-                if (is_file($filePath)) {
-                    unlink($filePath);
-                }
-            }
-            @rmdir($realViewDir);
-        }
-    }
-}
-
 redirectTo(buildAdminUrl([
     'action' => 'components',
     'component_id' => $componentId,
     'tab' => 'templates',
+    'view' => $view,
 ]));

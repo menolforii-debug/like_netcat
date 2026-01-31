@@ -105,10 +105,6 @@ foreach ($fieldsInput as $row) {
 }
 
 $views = [];
-if (DB::hasTable('component_views')) {
-    $viewRepo = new ComponentViewRepo();
-    $views = $viewRepo->listNamesForComponent($componentId);
-}
 
 $existing = $componentRepo->findByKeyword($keyword);
 if ($existing !== null && (int) $existing['id'] !== $componentId) {
@@ -118,8 +114,16 @@ if ($existing !== null && (int) $existing['id'] !== $componentId) {
     redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'error' => 'Компонент с таким ключом уже существует']));
 }
 
+$viewsJson = $component['views_json'] ?? '[]';
+$decodedViews = json_decode((string) $viewsJson, true);
+if (is_array($decodedViews)) {
+    $views = $decodedViews;
+}
+if ($views === []) {
+    $views = ['list'];
+}
+
 $componentRepo->update($componentId, $keyword, $name, $fields, $views);
-syncComponentViewsJson($componentId);
 
 if ($user) {
     AdminLog::log($user['id'], 'component_update', 'component', $componentId, [
