@@ -9,7 +9,7 @@ if ($object === null) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Объект не найден']);
     }
-    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Объект не найден']));
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));
 }
 
 $infoblock = $infoblockRepo->findById((int) $object['infoblock_id']);
@@ -17,14 +17,14 @@ if ($infoblock === null) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Инфоблок не найден']);
     }
-    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Инфоблок не найден']));
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));
 }
 
 if (!Permission::canAction($user, $infoblock, 'edit')) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Недостаточно прав']);
     }
-    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Недостаточно прав']));
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));
 }
 
 $component = $componentRepo->findById((int) $object['component_id']);
@@ -32,7 +32,7 @@ if ($component === null) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
     }
-    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Компонент не найден']));
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));
 }
 
 $fields = parseComponentFields($component);
@@ -64,7 +64,7 @@ foreach ($fields as $field) {
             if (isAjaxRequest()) {
                 jsonResponse(['ok' => false, 'error' => $error]);
             }
-            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => $error]));
+            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));
         }
         if ($storedPath !== null) {
             if (isset($existingData[$name]) && $existingData[$name] !== $storedPath) {
@@ -85,7 +85,7 @@ try {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => $e->getMessage()]);
     }
-    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => $e->getMessage()]));
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));
 }
 
 $objectRepo->update($id, ['data' => $data]);
@@ -96,7 +96,7 @@ if ($isEnabled && $currentStatus !== 'published') {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => 'Недостаточно прав для публикации']);
         }
-        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Недостаточно прав для публикации']));
+        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));
     }
     $objectRepo->publish($id);
 } elseif (!$isEnabled && $currentStatus === 'published') {
@@ -104,7 +104,7 @@ if ($isEnabled && $currentStatus !== 'published') {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => 'Недостаточно прав для снятия с публикации']);
         }
-        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Недостаточно прав для снятия с публикации']));
+        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));
     }
     $objectRepo->unpublish($id);
 }

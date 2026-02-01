@@ -7,7 +7,7 @@ if ($infoblockId <= 0) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Инфоблок не найден']);
     }
-    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Инфоблок не найден']));
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));
 }
 
 $infoblock = $infoblockRepo->findById($infoblockId);
@@ -15,14 +15,14 @@ if ($infoblock === null) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Инфоблок не найден']);
     }
-    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Инфоблок не найден']));
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));
 }
 
 if (!Permission::canAction($user, $infoblock, 'delete')) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Недостаточно прав']);
     }
-    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Недостаточно прав']));
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));
 }
 
 $component = $componentRepo->findById((int) $infoblock['component_id']);
@@ -30,7 +30,7 @@ if ($component === null) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
     }
-    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Компонент не найден']));
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));
 }
 
 $fields = parseComponentFields($component);

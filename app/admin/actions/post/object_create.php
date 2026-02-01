@@ -17,21 +17,21 @@ if ($infoblock === null) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Инфоблок не найден']);
     }
-    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Инфоблок не найден']));
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));
 }
 
 if (!Permission::canAction($user, $infoblock, 'create')) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Недостаточно прав']);
     }
-    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Недостаточно прав']));
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));
 }
 
 if ($isEnabled && !Permission::canAction($user, $infoblock, 'publish')) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Недостаточно прав для публикации']);
     }
-    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Недостаточно прав для публикации']));
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));
 }
 
 $component = $componentRepo->findById((int) $infoblock['component_id']);
@@ -39,7 +39,7 @@ if ($component === null) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
     }
-    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Компонент не найден']));
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));
 }
 
 $fields = parseComponentFields($component);
@@ -63,7 +63,7 @@ foreach ($fields as $field) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => $error]);
         }
-        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => $error]));
+        redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));
     }
     if ($storedPath !== null) {
         $data[$name] = $storedPath;
@@ -75,7 +75,7 @@ try {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => $e->getMessage()]);
     }
-    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => $e->getMessage()]));
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));
 }
 
 $status = $isEnabled ? 'published' : 'draft';
@@ -101,7 +101,6 @@ if (is_file($actionTemplatePath)) {
         redirectTo(buildAdminUrl([
             'section_id' => $sectionId,
             'tab' => 'content',
-            'error' => 'Ошибка выполнения шаблона действий: ' . $e->getMessage(),
         ]));
     }
 }
