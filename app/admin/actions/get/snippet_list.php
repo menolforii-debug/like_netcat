@@ -4,6 +4,8 @@ if (!Auth::isAdmin()) {
     redirectTo(buildAdminUrl(['error' => 'Недостаточно прав']));
 }
 
+$flash = adminFlashConsume();
+
 $root = dirname(__DIR__, 4);
 $snippetsDir = $root . '/templates/snippets';
 $files = [];
@@ -25,8 +27,6 @@ if ($snippetsCount > 1) {
 
 $keyword = isset($_GET['keyword']) ? trim((string) $_GET['keyword']) : '';
 $isNew = isset($_GET['new']) && (string) $_GET['new'] === '1';
-$saved = isset($_GET['saved']) ? (string) $_GET['saved'] : '';
-$errorMessage = isset($_GET['error']) ? trim((string) $_GET['error']) : '';
 $error = '';
 $content = '';
 $snippetExists = false;
@@ -130,11 +130,20 @@ if (empty($snippets)) {
 echo '</div>';
 echo '<div class="col-12 col-lg-8">';
 
-if ($saved === '1') {
-    echo '<div class="alert alert-success">Врезка сохранена.</div>';
-}
-if ($errorMessage !== '') {
-    echo '<div class="alert alert-danger">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
+// Flash messages (errors/success)
+if (!empty($flash)) {
+    foreach ($flash as $item) {
+        if (!is_array($item)) {
+            continue;
+        }
+        $type = (string) ($item['type'] ?? '');
+        $msg = (string) ($item['message'] ?? '');
+        if ($msg === '') {
+            continue;
+        }
+        $class = $type === 'success' ? 'alert alert-success' : 'alert alert-danger';
+        echo '<div class="' . $class . '">' . htmlspecialchars($msg, ENT_QUOTES, 'UTF-8') . '</div>';
+    }
 }
 if ($error !== '') {
     echo '<div class="alert alert-danger">' . htmlspecialchars($error, ENT_QUOTES, 'UTF-8') . '</div>';
@@ -169,8 +178,17 @@ if ($keyword === '' && $snippets === []) {
     echo '</div>';
     echo '</div>';
 
+    echo '<div class="d-flex gap-2 align-items-center">';
     echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
     echo '</form>';
+    if ($snippetExists) {
+        echo '<form method="post" action="/admin.php?action=snippet_delete" data-confirm="Удалить врезку? Это удалит файл и запись в базе (если есть).">';
+        echo csrf_token_field();
+        echo '<input type="hidden" name="keyword" value="' . htmlspecialchars($keyword, ENT_QUOTES, 'UTF-8') . '">';
+        echo '<button class="btn btn-outline-danger" type="submit">Удалить</button>';
+        echo '</form>';
+    }
+    echo '</div>';
 
     echo '<script>';
     echo 'document.addEventListener("DOMContentLoaded", function () {';
