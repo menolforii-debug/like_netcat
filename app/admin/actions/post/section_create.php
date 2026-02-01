@@ -32,14 +32,14 @@ if ($title === '' || $englishName === '') {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Название и english_name обязательны']);
     }
-    redirectTo(buildAdminUrl(['action' => 'section_new', 'parent_id' => $parentId, 'error' => 'Название и english_name обязательны']));
+    redirectTo(buildAdminUrl(['action' => 'section_new', 'parent_id' => $parentId]));
 }
 
 if (!englishNameIsValid($englishName)) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'English name должен быть URL-безопасным']);
     }
-    redirectTo(buildAdminUrl(['action' => 'section_new', 'parent_id' => $parentId, 'error' => 'English name должен быть URL-безопасным']));
+    redirectTo(buildAdminUrl(['action' => 'section_new', 'parent_id' => $parentId]));
 }
 
 $siteId = (int) $parent['site_id'];
@@ -47,7 +47,7 @@ if ($sectionRepo->existsSiblingEnglishName($siteId, $parentId, $englishName)) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'English name должен быть уникальным в пределах родительского раздела']);
     }
-    redirectTo(buildAdminUrl(['action' => 'section_new', 'parent_id' => $parentId, 'error' => 'English name должен быть уникальным в пределах родительского раздела']));
+    redirectTo(buildAdminUrl(['action' => 'section_new', 'parent_id' => $parentId]));
 }
 
 $extra = [];
@@ -75,7 +75,7 @@ if ($componentId > 0) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
         }
-        redirectTo(buildAdminUrl(['action' => 'section_new', 'parent_id' => $parentId, 'error' => 'Компонент не найден']));
+        redirectTo(buildAdminUrl(['action' => 'section_new', 'parent_id' => $parentId]));
     }
     $views = componentViews($component);
     $infoblockRepo->create([
