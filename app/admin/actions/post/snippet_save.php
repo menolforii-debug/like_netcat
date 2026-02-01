@@ -1,7 +1,9 @@
 <?php
 
 if (!Auth::isAdmin()) {
-    adminFlashSet('error', 'Недостаточно прав');
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Недостаточно прав']);
+    }
     redirectTo(buildAdminUrl(['action' => 'snippet_list']));
 }
 
@@ -10,7 +12,9 @@ $content = isset($_POST['content']) ? (string) $_POST['content'] : '';
 $name = isset($_POST['name']) ? trim((string) $_POST['name']) : '';
 
 if ($keyword === '' || !preg_match('/^[A-Za-z0-9_-]+$/', $keyword)) {
-    adminFlashSet('error', 'Некорректный ключ врезки');
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Некорректный ключ врезки']);
+    }
     redirectTo(buildAdminUrl(['action' => 'snippet_list']));
 }
 
@@ -22,7 +26,9 @@ if (!is_dir($snippetsDir)) {
 
 $baseReal = realpath($snippetsDir);
 if ($baseReal === false) {
-    adminFlashSet('error', 'Не удалось создать папку для врезок');
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Не удалось создать папку для врезок']);
+    }
     redirectTo(buildAdminUrl(['action' => 'snippet_list', 'keyword' => $keyword]));
 }
 $baseReal = rtrim($baseReal, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
@@ -30,7 +36,9 @@ $snippetPath = $baseReal . $keyword . '.php';
 
 $snippetDirReal = realpath(dirname($snippetPath));
 if ($snippetDirReal === false || strpos($snippetDirReal . DIRECTORY_SEPARATOR, $baseReal) !== 0) {
-    adminFlashSet('error', 'Некорректный путь к файлу врезки');
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Некорректный путь к файлу врезки']);
+    }
     redirectTo(buildAdminUrl(['action' => 'snippet_list', 'keyword' => $keyword]));
 }
 
@@ -38,7 +46,9 @@ $ok = @file_put_contents($snippetPath, $content, LOCK_EX);
 if ($ok === false) {
     $last = error_get_last();
     $msg = is_array($last) && isset($last['message']) ? $last['message'] : 'unknown';
-    adminFlashSet('error', 'Не удалось записать файл врезки: ' . $msg);
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Не удалось записать файл врезки: ' . $msg]);
+    }
     redirectTo(buildAdminUrl(['action' => 'snippet_list', 'keyword' => $keyword]));
 }
 
@@ -52,5 +62,12 @@ $stmt->execute([
     'name' => $name,
 ]);
 
-adminFlashSet('success', 'Врезка сохранена.');
+if (isAjaxRequest()) {
+    jsonResponse([
+        'ok' => true,
+        'message' => 'Врезка сохранена',
+        'focus' => ['keyword' => $keyword],
+        'refresh' => ['#snippetsSidebarBlock', '#snippetsContentBlock'],
+    ]);
+}
 redirectTo(buildAdminUrl(['action' => 'snippet_list', 'keyword' => $keyword]));

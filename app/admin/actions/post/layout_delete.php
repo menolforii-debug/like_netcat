@@ -1,24 +1,32 @@
 <?php
 
 if (!Auth::isAdmin()) {
-    adminFlashSet('error', 'Недостаточно прав');
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Недостаточно прав']);
+    }
     redirectTo(buildAdminUrl(['action' => 'layouts']));
 }
 
 $layoutKey = isset($_POST['layout_key']) ? trim((string) $_POST['layout_key']) : '';
 
 if ($layoutKey === '' || !layoutKeyIsValid($layoutKey)) {
-    adminFlashSet('error', 'Некорректный ключ макета');
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Некорректный ключ макета']);
+    }
     redirectTo(buildAdminUrl(['action' => 'layouts']));
 }
 
 if (in_array($layoutKey, ['default', 'home'], true)) {
-    adminFlashSet('error', 'Системный макет нельзя удалить');
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Системный макет нельзя удалить']);
+    }
     redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey]));
 }
 
 if (!LayoutCatalog::layoutExists($layoutKey)) {
-    adminFlashSet('error', 'Макет не найден');
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Макет не найден']);
+    }
     redirectTo(buildAdminUrl(['action' => 'layouts']));
 }
 
@@ -46,5 +54,12 @@ foreach ([$layoutPath, $navPath] as $path) {
     @unlink($real);
 }
 
-adminFlashSet('success', 'Макет удалён');
+if (isAjaxRequest()) {
+    jsonResponse([
+        'ok' => true,
+        'message' => 'Макет удалён',
+        'focus' => ['layout' => '', 'tab' => 'layout'],
+        'refresh' => ['#layoutsSidebarBlock', '#layoutsContentBlock'],
+    ]);
+}
 redirectTo(buildAdminUrl(['action' => 'layouts']));

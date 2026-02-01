@@ -1,7 +1,9 @@
 <?php
 
 if (!Auth::isAdmin()) {
-    adminFlashSet('error', 'Недостаточно прав');
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Недостаточно прав']);
+    }
     redirectTo(buildAdminUrl(['action' => 'layouts']));
 }
 
@@ -10,18 +12,24 @@ $layoutTpl = isset($_POST['layout_tpl']) ? (string) $_POST['layout_tpl'] : '';
 $layoutNavTpl = isset($_POST['layout_nav_tpl']) ? (string) $_POST['layout_nav_tpl'] : '';
 
 if ($layoutKey === '' || !layoutKeyIsValid($layoutKey)) {
-    adminFlashSet('error', 'Некорректный ключ макета');
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Некорректный ключ макета']);
+    }
     redirectTo(buildAdminUrl(['action' => 'layouts']));
 }
 
 if (!LayoutCatalog::layoutExists($layoutKey)) {
-    adminFlashSet('error', 'Макет не найден');
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Макет не найден']);
+    }
     redirectTo(buildAdminUrl(['action' => 'layouts']));
 }
 
 $error = null;
 if (!writeLayoutTemplate($layoutKey, $layoutTpl, $error)) {
-    adminFlashSet('error', $error ?: 'Не удалось сохранить макет');
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => ($error ?: 'Не удалось сохранить макет')]);
+    }
     redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey]));
 }
 
@@ -33,10 +41,19 @@ if (trim($layoutNavTpl) === '') {
 } else {
     $navError = null;
     if (!writeLayoutNavTemplate($layoutKey, $layoutNavTpl, $navError)) {
-        adminFlashSet('error', $navError ?: 'Не удалось сохранить шаблон навигации');
+        if (isAjaxRequest()) {
+            jsonResponse(['ok' => false, 'error' => ($navError ?: 'Не удалось сохранить шаблон навигации')]);
+        }
         redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey]));
     }
 }
 
-adminFlashSet('success', 'Изменения сохранены');
-redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey]));
+if (isAjaxRequest()) {
+    jsonResponse([
+        'ok' => true,
+        'message' => 'Изменения сохранены',
+        'focus' => ['layout' => $layoutKey, 'tab' => 'layout'],
+        'refresh' => ['#layoutsSidebarBlock', '#layoutsContentBlock'],
+    ]);
+}
+redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey, 'tab' => 'layout']));

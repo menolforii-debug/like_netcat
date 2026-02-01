@@ -4,8 +4,6 @@ if (!Auth::isAdmin()) {
     redirectTo(buildAdminUrl(['error' => 'Недостаточно прав']));
 }
 
-$flash = adminFlashConsume();
-
 $root = dirname(__DIR__, 4);
 $snippetsDir = $root . '/templates/snippets';
 $files = [];
@@ -83,26 +81,19 @@ function renderTextareaValue($value): string
     return $s ?? '';
 }
 
-AdminLayout::renderHeader('Врезки');
+function renderSnippetsSidebarHtml(array $snippets, array $snippetNames, string $keyword): void
+{
+    $createLink = buildAdminUrl(['action' => 'snippet_list', 'new' => 1]);
+    echo '<div class="d-flex align-items-center justify-content-between mb-2">';
+    echo '<div class="fw-semibold">Врезки</div>';
+    echo '<a class="btn btn-icon-square btn-outline-primary" href="' . htmlspecialchars($createLink, ENT_QUOTES, 'UTF-8') . '" title="Добавить врезку" aria-label="Добавить врезку">+</a>';
+    echo '</div>';
 
-echo '<div class="card shadow-sm">';
-echo '<div class="card-body">';
-echo '<div class="d-flex align-items-center justify-content-between mb-3">';
-echo '<h1 class="h5 mb-0">Врезки</h1>';
-echo '</div>';
+    if (empty($snippets)) {
+        echo '<div class="text-muted">Врезки пока не созданы.</div>';
+        return;
+    }
 
-echo '<div class="row g-4">';
-echo '<div class="col-12 col-lg-4">';
-
-$createLink = buildAdminUrl(['action' => 'snippet_list', 'new' => 1]);
-echo '<div class="d-flex align-items-center justify-content-between mb-2">';
-echo '<div class="fw-semibold">Врезки</div>';
-echo '<a class="btn btn-icon-square btn-outline-primary" href="' . htmlspecialchars($createLink, ENT_QUOTES, 'UTF-8') . '" title="Добавить врезку" aria-label="Добавить врезку">+</a>';
-echo '</div>';
-
-if (empty($snippets)) {
-    echo '<div class="text-muted">Врезки пока не созданы.</div>';
-} else {
     echo '<nav class="nav-deep nav-deep-sm nav-deep-light component-tree">';
     echo '<ul class="nav flex-column component-tree-root">';
     foreach ($snippets as $snippet) {
@@ -127,32 +118,23 @@ if (empty($snippets)) {
     echo '</nav>';
 }
 
-echo '</div>';
-echo '<div class="col-12 col-lg-8">';
-
-// Flash messages (errors/success)
-if (!empty($flash)) {
-    foreach ($flash as $item) {
-        if (!is_array($item)) {
-            continue;
-        }
-        $type = (string) ($item['type'] ?? '');
-        $msg = (string) ($item['message'] ?? '');
-        if ($msg === '') {
-            continue;
-        }
-        $class = $type === 'success' ? 'alert alert-success' : 'alert alert-danger';
-        echo '<div class="' . $class . '">' . htmlspecialchars($msg, ENT_QUOTES, 'UTF-8') . '</div>';
+function renderSnippetsContentHtml(
+    array $snippets,
+    string $keyword,
+    bool $snippetExists,
+    string $snippetName,
+    string $content,
+    string $error
+): void {
+    if ($error !== '') {
+        echo '<div class="alert alert-danger">' . htmlspecialchars($error, ENT_QUOTES, 'UTF-8') . '</div>';
     }
-}
-if ($error !== '') {
-    echo '<div class="alert alert-danger">' . htmlspecialchars($error, ENT_QUOTES, 'UTF-8') . '</div>';
-}
+    if ($keyword === '' && $snippets === []) {
+        echo '<div class="text-muted">Врезки пока не созданы.</div>';
+        return;
+    }
 
-if ($keyword === '' && $snippets === []) {
-    echo '<div class="text-muted">Врезки пока не созданы.</div>';
-} else {
-    echo '<form method="post" action="/admin.php?action=snippet_save">';
+    echo '<form method="post" action="/admin.php?action=snippet_save" data-ajax="true">';
     echo csrf_token_field();
 
     echo '<div class="mb-3">';
@@ -182,22 +164,48 @@ if ($keyword === '' && $snippets === []) {
     echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
     echo '</form>';
     if ($snippetExists) {
-        echo '<form method="post" action="/admin.php?action=snippet_delete" data-confirm="Удалить врезку? Это удалит файл и запись в базе (если есть).">';
+        echo '<form method="post" action="/admin.php?action=snippet_delete" data-ajax="true" data-confirm="Удалить врезку? Это действие необратимо.">';
         echo csrf_token_field();
         echo '<input type="hidden" name="keyword" value="' . htmlspecialchars($keyword, ENT_QUOTES, 'UTF-8') . '">';
         echo '<button class="btn btn-outline-danger" type="submit">Удалить</button>';
         echo '</form>';
     }
     echo '</div>';
-
-    echo '<script>';
-    echo 'document.addEventListener("DOMContentLoaded", function () {';
-    echo '  if (window.initCodeEditor) {';
-    echo '    window.initCodeEditor(document.getElementById("snippet_content"), "application/x-httpd-php");';
-    echo '  }';
-    echo '});';
-    echo '</script>';
 }
+
+// Snippets partials for AJAX refresh
+if (isAjaxRequest() && isset($_GET['partial']) && (string) $_GET['partial'] === 'sidebar') {
+    renderSnippetsSidebarHtml($snippets, $snippetNames, $keyword);
+    exit;
+}
+if (isAjaxRequest() && isset($_GET['partial']) && (string) $_GET['partial'] === 'content') {
+    renderSnippetsContentHtml($snippets, $keyword, $snippetExists, $snippetName, $content, $error);
+    exit;
+}
+
+AdminLayout::renderHeader('Врезки');
+
+echo '<div class="card shadow-sm">';
+echo '<div class="card-body">';
+echo '<div class="d-flex align-items-center justify-content-between mb-3">';
+echo '<h1 class="h5 mb-0">Врезки</h1>';
+echo '</div>';
+
+echo '<div class="row g-4">';
+echo '<div class="col-12 col-lg-4">';
+
+$sidebarTpl = buildAdminUrl(['action' => 'snippet_list', 'keyword' => '{keyword}', 'partial' => 'sidebar']);
+echo '<div id="snippetsSidebarBlock" data-refresh-url-template="' . htmlspecialchars($sidebarTpl, ENT_QUOTES, 'UTF-8') . '">';
+renderSnippetsSidebarHtml($snippets, $snippetNames, $keyword);
+echo '</div>';
+
+echo '</div>';
+echo '<div class="col-12 col-lg-8">';
+
+$contentTpl = buildAdminUrl(['action' => 'snippet_list', 'keyword' => '{keyword}', 'partial' => 'content']);
+echo '<div id="snippetsContentBlock" data-refresh-url-template="' . htmlspecialchars($contentTpl, ENT_QUOTES, 'UTF-8') . '">';
+renderSnippetsContentHtml($snippets, $keyword, $snippetExists, $snippetName, $content, $error);
+echo '</div>';
 
 echo '</div>';
 echo '</div>';

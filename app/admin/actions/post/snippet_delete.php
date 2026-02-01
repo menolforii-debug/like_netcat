@@ -1,13 +1,17 @@
 <?php
 
 if (!Auth::isAdmin()) {
-    adminFlashSet('error', 'Недостаточно прав');
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Недостаточно прав']);
+    }
     redirectTo(buildAdminUrl(['action' => 'snippet_list']));
 }
 
 $keyword = isset($_POST['keyword']) ? trim((string) $_POST['keyword']) : '';
 if ($keyword === '' || !preg_match('/^[A-Za-z0-9_-]+$/', $keyword)) {
-    adminFlashSet('error', 'Некорректный ключ врезки');
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Некорректный ключ врезки']);
+    }
     redirectTo(buildAdminUrl(['action' => 'snippet_list']));
 }
 
@@ -25,7 +29,9 @@ if (is_dir($snippetsDir)) {
             if ($realSnippetPath !== false && strpos($realSnippetPath, $baseReal) === 0) {
                 @unlink($realSnippetPath);
             } else {
-                adminFlashSet('error', 'Некорректный путь к файлу врезки');
+                if (isAjaxRequest()) {
+                    jsonResponse(['ok' => false, 'error' => 'Некорректный путь к файлу врезки']);
+                }
                 redirectTo(buildAdminUrl(['action' => 'snippet_list', 'keyword' => $keyword]));
             }
         }
@@ -39,10 +45,19 @@ if (DB::hasTable('snippet')) {
         $stmt->execute(['keyword' => $keyword]);
     } catch (Throwable $e) {
         // файл уже удалён — но сообщим о проблеме с БД
-        adminFlashSet('error', 'Файл удалён, но не удалось удалить запись из БД');
+        if (isAjaxRequest()) {
+            jsonResponse(['ok' => false, 'error' => 'Файл удалён, но не удалось удалить запись из БД']);
+        }
         redirectTo(buildAdminUrl(['action' => 'snippet_list', 'keyword' => $keyword]));
     }
 }
 
-adminFlashSet('success', 'Врезка удалена.');
+if (isAjaxRequest()) {
+    jsonResponse([
+        'ok' => true,
+        'message' => 'Врезка удалена',
+        'focus' => ['keyword' => ''],
+        'refresh' => ['#snippetsSidebarBlock', '#snippetsContentBlock'],
+    ]);
+}
 redirectTo(buildAdminUrl(['action' => 'snippet_list']));

@@ -1,3 +1,26 @@
+// Global refresh context (used by data-refresh-url-template)
+window.adminRefreshContext = window.adminRefreshContext || {};
+
+function initAdminRefreshContextFromUrl() {
+  try {
+    const url = new URL(window.location.href);
+    const layout = url.searchParams.get('layout');
+    const keyword = url.searchParams.get('keyword');
+    const tab = url.searchParams.get('tab');
+    if (layout !== null) window.adminRefreshContext.layout = layout;
+    if (keyword !== null) window.adminRefreshContext.keyword = keyword;
+    if (tab !== null) window.adminRefreshContext.tab = tab;
+  } catch (e) {}
+}
+
+function applyRefreshUrlTemplate(template) {
+  const ctx = window.adminRefreshContext || {};
+  return (template || '')
+    .replaceAll('{layout}', encodeURIComponent(ctx.layout || ''))
+    .replaceAll('{keyword}', encodeURIComponent(ctx.keyword || ''))
+    .replaceAll('{tab}', encodeURIComponent(ctx.tab || ''));
+}
+
 function initVisualInheritToggles(scope) {
   const root = scope || document;
   root.querySelectorAll('.js-visual-inherit').forEach((checkbox) => {
@@ -208,6 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initInfoblockViewSelects(document);
   initInfoblockKeyAutofill(document);
   initCodeEditorFullscreen(document);
+  initAdminRefreshContextFromUrl();
 });
 
 const ADMIN_SNACKBAR_DURATION = 3500;
@@ -327,7 +351,11 @@ function refreshAdminBlocks(selectors) {
   selectors.forEach((selector) => {
     const target = document.querySelector(selector);
     if (!target) return;
-    const url = target.getAttribute('data-refresh-url');
+    let url = target.getAttribute('data-refresh-url');
+    const tpl = target.getAttribute('data-refresh-url-template');
+    if (tpl) {
+      url = applyRefreshUrlTemplate(tpl);
+    }
     if (!url) return;
     fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
       .then((res) => res.text())
@@ -336,6 +364,8 @@ function refreshAdminBlocks(selectors) {
         initVisualInheritToggles(target);
         initInfoblockViewSelects(target);
         initInfoblockKeyAutofill(target);
+        initCodeEditorFullscreen(target);
+        if (window.initCodeEditors) window.initCodeEditors(target);
       });
   });
 }
@@ -353,6 +383,25 @@ function handleAjaxResponse(payload, context) {
     return;
   }
   if (payload.ok) {
+    // Support focus.layout and focus.keyword (snippets) in addition to existing focus.section_id/component_id
+    if (payload.focus && payload.focus.layout !== undefined) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('layout', payload.focus.layout);
+      if (payload.focus.tab) {
+        url.searchParams.set('tab', payload.focus.tab);
+      }
+      window.history.replaceState({}, '', url);
+      window.adminRefreshContext.layout = payload.focus.layout;
+      if (payload.focus.tab) window.adminRefreshContext.tab = payload.focus.tab;
+    }
+    if (payload.focus && payload.focus.keyword !== undefined) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('keyword', payload.focus.keyword);
+      url.searchParams.delete('new');
+      window.history.replaceState({}, '', url);
+      window.adminRefreshContext.keyword = payload.focus.keyword;
+    }
+
     if (payload.refresh) {
       refreshAdminBlocks(payload.refresh);
     }
@@ -371,6 +420,16 @@ function handleAjaxResponse(payload, context) {
       const url = new URL(window.location.href);
       url.searchParams.set('component_id', payload.focus.component_id);
       window.history.replaceState({}, '', url);
+    }
+    // Optional hard redirect if backend asks
+    if (payload.redirect) {
+      if (isModalForm && modalEl) {
+        // modal will be closed below; redirect after close
+        const modalInstance = window.bootstrap ? window.bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+        if (modalInstance) modalInstance.hide();
+      }
+      window.location.href = payload.redirect;
+      return;
     }
     if (isModalForm && modalEl) {
       const modalInstance = window.bootstrap ? window.bootstrap.Modal.getOrCreateInstance(modalEl) : null;

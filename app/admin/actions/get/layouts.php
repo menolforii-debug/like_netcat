@@ -4,8 +4,6 @@ if (!Auth::isAdmin()) {
     redirectTo(buildAdminUrl(['error' => 'Недостаточно прав']));
 }
 
-$flash = adminFlashConsume();
-
 $layouts = LayoutCatalog::listLayouts();
 $layoutKey = isset($_GET['layout']) ? trim((string) $_GET['layout']) : '';
 $tab = isset($_GET['tab']) ? (string) $_GET['tab'] : 'layout';
@@ -58,92 +56,72 @@ function renderVisualFieldsContent(array $visualFields): void
     echo '</div>';
 }
 
-if (isset($_GET['partial']) && (string) $_GET['partial'] === 'visual_fields') {
-    $visualFields = $visualFieldRepo->listAll();
-    renderVisualFieldsContent($visualFields);
-    exit;
-}
-
-AdminLayout::renderHeader('Макеты дизайна');
-
-AdminLayout::openSidebar();
-
-echo '<div class="card shadow-sm border-0">';
-echo '<div class="card-body p-3">';
-echo '<div class="d-flex align-items-center justify-content-between mb-2">';
-echo '<div class="fw-semibold">Макеты дизайна</div>';
-echo '<a class="btn btn-icon-square btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'layouts', 'layout' => '_new']), ENT_QUOTES, 'UTF-8') . '" title="Добавить макет" aria-label="Добавить макет">+</a>';
-echo '</div>';
-
-if (empty($layouts)) {
-    echo '<div class="text-muted">Макеты пока не созданы.</div>';
-} elseif ($layoutKey !== '_new') {
-    echo '<nav class="nav-deep nav-deep-sm nav-deep-light">';
-    echo '<ul class="nav flex-column">';
-    foreach ($layouts as $layout) {
-        $isActive = $layoutKey === $layout;
-        $link = buildAdminUrl(['action' => 'layouts', 'layout' => $layout]);
-        $activeClass = $isActive ? ' fw-bold' : '';
-        echo '<li class="nav-item">';
-        echo '<a class="nav-link text-decoration-none text-truncate' . $activeClass . '" href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">';
-        echo htmlspecialchars($layout, ENT_QUOTES, 'UTF-8');
-        echo '</a>';
-        echo '</li>';
-    }
-    echo '</ul>';
-    echo '</nav>';
-} else {
-    echo '<div class="text-muted small">Создание нового макета.</div>';
-}
-echo '</div>';
-echo '</div>';
-
-AdminLayout::closeSidebar();
-
-AdminLayout::openContent();
-echo '<div class="card shadow-sm">';
-echo '<div class="card-body">';
-
-// Flash messages (errors/success)
-if (!empty($flash)) {
-    foreach ($flash as $item) {
-        if (!is_array($item)) {
-            continue;
-        }
-        $type = (string) ($item['type'] ?? '');
-        $msg = (string) ($item['message'] ?? '');
-        if ($msg === '') {
-            continue;
-        }
-        $class = $type === 'success' ? 'alert alert-success' : 'alert alert-danger';
-        echo '<div class="' . $class . '">' . htmlspecialchars($msg, ENT_QUOTES, 'UTF-8') . '</div>';
-    }
-}
-
-echo '<ul class="nav nav-tabs mb-3">';
-$layoutTabLabel = $layoutKey === '_new' ? 'Новый макет' : 'Редактирование макета';
-$layoutTabClass = $tab === 'layout' ? ' active' : '';
-$visualTabClass = $tab === 'visual' ? ' active' : '';
-echo '<li class="nav-item"><a class="nav-link' . $layoutTabClass . '" href="' . htmlspecialchars(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey !== '' ? $layoutKey : null, 'tab' => 'layout']), ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($layoutTabLabel, ENT_QUOTES, 'UTF-8') . '</a></li>';
-echo '<li class="nav-item"><a class="nav-link' . $visualTabClass . '" href="' . htmlspecialchars(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey !== '' ? $layoutKey : null, 'tab' => 'visual']), ENT_QUOTES, 'UTF-8') . '">Визуальные настройки</a></li>';
-echo '</ul>';
-
-if ($tab === 'visual') {
-    $visualFields = $visualFieldRepo->listAll();
-    $refreshUrl = buildAdminUrl([
-        'action' => 'layouts',
-        'layout' => $layoutKey !== '' ? $layoutKey : null,
-        'tab' => 'visual',
-        'partial' => 'visual_fields',
-    ]);
-    echo '<div id="visualFieldsBlock" data-refresh-url="' . htmlspecialchars($refreshUrl, ENT_QUOTES, 'UTF-8') . '">';
-    renderVisualFieldsContent($visualFields);
+function renderLayoutsSidebarHtml(array $layouts, string $layoutKey): void
+{
+    echo '<div class="card shadow-sm border-0">';
+    echo '<div class="card-body p-3">';
+    echo '<div class="d-flex align-items-center justify-content-between mb-2">';
+    echo '<div class="fw-semibold">Макеты дизайна</div>';
+    echo '<a class="btn btn-icon-square btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'layouts', 'layout' => '_new']), ENT_QUOTES, 'UTF-8') . '" title="Добавить макет" aria-label="Добавить макет">+</a>';
     echo '</div>';
-} else {
+
+    if (empty($layouts)) {
+        echo '<div class="text-muted">Макеты пока не созданы.</div>';
+    } elseif ($layoutKey !== '_new') {
+        echo '<nav class="nav-deep nav-deep-sm nav-deep-light">';
+        echo '<ul class="nav flex-column">';
+        foreach ($layouts as $layout) {
+            $isActive = $layoutKey === $layout;
+            $link = buildAdminUrl(['action' => 'layouts', 'layout' => $layout]);
+            $activeClass = $isActive ? ' fw-bold' : '';
+            echo '<li class="nav-item">';
+            echo '<a class="nav-link text-decoration-none text-truncate' . $activeClass . '" href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">';
+            echo htmlspecialchars($layout, ENT_QUOTES, 'UTF-8');
+            echo '</a>';
+            echo '</li>';
+        }
+        echo '</ul>';
+        echo '</nav>';
+    } else {
+        echo '<div class="text-muted small">Создание нового макета.</div>';
+    }
+    echo '</div>';
+    echo '</div>';
+}
+
+function renderLayoutsContentHtml(array $layouts, string $layoutKey, string $tab): void
+{
+    echo '<div class="card shadow-sm">';
+    echo '<div class="card-body">';
+
+    echo '<ul class="nav nav-tabs mb-3">';
+    $layoutTabLabel = $layoutKey === '_new' ? 'Новый макет' : 'Редактирование макета';
+    $layoutTabClass = $tab === 'layout' ? ' active' : '';
+    $visualTabClass = $tab === 'visual' ? ' active' : '';
+    echo '<li class="nav-item"><a class="nav-link' . $layoutTabClass . '" href="' . htmlspecialchars(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey !== '' ? $layoutKey : null, 'tab' => 'layout']), ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($layoutTabLabel, ENT_QUOTES, 'UTF-8') . '</a></li>';
+    echo '<li class="nav-item"><a class="nav-link' . $visualTabClass . '" href="' . htmlspecialchars(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey !== '' ? $layoutKey : null, 'tab' => 'visual']), ENT_QUOTES, 'UTF-8') . '">Визуальные настройки</a></li>';
+    echo '</ul>';
+
+    if ($tab === 'visual') {
+        global $visualFieldRepo;
+        $visualFields = $visualFieldRepo->listAll();
+        $refreshUrl = buildAdminUrl([
+            'action' => 'layouts',
+            'layout' => $layoutKey !== '' ? $layoutKey : null,
+            'tab' => 'visual',
+            'partial' => 'visual_fields',
+        ]);
+        echo '<div id="visualFieldsBlock" data-refresh-url="' . htmlspecialchars($refreshUrl, ENT_QUOTES, 'UTF-8') . '">';
+        renderVisualFieldsContent($visualFields);
+        echo '</div>';
+        echo '</div></div>';
+        return;
+    }
+
     if ($layoutKey === '_new') {
         $defaultLayoutTemplate = readDefaultLayoutTemplateFile() ?? '';
         $defaultLayoutNavTemplate = readDefaultLayoutNavTemplateFile() ?? '';
-        echo '<form method="post" action="/admin.php?action=layout_create">';
+        echo '<form method="post" action="/admin.php?action=layout_create" data-ajax="true">';
         echo csrf_token_field();
         echo '<div class="mb-3"><label class="form-label">Ключ макета</label><input class="form-control" name="layout_key" required></div>';
         echo '<div class="mb-3 js-code-editor-wrapper">';
@@ -170,7 +148,7 @@ if ($tab === 'visual') {
         if ($content === null) {
             echo '<div class="text-muted">Макет не найден.</div>';
         } else {
-            echo '<form method="post" action="/admin.php?action=layout_update">';
+            echo '<form method="post" action="/admin.php?action=layout_update" data-ajax="true">';
             echo csrf_token_field();
             echo '<div class="mb-3"><label class="form-label">Ключ макета</label><input class="form-control" name="layout_key" value="' . htmlspecialchars($layoutKey, ENT_QUOTES, 'UTF-8') . '" readonly></div>';
             echo '<div class="mb-3 js-code-editor-wrapper">';
@@ -192,34 +170,11 @@ if ($tab === 'visual') {
             echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
             echo '</form>';
             if (!in_array($layoutKey, ['default', 'home'], true)) {
-                echo '<div class="mt-2">';
-                echo '<button class="btn btn-outline-danger" type="button" data-bs-toggle="modal" data-bs-target="#deleteLayoutModal">';
-                echo 'Удалить';
-                echo '</button>';
-                echo '</div>';
-
-                // Modal confirmation
-                echo '<div class="modal fade" id="deleteLayoutModal" tabindex="-1" aria-hidden="true">';
-                echo '  <div class="modal-dialog">';
-                echo '    <div class="modal-content">';
-                echo '      <div class="modal-header">';
-                echo '        <h5 class="modal-title">Удалить макет?</h5>';
-                echo '        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>';
-                echo '      </div>';
-                echo '      <div class="modal-body">';
-                echo '        Макет <strong>' . htmlspecialchars($layoutKey, ENT_QUOTES, 'UTF-8') . '</strong> будет удалён безвозвратно.';
-                echo '      </div>';
-                echo '      <div class="modal-footer">';
-                echo '        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>';
-                echo '        <form method="post" action="/admin.php?action=layout_delete">';
-                echo              csrf_token_field();
-                echo '          <input type="hidden" name="layout_key" value="' . htmlspecialchars($layoutKey, ENT_QUOTES, 'UTF-8') . '">';
-                echo '          <button class="btn btn-danger" type="submit">Удалить</button>';
-                echo '        </form>';
-                echo '      </div>';
-                echo '    </div>';
-                echo '  </div>';
-                echo '</div>';
+                echo '<form class="mt-2" method="post" action="/admin.php?action=layout_delete" data-ajax="true" data-confirm="Удалить макет? Это действие необратимо.">';
+                echo csrf_token_field();
+                echo '<input type="hidden" name="layout_key" value="' . htmlspecialchars($layoutKey, ENT_QUOTES, 'UTF-8') . '">';
+                echo '<button class="btn btn-outline-danger" type="submit">Удалить</button>';
+                echo '</form>';
             } else {
                 echo '<div class="text-muted small mt-2">Системные макеты нельзя удалить.</div>';
             }
@@ -227,9 +182,42 @@ if ($tab === 'visual') {
     } else {
         echo '<div class="text-muted">Выберите макет для редактирования.</div>';
     }
+
+    echo '</div></div>';
 }
 
-echo '</div></div>';
+if (isset($_GET['partial']) && (string) $_GET['partial'] === 'visual_fields') {
+    $visualFields = $visualFieldRepo->listAll();
+    renderVisualFieldsContent($visualFields);
+    exit;
+}
+
+// Layouts partials for AJAX refresh
+if (isAjaxRequest() && isset($_GET['partial']) && (string) $_GET['partial'] === 'sidebar') {
+    renderLayoutsSidebarHtml($layouts, $layoutKey);
+    exit;
+}
+if (isAjaxRequest() && isset($_GET['partial']) && (string) $_GET['partial'] === 'content') {
+    renderLayoutsContentHtml($layouts, $layoutKey, $tab);
+    exit;
+}
+
+AdminLayout::renderHeader('Макеты дизайна');
+
+AdminLayout::openSidebar();
+
+$sidebarTpl = buildAdminUrl(['action' => 'layouts', 'layout' => '{layout}', 'partial' => 'sidebar']);
+echo '<div id="layoutsSidebarBlock" data-refresh-url-template="' . htmlspecialchars($sidebarTpl, ENT_QUOTES, 'UTF-8') . '">';
+renderLayoutsSidebarHtml($layouts, $layoutKey);
+echo '</div>';
+
+AdminLayout::closeSidebar();
+
+AdminLayout::openContent();
+$contentTpl = buildAdminUrl(['action' => 'layouts', 'layout' => '{layout}', 'tab' => '{tab}', 'partial' => 'content']);
+echo '<div id="layoutsContentBlock" data-refresh-url-template="' . htmlspecialchars($contentTpl, ENT_QUOTES, 'UTF-8') . '">';
+renderLayoutsContentHtml($layouts, $layoutKey, $tab);
+echo '</div>';
 AdminLayout::closeContent();
 
 AdminLayout::renderFooter();
