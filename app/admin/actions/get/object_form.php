@@ -19,17 +19,17 @@ foreach ($infoblocks as $row) {
 }
 
 if ($infoblock === null) {
-    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Инфоблок не найден']));
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));
 }
 
 $permissionAction = $object ? 'edit' : 'create';
 if (!Permission::canAction($user, $infoblock, $permissionAction)) {
-    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Недостаточно прав']));
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));
 }
 
 $component = $componentRepo->findById((int) $infoblock['component_id']);
 if ($component === null) {
-    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Компонент не найден']));
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));
 }
 
 $fields = parseComponentFields($component);

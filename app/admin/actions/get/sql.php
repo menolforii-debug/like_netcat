@@ -1,7 +1,7 @@
 <?php
 
 if (!Auth::isAdmin()) {
-    redirectTo(buildAdminUrl(['error' => 'Недостаточно прав']));
+    redirectTo(buildAdminUrl([]));
 }
 
 AdminLayout::renderHeader('SQL');

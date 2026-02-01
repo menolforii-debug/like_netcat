@@ -1,13 +1,13 @@
 <?php
 
 if (!Auth::isAdmin()) {
-    redirectTo(buildAdminUrl(['error' => 'Недостаточно прав']));
+    redirectTo(buildAdminUrl([]));
 }
 
 $parentId = isset($_GET['parent_id']) ? (int) $_GET['parent_id'] : 0;
 $parent = $parentId > 0 ? $sectionRepo->findById($parentId) : null;
 if ($parent === null) {
-    redirectTo(buildAdminUrl(['error' => 'Родитель не найден']));
+    redirectTo(buildAdminUrl([]));
 }
 $showInMenuInherit = true;
 $showInMenuValue = true;

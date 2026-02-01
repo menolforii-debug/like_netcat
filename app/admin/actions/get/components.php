@@ -1,7 +1,7 @@
 <?php
 
 if (!Auth::isAdmin()) {
-    redirectTo(buildAdminUrl(['error' => 'Недостаточно прав']));
+    redirectTo(buildAdminUrl([]));
 }
 
 $components = $componentRepo->listAll();
@@ -290,9 +290,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
         echo '<div class="mb-3 text-danger">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
     }
 
-    if ($saved === '1') {
-        echo '<div class="alert alert-success">Изменения сохранены.</div>';
-    }
+    // Сообщения create/update/delete теперь показываются только через AJAX → toast.
 
     if ($selectedComponent === null && !$isNewComponent) {
         echo '<div class="text-muted">Выберите компонент слева.</div>';

@@ -1,13 +1,13 @@
 <?php
 
 if (!Auth::isAdmin()) {
-    redirectTo(buildAdminUrl(['error' => 'Недостаточно прав']));
+    redirectTo(buildAdminUrl([]));
 }
 
 $sectionId = isset($_GET['section_id']) ? (int) $_GET['section_id'] : 0;
 $section = $sectionId > 0 ? $sectionRepo->findById($sectionId) : null;
 if ($section === null) {
-    redirectTo(buildAdminUrl(['error' => 'Раздел не найден']));
+    redirectTo(buildAdminUrl([]));
 }
 
 $components = $componentRepo->listAll();

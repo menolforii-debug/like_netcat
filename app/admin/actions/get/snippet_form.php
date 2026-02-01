@@ -1,7 +1,7 @@
 <?php
 
 if (!Auth::isAdmin()) {
-    redirectTo(buildAdminUrl(['error' => 'Недостаточно прав']));
+    redirectTo(buildAdminUrl([]));
 }
 
 $keyword = isset($_GET['keyword']) ? trim((string) $_GET['keyword']) : '';
@@ -54,15 +54,10 @@ echo '<h1 class="h5 mb-0">' . ($snippetExists ? 'Редактирование в
 echo '<a class="btn btn-outline-secondary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'snippet_list']), ENT_QUOTES, 'UTF-8') . '">К списку</a>';
 echo '</div>';
 
-if ($saved === '1') {
-    echo '<div class="alert alert-success">Врезка сохранена.</div>';
-}
-if ($errorMessage !== '') {
-    echo '<div class="alert alert-danger">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
-}
-if ($error !== '') {
-    echo '<div class="alert alert-danger">' . htmlspecialchars($error, ENT_QUOTES, 'UTF-8') . '</div>';
-}
+    // Сообщения create/update/delete теперь показываются только через AJAX → toast.
+    if ($error !== '') {
+        echo '<div class="alert alert-danger">' . htmlspecialchars($error, ENT_QUOTES, 'UTF-8') . '</div>';
+    }
 
 echo '<form method="post" action="/admin.php?action=snippet_save">';
 echo csrf_token_field();
