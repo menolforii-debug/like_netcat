@@ -46,7 +46,7 @@ if (!empty($history)) {
 }
 
 if ($sqlError) {
-    echo '<div class="alert alert-danger">' . htmlspecialchars((string) $sqlError, ENT_QUOTES, 'UTF-8') . '</div>';
+    echo '<script>window.showGlobalSnackbar(' . json_encode((string) $sqlError, JSON_UNESCAPED_UNICODE) . ', "error");</script>';
 }
 
 if ($sqlResult && isset($sqlResult['type'])) {
@@ -78,7 +78,7 @@ if ($sqlResult && isset($sqlResult['type'])) {
 
     if ($sqlResult['type'] === 'exec') {
         $message = $sqlResult['message'] ?? 'Запрос выполнен.';
-        echo '<div class="alert alert-success">' . htmlspecialchars((string) $message, ENT_QUOTES, 'UTF-8') . '</div>';
+        echo '<script>window.showGlobalSnackbar(' . json_encode((string) $message, JSON_UNESCAPED_UNICODE) . ', "success");</script>';
     }
 }
 

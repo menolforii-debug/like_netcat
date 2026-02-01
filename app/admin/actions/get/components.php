@@ -442,7 +442,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
 
     if ($tab === 'templates') {
         if ($templateError !== '') {
-            echo '<div class="alert alert-danger">' . htmlspecialchars($templateError, ENT_QUOTES, 'UTF-8') . '</div>';
+            echo '<script>window.showGlobalSnackbar(' . json_encode((string) $templateError, JSON_UNESCAPED_UNICODE) . ', "error");</script>';
         }
 
         if ($addView === '1') {

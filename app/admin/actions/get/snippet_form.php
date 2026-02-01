@@ -56,7 +56,7 @@ echo '</div>';
 
     // Сообщения create/update/delete теперь показываются только через AJAX → toast.
     if ($error !== '') {
-        echo '<div class="alert alert-danger">' . htmlspecialchars($error, ENT_QUOTES, 'UTF-8') . '</div>';
+        echo '<script>window.showGlobalSnackbar(' . json_encode((string) $error, JSON_UNESCAPED_UNICODE) . ', "error");</script>';
     }
 
 echo '<form method="post" action="/admin.php?action=snippet_save">';

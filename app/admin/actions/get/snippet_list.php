@@ -127,7 +127,7 @@ function renderSnippetsContentHtml(
     string $error
 ): void {
     if ($error !== '') {
-        echo '<div class="alert alert-danger">' . htmlspecialchars($error, ENT_QUOTES, 'UTF-8') . '</div>';
+        echo '<script>window.showGlobalSnackbar(' . json_encode((string) $error, JSON_UNESCAPED_UNICODE) . ', "error");</script>';
     }
     if ($keyword === '' && $snippets === []) {
         echo '<div class="text-muted">Врезки пока не созданы.</div>';
