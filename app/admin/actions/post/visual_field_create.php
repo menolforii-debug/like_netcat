@@ -18,14 +18,14 @@ if ($name === '' || $label === '') {
     if ($isAjax) {
         jsonResponse(['ok' => false, 'error' => 'Заполните ключ и название поля']);
     }
-    redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual', 'error' => 'Заполните ключ и название поля']));
+    redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual']));
 }
 
 if (!preg_match('/^[A-Za-z0-9_-]+$/', $name)) {
     if ($isAjax) {
         jsonResponse(['ok' => false, 'error' => 'Ключ поля должен быть URL-безопасным']);
     }
-    redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual', 'error' => 'Ключ поля должен быть URL-безопасным']));
+    redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual']));
 }
 
 $allowedTypes = ['text', 'textarea', 'number', 'checkbox', 'select', 'color', 'file'];
@@ -38,7 +38,7 @@ if ($visualFieldRepo->findByName($name) !== null) {
     if ($isAjax) {
         jsonResponse(['ok' => false, 'error' => 'Поле с таким ключом уже существует']);
     }
-    redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual', 'error' => 'Поле с таким ключом уже существует']));
+    redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual']));
 }
 
 $options = [];

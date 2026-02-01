@@ -12,16 +12,25 @@ $userId = isset($_POST['user_id']) ? (int) $_POST['user_id'] : 0;
 $password = isset($_POST['password']) ? (string) $_POST['password'] : '';
 
 if ($userId <= 0) {
-    redirectTo(buildAdminUrl(['action' => 'users_list', 'error' => 'Пользователь не найден']));
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Пользователь не найден']);
+    }
+    redirectTo(buildAdminUrl(['action' => 'users_list']));
 }
 
 if ($password === '') {
-    redirectTo(buildAdminUrl(['action' => 'users_list', 'error' => 'Введите новый пароль']));
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Введите новый пароль']);
+    }
+    redirectTo(buildAdminUrl(['action' => 'users_list']));
 }
 
 $targetUser = $userRepo->findById($userId);
 if ($targetUser === null) {
-    redirectTo(buildAdminUrl(['action' => 'users_list', 'error' => 'Пользователь не найден']));
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Пользователь не найден']);
+    }
+    redirectTo(buildAdminUrl(['action' => 'users_list']));
 }
 
 Auth::updateUserPassword($userId, $password);
@@ -29,6 +38,14 @@ Auth::updateUserPassword($userId, $password);
 if ($user) {
     AdminLog::log($user['id'], 'user_update_password', 'user', $userId, [
         'login' => $targetUser['login'] ?? null,
+    ]);
+}
+
+if (isAjaxRequest()) {
+    jsonResponse([
+        'ok' => true,
+        'message' => 'Пароль обновлен',
+        'refresh' => ['#usersContentBlock'],
     ]);
 }
 

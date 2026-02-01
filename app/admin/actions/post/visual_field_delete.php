@@ -9,8 +9,28 @@ if (!Auth::isAdmin()) {
 }
 
 $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
-if ($id > 0) {
+if ($id <= 0) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Поле не найдено']);
+    }
+    redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual']));
+}
+
+try {
     $visualFieldRepo->delete($id);
+} catch (Throwable $e) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => $e->getMessage()]);
+    }
+    redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual']));
+}
+
+if (isAjaxRequest()) {
+    jsonResponse([
+        'ok' => true,
+        'message' => 'Поле удалено',
+        'refresh' => ['#visualFieldsBlock'],
+    ]);
 }
 
 redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual']));

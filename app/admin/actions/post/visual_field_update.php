@@ -1,8 +1,7 @@
 <?php
 
-$isAjax = isAjaxRequest();
 if (!Auth::isAdmin()) {
-    if ($isAjax) {
+    if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Недостаточно прав']);
     }
     // fallback без сообщений
@@ -10,42 +9,33 @@ if (!Auth::isAdmin()) {
 }
 
 $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
-$field = $visualFieldRepo->findById($id);
-if ($field === null) {
-    if ($isAjax) {
+if ($id <= 0) {
+    if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Поле не найдено']);
     }
-    redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual', 'error' => 'Поле не найдено']));
+    redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual']));
 }
 
-$label = isset($_POST['label']) ? trim((string) $_POST['label']) : '';
-$type = isset($_POST['type']) ? trim((string) $_POST['type']) : 'text';
-$sort = isset($_POST['sort']) ? (int) $_POST['sort'] : 0;
-
-if ($label === '') {
-    if ($isAjax) {
-        jsonResponse(['ok' => false, 'error' => 'Название поля обязательно']);
+try {
+    $visualFieldRepo->update($id, [
+        'name' => isset($_POST['name']) ? trim((string) $_POST['name']) : '',
+        'label' => isset($_POST['label']) ? trim((string) $_POST['label']) : '',
+        'type' => isset($_POST['type']) ? trim((string) $_POST['type']) : 'text',
+        'sort' => isset($_POST['sort']) ? (int) $_POST['sort'] : 0,
+    ]);
+} catch (Throwable $e) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => $e->getMessage()]);
     }
-    redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual', 'error' => 'Название поля обязательно']));
+    redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual']));
 }
 
-$allowedTypes = ['text', 'textarea', 'number', 'checkbox', 'select', 'color', 'file'];
-if (!in_array($type, $allowedTypes, true)) {
-    // Если тип неизвестен, сохраняем безопасный дефолт.
-    $type = 'text';
-}
-
-$options = [];
-if ($type === 'select') {
-    $options = isset($field['options']) && is_array($field['options']) ? $field['options'] : [];
-}
-$visualFieldRepo->update($id, $label, $type, $options, $sort);
-
-if ($isAjax) {
+if (isAjaxRequest()) {
     jsonResponse([
         'ok' => true,
         'message' => 'Поле обновлено',
         'refresh' => ['#visualFieldsBlock'],
     ]);
 }
+
 redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual']));

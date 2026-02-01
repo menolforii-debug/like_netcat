@@ -13,11 +13,17 @@ $password = isset($_POST['password']) ? (string) $_POST['password'] : '';
 $role = isset($_POST['role']) ? trim((string) $_POST['role']) : null;
 
 if ($login === '' || $password === '') {
-    redirectTo(buildAdminUrl(['action' => 'users_list', 'error' => 'Заполните логин и пароль']));
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Заполните логин и пароль']);
+    }
+    redirectTo(buildAdminUrl(['action' => 'users_list']));
 }
 
 if ($userRepo->findByLogin($login)) {
-    redirectTo(buildAdminUrl(['action' => 'users_list', 'error' => 'Пользователь с таким логином уже существует']));
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Пользователь с таким логином уже существует']);
+    }
+    redirectTo(buildAdminUrl(['action' => 'users_list']));
 }
 
 $allowedRoles = ['admin', 'editor', 'guest'];
@@ -31,6 +37,14 @@ if ($user) {
     AdminLog::log($user['id'], 'user_create', 'user', $userId, [
         'login' => $login,
         'role' => $role,
+    ]);
+}
+
+if (isAjaxRequest()) {
+    jsonResponse([
+        'ok' => true,
+        'message' => 'Пользователь создан',
+        'refresh' => ['#usersContentBlock'],
     ]);
 }
 

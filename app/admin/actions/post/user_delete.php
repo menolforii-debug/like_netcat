@@ -10,16 +10,25 @@ if (!Auth::isAdmin()) {
 
 $userId = isset($_POST['user_id']) ? (int) $_POST['user_id'] : 0;
 if ($userId <= 0) {
-    redirectTo(buildAdminUrl(['action' => 'users_list', 'error' => 'Пользователь не найден']));
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Пользователь не найден']);
+    }
+    redirectTo(buildAdminUrl(['action' => 'users_list']));
 }
 
 $targetUser = $userRepo->findById($userId);
 if ($targetUser === null) {
-    redirectTo(buildAdminUrl(['action' => 'users_list', 'error' => 'Пользователь не найден']));
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Пользователь не найден']);
+    }
+    redirectTo(buildAdminUrl(['action' => 'users_list']));
 }
 
 if (DB::hasColumn('users', 'role') && ($targetUser['role'] ?? null) === 'admin' && $userRepo->countAdmins() <= 1) {
-    redirectTo(buildAdminUrl(['action' => 'users_list', 'error' => 'Нельзя удалить последнего администратора']));
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Нельзя удалить последнего администратора']);
+    }
+    redirectTo(buildAdminUrl(['action' => 'users_list']));
 }
 
 $userRepo->delete($userId);
@@ -27,6 +36,14 @@ $userRepo->delete($userId);
 if ($user) {
     AdminLog::log($user['id'], 'user_delete', 'user', $userId, [
         'login' => $targetUser['login'] ?? null,
+    ]);
+}
+
+if (isAjaxRequest()) {
+    jsonResponse([
+        'ok' => true,
+        'message' => 'Пользователь удален',
+        'refresh' => ['#usersContentBlock'],
     ]);
 }
 
