@@ -15,7 +15,7 @@ if ($id === 0 || $name === '' || $key === '') {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Заполните обязательные поля']);
     }
-    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'error' => 'Заполните обязательные поля']));
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks']));
 }
 
 if ($perPage < 0) {
@@ -27,7 +27,7 @@ if (!Utils::isUrlSafe($key)) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => $message]);
     }
-    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'error' => $message]));
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks']));
 }
 
 $existing = DB::fetchOne(
@@ -39,7 +39,7 @@ if ($existing !== null && (int) $existing['id'] !== $id) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => $message]);
     }
-    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'error' => $message]));
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks']));
 }
 
 $extra = [

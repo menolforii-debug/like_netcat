@@ -12,16 +12,25 @@ $componentId = isset($_POST['component_id']) ? (int) $_POST['component_id'] : 0;
 $view = isset($_POST['view']) ? trim((string) $_POST['view']) : '';
 
 if ($componentId <= 0) {
-    redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Компонент не найден']));
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
+    }
+    redirectTo(buildAdminUrl(['action' => 'components']));
 }
 
 if ($view === '' || !preg_match('/^[A-Za-z0-9_-]+$/', $view)) {
-    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => 'templates', 'error' => 'Некорректное имя шаблона']));
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Некорректное имя шаблона']);
+    }
+    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => 'templates']));
 }
 
 $component = $componentRepo->findById($componentId);
 if ($component === null) {
-    redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Компонент не найден']));
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
+    }
+    redirectTo(buildAdminUrl(['action' => 'components']));
 }
 
 $views = [];
@@ -48,6 +57,19 @@ if (is_array($decodedFields)) {
 }
 
 $componentRepo->update($componentId, (string) ($component['keyword'] ?? ''), (string) ($component['name'] ?? ''), $fields, $views);
+
+if (isAjaxRequest()) {
+    jsonResponse([
+        'ok' => true,
+        'message' => 'Шаблон добавлен',
+        'redirect' => buildAdminUrl([
+            'action' => 'components',
+            'component_id' => $componentId,
+            'tab' => 'templates',
+            'view' => $view,
+        ]),
+    ]);
+}
 
 redirectTo(buildAdminUrl([
     'action' => 'components',

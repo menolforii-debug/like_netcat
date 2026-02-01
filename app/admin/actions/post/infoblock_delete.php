@@ -7,7 +7,7 @@ if ($id === 0) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Инфоблок не найден']);
     }
-    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'error' => 'Инфоблок не найден']));
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks']));
 }
 
 try {
@@ -16,7 +16,7 @@ try {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => $e->getMessage()]);
     }
-    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks', 'error' => $e->getMessage()]));
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks']));
 }
 
 if ($user) {

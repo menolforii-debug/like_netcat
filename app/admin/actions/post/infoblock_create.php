@@ -16,7 +16,7 @@ if ($section === null || $componentId === 0 || $name === '' || $key === '') {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Заполните обязательные поля']);
     }
-    redirectTo(buildAdminUrl(['action' => 'infoblock_new', 'section_id' => $sectionId, 'error' => 'Заполните обязательные поля']));
+    redirectTo(buildAdminUrl(['action' => 'infoblock_new', 'section_id' => $sectionId]));
 }
 
 $component = $componentRepo->findById($componentId);
@@ -24,7 +24,7 @@ if ($component === null) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
     }
-    redirectTo(buildAdminUrl(['action' => 'infoblock_new', 'section_id' => $sectionId, 'error' => 'Компонент не найден']));
+    redirectTo(buildAdminUrl(['action' => 'infoblock_new', 'section_id' => $sectionId]));
 }
 
 if ($viewTemplate === '') {
@@ -41,7 +41,7 @@ if (!Utils::isUrlSafe($key)) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => $message]);
     }
-    redirectTo(buildAdminUrl(['action' => 'infoblock_new', 'section_id' => $sectionId, 'error' => $message]));
+    redirectTo(buildAdminUrl(['action' => 'infoblock_new', 'section_id' => $sectionId]));
 }
 
 $existing = DB::fetchOne(
@@ -53,7 +53,7 @@ if ($existing !== null) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => $message]);
     }
-    redirectTo(buildAdminUrl(['action' => 'infoblock_new', 'section_id' => $sectionId, 'error' => $message]));
+    redirectTo(buildAdminUrl(['action' => 'infoblock_new', 'section_id' => $sectionId]));
 }
 
 $extra = [

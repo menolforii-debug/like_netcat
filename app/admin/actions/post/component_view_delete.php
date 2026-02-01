@@ -15,7 +15,7 @@ if ($componentId <= 0) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
     }
-    redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Компонент не найден']));
+    redirectTo(buildAdminUrl(['action' => 'components']));
 }
 
 if ($view === '' || !preg_match('/^[A-Za-z0-9_-]+$/', $view)) {
@@ -23,7 +23,7 @@ if ($view === '' || !preg_match('/^[A-Za-z0-9_-]+$/', $view)) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => $message]);
     }
-    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => 'templates', 'error' => $message]));
+    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => 'templates']));
 }
 
 $component = $componentRepo->findById($componentId);
@@ -31,7 +31,7 @@ if ($component === null) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
     }
-    redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Компонент не найден']));
+    redirectTo(buildAdminUrl(['action' => 'components']));
 }
 
 $views = [];
