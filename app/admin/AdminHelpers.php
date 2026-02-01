@@ -767,10 +767,19 @@ function writeLayoutTemplate(string $layoutKey, string $content, ?string &$error
         @chmod($templatesDir, 0775);
     }
 
-    if (!is_writable($templatesDir)) {
-        $error = 'Папка макетов недоступна для записи: ' . $templatesDir;
+    // Надёжная проверка записи (is_writable может врать из-за open_basedir/ACL/FS)
+    $probe = rtrim($templatesDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . '.write_probe';
+    $ok = @file_put_contents($probe, '1');
+    if ($ok === false) {
+        $last = error_get_last();
+        $msg = is_array($last) && isset($last['message']) ? $last['message'] : 'unknown';
+        $ob = ini_get('open_basedir') ?: '';
+        $error = 'Папка макетов недоступна для записи: ' . $templatesDir .
+            ($ob !== '' ? ' (open_basedir=' . $ob . ')' : '') .
+            ' (' . $msg . ')';
         return false;
     }
+    @unlink($probe);
 
     $finalPath = $templatesDir . '/' . $layoutKey . '.php';
     $tmpPath = $finalPath . '.tmp';

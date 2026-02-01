@@ -74,7 +74,8 @@ POST-действия для страницы макетов (`/admin.php?action
 - на странице `GET`‑формы выводите `adminFlashConsume()` и отображайте список сообщений.
 
 `writeLayoutTemplate()` и `writeLayoutNavTemplate()` дополнительно проверяют доступность директории
-`templates/layouts/` для записи и возвращают текст ошибки через `$error`, если папка недоступна.
+`templates/layouts/` через пробную запись (файл `.write_probe`) и возвращают текст ошибки через
+`$error`, если папка недоступна или блокируется настройками вроде `open_basedir`.
 
 ### Пример `browse_messages()` в админке
 
