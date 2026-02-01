@@ -11,7 +11,7 @@ if ($title === '') {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Название сайта обязательно']);
     }
-    redirectTo(buildAdminUrl(['action' => 'site_new', 'error' => 'Название сайта обязательно']));
+    redirectTo(buildAdminUrl(['action' => 'site_new']));
 }
 
 $existingSites = $sectionRepo->listSitesOnly();
@@ -20,7 +20,7 @@ if (!empty($existingSites)) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => $message]);
     }
-    redirectTo(buildAdminUrl(['action' => 'site_new', 'error' => $message]));
+    redirectTo(buildAdminUrl(['action' => 'site_new']));
 }
 
 $normalizedDomain = Utils::normalizeHost($siteDomain);
@@ -34,7 +34,7 @@ foreach ($candidates as $candidate) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => $message]);
         }
-        redirectTo(buildAdminUrl(['action' => 'site_new', 'error' => $message]));
+        redirectTo(buildAdminUrl(['action' => 'site_new']));
     }
 }
 

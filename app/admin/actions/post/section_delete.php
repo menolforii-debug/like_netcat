@@ -16,7 +16,7 @@ if ($id > 0) {
             if (isAjaxRequest()) {
                 jsonResponse(['ok' => false, 'error' => 'Нельзя удалить системный раздел']);
             }
-            redirectTo(buildAdminUrl(['section_id' => $id, 'error' => 'Нельзя удалить системный раздел']));
+            redirectTo(buildAdminUrl(['section_id' => $id]));
         }
         if ($section['parent_id'] === null) {
             $sectionRepo->deleteSiteRecursive((int) $section['id']);
@@ -43,7 +43,7 @@ if ($id > 0) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => $e->getMessage()]);
         }
-        redirectTo(buildAdminUrl(['section_id' => $selectedId, 'error' => $e->getMessage()]));
+        redirectTo(buildAdminUrl(['section_id' => $selectedId]));
     }
 }
 

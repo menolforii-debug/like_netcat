@@ -44,7 +44,7 @@ foreach ($candidates as $candidate) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => $message]);
         }
-        redirectTo(buildAdminUrl(['section_id' => $id, 'error' => $message]));
+        redirectTo(buildAdminUrl(['section_id' => $id]));
     }
 }
 
@@ -99,7 +99,7 @@ if ($hasVisualInput) {
                         if (isAjaxRequest()) {
                             jsonResponse(['ok' => false, 'error' => $error]);
                         }
-                        redirectTo(buildAdminUrl(['section_id' => $id, 'error' => $error]));
+                        redirectTo(buildAdminUrl(['section_id' => $id]));
                     }
                     if ($storedPath !== null) {
                         if (isset($existingVisual[$name]) && $existingVisual[$name] !== $storedPath) {

@@ -33,4 +33,13 @@ if ($user) {
     ]);
 }
 
+if (isAjaxRequest()) {
+    jsonResponse([
+        'ok' => true,
+        'message' => 'SEO обновлено',
+        'refresh' => ['#sidebarTree', '#contentPane'],
+        'focus' => ['section_id' => $id, 'tab' => 'seo'],
+    ]);
+}
+
 redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'seo']));
