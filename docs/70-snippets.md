@@ -33,6 +33,14 @@ templates/snippets/<name>.php
 - проверяет имя на регулярное выражение;
 - проверяет `realpath` и принадлежность к `templates/snippets`.
 
+## Управление в админке
+В админке доступно создание и удаление врезок:
+- сохранение выполняет `/admin.php?action=snippet_save`;
+- удаление выполняет `/admin.php?action=snippet_delete`.
+
+Удаление удаляет файл `templates/snippets/<keyword>.php` и запись в таблице `snippet` (если таблица существует).
+Для безопасности действие проверяет ключ по шаблону `A-Za-z0-9_-` и путь через `realpath`.
+
 ## Пример: врезка футера
 `templates/snippets/footer.php`:
 
