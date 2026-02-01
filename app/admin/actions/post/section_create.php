@@ -15,7 +15,8 @@ if ($parentId <= 0) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Родитель не найден']);
     }
-    redirectTo(buildAdminUrl(['error' => 'Родитель не найден']));
+    // fallback без сообщений
+    redirectTo(buildAdminUrl([]));
 }
 
 $parent = $sectionRepo->findById($parentId);
@@ -23,7 +24,8 @@ if ($parent === null) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Родитель не найден']);
     }
-    redirectTo(buildAdminUrl(['error' => 'Родитель не найден']));
+    // fallback без сообщений
+    redirectTo(buildAdminUrl([]));
 }
 
 if ($title === '' || $englishName === '') {

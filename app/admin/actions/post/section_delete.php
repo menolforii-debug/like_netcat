@@ -7,7 +7,8 @@ if ($id > 0) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => 'Узел не найден']);
         }
-        redirectTo(buildAdminUrl(['error' => 'Узел не найден']));
+        // fallback без сообщений
+        redirectTo(buildAdminUrl([]));
     }
 
     try {
@@ -49,4 +50,5 @@ if ($id > 0) {
 if (isAjaxRequest()) {
     jsonResponse(['ok' => false, 'error' => 'Узел не найден']);
 }
-redirectTo(buildAdminUrl(['error' => 'Узел не найден']));
+// fallback без сообщений
+redirectTo(buildAdminUrl([]));

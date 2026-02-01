@@ -1,7 +1,11 @@
 <?php
 
 if (!Auth::isAdmin()) {
-    redirectTo(buildAdminUrl(['error' => 'Недостаточно прав']));
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Недостаточно прав']);
+    }
+    // fallback без сообщений
+    redirectTo(buildAdminUrl([]));
 }
 
 $componentId = isset($_POST['component_id']) ? (int) $_POST['component_id'] : 0;

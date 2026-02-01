@@ -3,7 +3,11 @@
 $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
 $section = $sectionRepo->findById($id);
 if ($section === null || $section['parent_id'] === null) {
-    redirectTo(buildAdminUrl(['error' => 'Раздел не найден']));
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Раздел не найден']);
+    }
+    // fallback без сообщений
+    redirectTo(buildAdminUrl([]));
 }
 
 $before = Utils::decodeExtra($section);

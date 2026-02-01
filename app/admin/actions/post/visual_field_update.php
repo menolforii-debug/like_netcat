@@ -5,7 +5,8 @@ if (!Auth::isAdmin()) {
     if ($isAjax) {
         jsonResponse(['ok' => false, 'error' => 'Недостаточно прав']);
     }
-    redirectTo(buildAdminUrl(['error' => 'Недостаточно прав']));
+    // fallback без сообщений
+    redirectTo(buildAdminUrl([]));
 }
 
 $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;

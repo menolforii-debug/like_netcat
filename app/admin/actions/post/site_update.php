@@ -6,7 +6,8 @@ if ($site === null || $site['parent_id'] !== null) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Сайт не найден']);
     }
-    redirectTo(buildAdminUrl(['error' => 'Сайт не найден']));
+    // fallback без сообщений
+    redirectTo(buildAdminUrl([]));
 }
 
 $before = [

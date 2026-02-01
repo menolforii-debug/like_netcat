@@ -6,7 +6,8 @@ if ($section === null || $section['parent_id'] === null) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Раздел не найден']);
     }
-    redirectTo(buildAdminUrl(['error' => 'Раздел не найден']));
+    // fallback без сообщений
+    redirectTo(buildAdminUrl([]));
 }
 
 $title = isset($_POST['title']) ? trim((string) $_POST['title']) : '';

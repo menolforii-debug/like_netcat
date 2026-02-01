@@ -1,7 +1,11 @@
 <?php
 
 if (!Auth::isAdmin()) {
-    redirectTo(buildAdminUrl(['error' => 'Недостаточно прав']));
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Недостаточно прав']);
+    }
+    // fallback без сообщений
+    redirectTo(buildAdminUrl([]));
 }
 
 $login = isset($_POST['login']) ? trim((string) $_POST['login']) : '';
