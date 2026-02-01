@@ -1,5 +1,11 @@
 <?php
 
+// Логин оставляем НЕ-AJAX (сессия/куки + корректный redirect).
+// Но если внезапно пришёл AJAX — вернём JSON, чтобы фронт показал toast, а не пытался парсить HTML.
+if (function_exists('isAjaxRequest') && isAjaxRequest()) {
+    jsonResponse(['ok' => false, 'error' => 'Вход в админку не поддерживает AJAX. Обновите страницу и войдите обычным способом.']);
+}
+
 $login = isset($_POST['login']) ? trim((string) $_POST['login']) : '';
 $pass = isset($_POST['pass']) ? (string) $_POST['pass'] : '';
 
