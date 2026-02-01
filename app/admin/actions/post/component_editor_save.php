@@ -15,21 +15,33 @@ $singleContent = isset($_POST['single_content']) ? (string) $_POST['single_conte
 $systemContent = isset($_POST['system_content']) ? (string) $_POST['system_content'] : '';
 
 if ($componentId <= 0) {
-    redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Компонент не найден']));
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
+    }
+    redirectTo(buildAdminUrl(['action' => 'components']));
 }
 
 if ($view === '' || !preg_match('/^[A-Za-z0-9_-]+$/', $view)) {
-    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => 'templates', 'error' => 'Некорректное представление']));
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Некорректное представление']);
+    }
+    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => 'templates']));
 }
 
 $component = $componentRepo->findById($componentId);
 if ($component === null) {
-    redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Компонент не найден']));
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
+    }
+    redirectTo(buildAdminUrl(['action' => 'components']));
 }
 
 $componentKey = trim((string) ($component['keyword'] ?? ''));
 if ($componentKey === '' || !preg_match('/^[A-Za-z0-9_-]+$/', $componentKey)) {
-    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => 'templates', 'view' => $view, 'error' => 'Некорректный ключ компонента']));
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Некорректный ключ компонента']);
+    }
+    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => 'templates', 'view' => $view]));
 }
 
 $root = dirname(__DIR__, 4);
@@ -40,7 +52,10 @@ if (!is_dir($baseDir)) {
 
 $baseReal = realpath($baseDir);
 if ($baseReal === false) {
-    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => 'templates', 'view' => $view, 'error' => 'Не удалось подготовить папку шаблонов']));
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Не удалось подготовить папку шаблонов']);
+    }
+    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => 'templates', 'view' => $view]));
 }
 $baseReal = rtrim($baseReal, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
 $componentDir = $baseReal . $componentKey . '/' . $view;
@@ -50,7 +65,10 @@ if (!is_dir($componentDir)) {
 
 $componentDirReal = realpath($componentDir);
 if ($componentDirReal === false || strpos($componentDirReal . DIRECTORY_SEPARATOR, $baseReal) !== 0) {
-    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => 'templates', 'view' => $view, 'error' => 'Некорректный путь к шаблонам']));
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Некорректный путь к шаблонам']);
+    }
+    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => 'templates', 'view' => $view]));
 }
 
 $files = [
@@ -62,6 +80,19 @@ $files = [
 foreach ($files as $fileName => $content) {
     $filePath = $componentDirReal . '/' . $fileName;
     file_put_contents($filePath, $content, LOCK_EX);
+}
+
+if (isAjaxRequest()) {
+    jsonResponse([
+        'ok' => true,
+        'message' => 'Шаблоны сохранены',
+        'redirect' => buildAdminUrl([
+            'action' => 'components',
+            'component_id' => $componentId,
+            'tab' => 'templates',
+            'view' => $view,
+        ]),
+    ]);
 }
 
 redirectTo(buildAdminUrl([

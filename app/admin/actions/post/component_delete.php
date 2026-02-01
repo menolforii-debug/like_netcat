@@ -13,7 +13,7 @@ if ($componentId <= 0) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
     }
-    redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Компонент не найден']));
+    redirectTo(buildAdminUrl(['action' => 'components']));
 }
 
 $component = $componentRepo->findById($componentId);
@@ -21,7 +21,7 @@ if ($component === null) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
     }
-    redirectTo(buildAdminUrl(['action' => 'components', 'error' => 'Компонент не найден']));
+    redirectTo(buildAdminUrl(['action' => 'components']));
 }
 
 $infoblock = DB::fetchOne(
@@ -36,7 +36,6 @@ if ($infoblock !== null) {
     redirectTo(buildAdminUrl([
         'action' => 'components',
         'component_id' => $componentId,
-        'error' => $message,
     ]));
 }
 
@@ -47,7 +46,7 @@ if ($componentKey !== '' && !componentKeyIsValid($componentKey)) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => $message]);
     }
-    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'error' => $message]));
+    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId]));
 }
 
 try {
@@ -76,7 +75,7 @@ try {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => $e->getMessage()]);
     }
-    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'error' => $e->getMessage()]));
+    redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId]));
 }
 
 if ($user) {
