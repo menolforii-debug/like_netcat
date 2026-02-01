@@ -33,7 +33,7 @@ echo '</div>';
 
 echo '<div class="card shadow-sm">';
 echo '<div class="card-body">';
-echo '<form method="post" action="/admin.php?action=infoblock_create">';
+echo '<form method="post" action="/admin.php?action=infoblock_create" data-ajax="true">';
 echo csrf_token_field();
 echo '<input type="hidden" name="section_id" value="' . (int) $sectionId . '">';
 echo '<div class="row g-3">';

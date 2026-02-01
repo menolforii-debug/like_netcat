@@ -46,7 +46,7 @@ if (empty($users)) {
         echo '<div class="row g-2">';
         if ($hasRole) {
             echo '<div class="col-md-6">';
-            echo '<form method="post" action="/admin.php?action=user_update_role">';
+            echo '<form method="post" action="/admin.php?action=user_update_role" data-ajax="true">';
             echo csrf_token_field();
             echo '<input type="hidden" name="user_id" value="' . $userId . '">';
             echo '<label class="form-label">Роль</label>';
@@ -67,7 +67,7 @@ if (empty($users)) {
         }
 
         echo '<div class="col-md-6">';
-        echo '<form method="post" action="/admin.php?action=user_update_password">';
+        echo '<form method="post" action="/admin.php?action=user_update_password" data-ajax="true">';
         echo csrf_token_field();
         echo '<input type="hidden" name="user_id" value="' . $userId . '">';
         echo '<label class="form-label">Новый пароль</label>';
@@ -79,7 +79,7 @@ if (empty($users)) {
         echo '</div>';
         echo '</div>';
 
-        echo '<form method="post" action="/admin.php?action=user_delete" class="mt-3" onsubmit="return confirm(\'Удалить пользователя?\')">';
+        echo '<form method="post" action="/admin.php?action=user_delete" class="mt-3" data-ajax="true" data-confirm="Удалить пользователя?">';
         echo csrf_token_field();
         echo '<input type="hidden" name="user_id" value="' . $userId . '">';
         $disabledAttr = $isLastAdmin ? ' disabled' : '';

@@ -20,7 +20,7 @@ echo '</div>';
 
 echo '<div class="card shadow-sm">';
 echo '<div class="card-body">';
-echo '<form method="post" action="/admin.php?action=user_create">';
+echo '<form method="post" action="/admin.php?action=user_create" data-ajax="true">';
 echo csrf_token_field();
 echo '<div class="mb-3">';
 echo '<label class="form-label">Логин</label>';

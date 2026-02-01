@@ -21,7 +21,7 @@ echo '</div>';
 
 echo '<div class="card shadow-sm">';
 echo '<div class="card-body">';
-echo '<form method="post" action="/admin.php?action=section_create">';
+echo '<form method="post" action="/admin.php?action=section_create" data-ajax="true">';
 echo csrf_token_field();
 echo '<input type="hidden" name="parent_id" value="' . (int) $parentId . '">';
 echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" type="text" name="title" required></div>';

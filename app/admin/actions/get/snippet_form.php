@@ -59,7 +59,7 @@ echo '</div>';
         echo '<script>window.showGlobalSnackbar(' . json_encode((string) $error, JSON_UNESCAPED_UNICODE) . ', "error");</script>';
     }
 
-echo '<form method="post" action="/admin.php?action=snippet_save">';
+echo '<form method="post" action="/admin.php?action=snippet_save" data-ajax="true">';
 echo csrf_token_field();
 
 echo '<div class="mb-3">';

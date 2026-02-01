@@ -43,7 +43,7 @@ function renderVisualFieldsContent(array $visualFields): void
             echo '</div>';
             echo '<div class="d-flex gap-2">';
             echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars(buildAdminUrl(['action' => 'visual_field_form', 'id' => (int) $field['id']]), ENT_QUOTES, 'UTF-8') . '">Редактировать</button>';
-            echo '<form method="post" action="/admin.php?action=visual_field_delete" onsubmit="return confirm(\'Удалить поле?\')">';
+            echo '<form method="post" action="/admin.php?action=visual_field_delete" data-ajax="true" data-confirm="Удалить поле?">';
             echo csrf_token_field();
             echo '<input type="hidden" name="id" value="' . (int) $field['id'] . '">';
             echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>';

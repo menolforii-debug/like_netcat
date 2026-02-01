@@ -13,7 +13,7 @@ echo '</div>';
 
 echo '<div class="card shadow-sm">';
 echo '<div class="card-body">';
-echo '<form method="post" action="/admin.php?action=site_create">';
+echo '<form method="post" action="/admin.php?action=site_create" data-ajax="true">';
 echo csrf_token_field();
 echo '<div class="mb-3"><label class="form-label">Название сайта</label><input class="form-control" type="text" name="title" required></div>';
 echo '<div class="mb-3"><label class="form-label">Основной домен</label><input class="form-control" type="text" name="site_domain"></div>';

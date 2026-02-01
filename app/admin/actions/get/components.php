@@ -185,7 +185,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
             if ($errorMessage !== '') {
                 echo '<div class="mb-3 text-danger">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
             }
-            echo '<form method="post" action="/admin.php?action=component_create">';
+            echo '<form method="post" action="/admin.php?action=component_create" data-ajax="true">';
             echo csrf_token_field();
             echo '<div class="mb-3"><label class="form-label">Ключ</label><input class="form-control" name="keyword" required></div>';
             echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" name="name" required></div>';
@@ -303,7 +303,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
     }
 
     if ($isNewComponent) {
-        echo '<form method="post" action="/admin.php?action=component_create">';
+        echo '<form method="post" action="/admin.php?action=component_create" data-ajax="true">';
         echo csrf_token_field();
         echo '<div class="mb-3"><label class="form-label">Ключ</label><input class="form-control" name="keyword" required></div>';
         echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" name="name" required></div>';
@@ -337,7 +337,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
     }
 
     if ($tab === 'general') {
-        echo '<form method="post" action="/admin.php?action=component_update">';
+        echo '<form method="post" action="/admin.php?action=component_update" data-ajax="true">';
         echo csrf_token_field();
         echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
         echo '<input type="hidden" name="return_tab" value="general">';
@@ -371,7 +371,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
     }
 
     if ($tab === 'fields') {
-        echo '<form method="post" action="/admin.php?action=component_update">';
+        echo '<form method="post" action="/admin.php?action=component_update" data-ajax="true">';
         echo csrf_token_field();
         echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
         echo '<input type="hidden" name="return_tab" value="fields">';
@@ -446,7 +446,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
         }
 
         if ($addView === '1') {
-            echo '<form method="post" action="/admin.php?action=component_view_add" class="mb-4">';
+            echo '<form method="post" action="/admin.php?action=component_view_add" class="mb-4" data-ajax="true">';
             echo csrf_token_field();
             echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
             echo '<div class="mb-3"><label class="form-label">Название шаблона</label><input class="form-control" name="view" required></div>';
@@ -458,7 +458,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
             echo 'templates/component/' . htmlspecialchars($componentKey, ENT_QUOTES, 'UTF-8') . '/' . htmlspecialchars($selectedView, ENT_QUOTES, 'UTF-8') . '/';
             echo '</div>';
 
-            echo '<form method="post" action="/admin.php?action=component_editor_save">';
+            echo '<form method="post" action="/admin.php?action=component_editor_save" data-ajax="true">';
             echo csrf_token_field();
             echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
             echo '<input type="hidden" name="view" value="' . htmlspecialchars($selectedView, ENT_QUOTES, 'UTF-8') . '">';
