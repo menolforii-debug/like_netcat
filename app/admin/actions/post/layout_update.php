@@ -1,9 +1,7 @@
 <?php
 
 if (!Auth::isAdmin()) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Недостаточно прав']);
-    }
+    adminFlashSet('danger', 'Недостаточно прав');
     redirectTo(buildAdminUrl(['action' => 'layouts']));
 }
 
@@ -12,24 +10,18 @@ $layoutTpl = isset($_POST['layout_tpl']) ? (string) $_POST['layout_tpl'] : '';
 $layoutNavTpl = isset($_POST['layout_nav_tpl']) ? (string) $_POST['layout_nav_tpl'] : '';
 
 if ($layoutKey === '' || !layoutKeyIsValid($layoutKey)) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Некорректный ключ макета']);
-    }
+    adminFlashSet('danger', 'Некорректный ключ макета');
     redirectTo(buildAdminUrl(['action' => 'layouts']));
 }
 
 if (!LayoutCatalog::layoutExists($layoutKey)) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Макет не найден']);
-    }
+    adminFlashSet('danger', 'Макет не найден');
     redirectTo(buildAdminUrl(['action' => 'layouts']));
 }
 
 $error = null;
 if (!writeLayoutTemplate($layoutKey, $layoutTpl, $error)) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => ($error ?: 'Не удалось сохранить макет')]);
-    }
+    adminFlashSet('danger', $error ?: 'Не удалось сохранить макет');
     redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey]));
 }
 
@@ -41,14 +33,10 @@ if (trim($layoutNavTpl) === '') {
 } else {
     $navError = null;
     if (!writeLayoutNavTemplate($layoutKey, $layoutNavTpl, $navError)) {
-        if (isAjaxRequest()) {
-            jsonResponse(['ok' => false, 'error' => ($navError ?: 'Не удалось сохранить шаблон навигации')]);
-        }
+        adminFlashSet('danger', $navError ?: 'Не удалось сохранить шаблон навигации');
         redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey]));
     }
 }
 
-if (isAjaxRequest()) {
-    jsonResponse(['ok' => true]);
-}
+adminFlashSet('success', 'Макет обновлен');
 redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey, 'tab' => 'layout']));
