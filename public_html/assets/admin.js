@@ -1,4 +1,4 @@
-// Global refresh context (used by data-refresh-url-template)
+// Global refresh context (used for URL-driven state)
 window.adminRefreshContext = window.adminRefreshContext || {};
 
 function initAdminRefreshContextFromUrl() {
@@ -17,27 +17,6 @@ function initAdminRefreshContextFromUrl() {
     if (sectionId !== null) window.adminRefreshContext.section_id = sectionId;
     if (view !== null) window.adminRefreshContext.view = view;
   } catch (e) {}
-}
-
-function applyRefreshUrlTemplate(template) {
-  const ctx = window.adminRefreshContext || {};
-  let out = (template || '');
-
-  const replaceToken = (name, value) => {
-    const rawToken = '{' + name + '}';
-    const encToken = '%7B' + name + '%7D';
-    const v = encodeURIComponent(value || '');
-    out = out.replaceAll(rawToken, v).replaceAll(encToken, v);
-  };
-
-  replaceToken('layout', ctx.layout || '');
-  replaceToken('keyword', ctx.keyword || '');
-  replaceToken('tab', ctx.tab || '');
-  replaceToken('component_id', ctx.component_id || '');
-  replaceToken('section_id', ctx.section_id || '');
-  replaceToken('view', ctx.view || '');
-
-  return out;
 }
 
 function initVisualInheritToggles(scope) {
@@ -232,8 +211,11 @@ function initCodeEditorFullscreen(scope) {
   });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('textarea.code-editor').forEach((textarea) => {
+function initCodeEditorTabIndentation(scope) {
+  const root = scope || document;
+  root.querySelectorAll('textarea.code-editor').forEach((textarea) => {
+    if (textarea.dataset.adminTabHandled === '1') return;
+    textarea.dataset.adminTabHandled = '1';
     textarea.addEventListener('keydown', (event) => {
       if (event.key === 'Tab') {
         event.preventDefault();
@@ -245,11 +227,48 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+}
 
-  initVisualInheritToggles(document);
-  initInfoblockViewSelects(document);
-  initInfoblockKeyAutofill(document);
-  initCodeEditorFullscreen(document);
+function initAdminUI(rootElement) {
+  const root = rootElement || document;
+  initCodeEditorTabIndentation(root);
+  initVisualInheritToggles(root);
+  initInfoblockViewSelects(root);
+  initInfoblockKeyAutofill(root);
+  initCodeEditorFullscreen(root);
+  if (window.initCodeEditors) window.initCodeEditors(root);
+}
+
+function ajaxLoad(url, { push = true } = {}) {
+  fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error('Bad response');
+      }
+      return res.text();
+    })
+    .then((html) => {
+      const content = document.getElementById('content');
+      if (!content) {
+        window.location.href = url;
+        return;
+      }
+      content.innerHTML = html;
+      if (push) {
+        window.history.pushState({}, '', url);
+      } else {
+        window.history.replaceState({}, '', url);
+      }
+      initAdminRefreshContextFromUrl();
+      initAdminUI(content);
+    })
+    .catch(() => {
+      window.location.href = url;
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initAdminUI(document);
   initAdminRefreshContextFromUrl();
 });
 
@@ -365,30 +384,6 @@ function clearModalError() {
   parts.errorEl.classList.add('d-none');
 }
 
-function refreshAdminBlocks(selectors) {
-  if (!Array.isArray(selectors)) return;
-  selectors.forEach((selector) => {
-    const target = document.querySelector(selector);
-    if (!target) return;
-    let url = target.getAttribute('data-refresh-url');
-    const tpl = target.getAttribute('data-refresh-url-template');
-    if (tpl) {
-      url = applyRefreshUrlTemplate(tpl);
-    }
-    if (!url) return;
-    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-      .then((res) => res.text())
-      .then((html) => {
-        target.innerHTML = html;
-        initVisualInheritToggles(target);
-        initInfoblockViewSelects(target);
-        initInfoblockKeyAutofill(target);
-        initCodeEditorFullscreen(target);
-        if (window.initCodeEditors) window.initCodeEditors(target);
-      });
-  });
-}
-
 function handleAjaxResponse(payload, context) {
   const isModalForm = context && context.isModalForm;
   const modalEl = context && context.modalEl;
@@ -402,59 +397,6 @@ function handleAjaxResponse(payload, context) {
     return;
   }
   if (payload.ok) {
-    // Support focus.layout and focus.keyword (snippets) in addition to existing focus.section_id/component_id
-    if (payload.focus && payload.focus.layout !== undefined) {
-      const url = new URL(window.location.href);
-      url.searchParams.set('layout', payload.focus.layout);
-      if (payload.focus.tab) {
-        url.searchParams.set('tab', payload.focus.tab);
-      }
-      window.history.replaceState({}, '', url);
-      window.adminRefreshContext.layout = payload.focus.layout;
-      if (payload.focus.tab) window.adminRefreshContext.tab = payload.focus.tab;
-    }
-    if (payload.focus && payload.focus.keyword !== undefined) {
-      const url = new URL(window.location.href);
-      url.searchParams.set('keyword', payload.focus.keyword);
-      url.searchParams.delete('new');
-      window.history.replaceState({}, '', url);
-      window.adminRefreshContext.keyword = payload.focus.keyword;
-    }
-
-    // IMPORTANT: apply section/component focus BEFORE refresh,
-    // so data-refresh-url-template can use updated context.
-    if (payload.focus && payload.focus.section_id) {
-      const url = new URL(window.location.href);
-      url.searchParams.set('section_id', payload.focus.section_id);
-      if (payload.focus.tab) {
-        url.searchParams.set('tab', payload.focus.tab);
-        if (payload.focus.tab !== 'infoblocks') {
-          url.searchParams.delete('infoblock_tab');
-        }
-      }
-      window.history.replaceState({}, '', url);
-      window.adminRefreshContext.section_id = payload.focus.section_id;
-      if (payload.focus.tab) window.adminRefreshContext.tab = payload.focus.tab;
-    }
-    if (payload.focus && payload.focus.component_id) {
-      const url = new URL(window.location.href);
-      url.searchParams.set('component_id', payload.focus.component_id);
-      // keep tab if backend provided it
-      if (payload.focus.tab) {
-        url.searchParams.set('tab', payload.focus.tab);
-      }
-      if (payload.focus.view) {
-        url.searchParams.set('view', payload.focus.view);
-        window.adminRefreshContext.view = payload.focus.view;
-      }
-      window.history.replaceState({}, '', url);
-      window.adminRefreshContext.component_id = payload.focus.component_id;
-      if (payload.focus.tab) window.adminRefreshContext.tab = payload.focus.tab;
-    }
-
-    if (payload.refresh) {
-      refreshAdminBlocks(payload.refresh);
-    }
     // Optional hard redirect if backend asks
     if (payload.redirect) {
       if (isModalForm && modalEl) {
@@ -527,6 +469,26 @@ document.addEventListener('click', (e) => {
   if (url) {
     openAdminModal(url);
   }
+});
+
+document.addEventListener('click', (event) => {
+  const link = event.target.closest('a.ajax-admin');
+  if (!link) return;
+  if (event.defaultPrevented) return;
+  if (event.button !== 0) return;
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  const target = link.getAttribute('target');
+  if (target && target !== '_self') return;
+  const href = link.getAttribute('href');
+  if (!href) return;
+  const url = new URL(href, window.location.href);
+  if (url.origin !== window.location.origin) return;
+  event.preventDefault();
+  ajaxLoad(url.toString(), { push: true });
+});
+
+window.addEventListener('popstate', () => {
+  ajaxLoad(window.location.href, { push: false });
 });
 
 document.addEventListener('submit', (e) => {

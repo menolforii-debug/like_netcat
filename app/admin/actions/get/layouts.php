@@ -4,35 +4,6 @@ if (!Auth::isAdmin()) {
     redirectTo(buildAdminUrl([]));
 }
 
-// ===============================
-// AJAX PARTIALS (MUST BE FIRST)
-// ===============================
-
-$partial = isset($_GET['partial']) ? (string) $_GET['partial'] : '';
-$layoutKey = isset($_GET['layout']) ? trim((string) $_GET['layout']) : '';
-$tab = isset($_GET['tab']) ? (string) $_GET['tab'] : 'layout';
-
-if ($partial !== '' && isAjaxRequest()) {
-    $layouts = LayoutCatalog::listLayouts();
-
-    if ($partial === 'sidebar') {
-        renderLayoutsSidebarHtml($layouts, $layoutKey);
-        exit;
-    }
-
-    if ($partial === 'content') {
-        renderLayoutsContentHtml($layouts, $layoutKey, $tab);
-        exit;
-    }
-
-    if ($partial === 'visual_fields') {
-        global $visualFieldRepo;
-        $visualFields = $visualFieldRepo->listAll();
-        renderVisualFieldsContent($visualFields);
-        exit;
-    }
-}
-
 $layouts = LayoutCatalog::listLayouts();
 $layoutKey = isset($_GET['layout']) ? trim((string) $_GET['layout']) : '';
 $tab = isset($_GET['tab']) ? (string) $_GET['tab'] : 'layout';
@@ -85,13 +56,13 @@ function renderVisualFieldsContent(array $visualFields): void
     echo '</div>';
 }
 
-function renderLayoutsSidebarHtml(array $layouts, string $layoutKey): void
+function renderLayoutsSidebarHtml(array $layouts, string $layoutKey, string $tab): void
 {
     echo '<div class="card shadow-sm border-0">';
     echo '<div class="card-body p-3">';
     echo '<div class="d-flex align-items-center justify-content-between mb-2">';
     echo '<div class="fw-semibold">Макеты дизайна</div>';
-    echo '<a class="btn btn-icon-square btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'layouts', 'layout' => '_new']), ENT_QUOTES, 'UTF-8') . '" title="Добавить макет" aria-label="Добавить макет">+</a>';
+    echo '<a class="btn btn-icon-square btn-outline-primary ajax-admin" href="' . htmlspecialchars(buildAdminUrl(['action' => 'layouts', 'layout' => '_new', 'tab' => $tab]), ENT_QUOTES, 'UTF-8') . '" title="Добавить макет" aria-label="Добавить макет">+</a>';
     echo '</div>';
 
     if (empty($layouts)) {
@@ -101,10 +72,10 @@ function renderLayoutsSidebarHtml(array $layouts, string $layoutKey): void
         echo '<ul class="nav flex-column">';
         foreach ($layouts as $layout) {
             $isActive = $layoutKey === $layout;
-            $link = buildAdminUrl(['action' => 'layouts', 'layout' => $layout]);
+            $link = buildAdminUrl(['action' => 'layouts', 'layout' => $layout, 'tab' => $tab]);
             $activeClass = $isActive ? ' fw-bold' : '';
             echo '<li class="nav-item">';
-            echo '<a class="nav-link text-decoration-none text-truncate' . $activeClass . '" href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">';
+            echo '<a class="nav-link text-decoration-none text-truncate ajax-admin' . $activeClass . '" href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">';
             echo htmlspecialchars($layout, ENT_QUOTES, 'UTF-8');
             echo '</a>';
             echo '</li>';
@@ -127,20 +98,14 @@ function renderLayoutsContentHtml(array $layouts, string $layoutKey, string $tab
     $layoutTabLabel = $layoutKey === '_new' ? 'Новый макет' : 'Редактирование макета';
     $layoutTabClass = $tab === 'layout' ? ' active' : '';
     $visualTabClass = $tab === 'visual' ? ' active' : '';
-    echo '<li class="nav-item"><a class="nav-link' . $layoutTabClass . '" href="' . htmlspecialchars(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey !== '' ? $layoutKey : null, 'tab' => 'layout']), ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($layoutTabLabel, ENT_QUOTES, 'UTF-8') . '</a></li>';
-    echo '<li class="nav-item"><a class="nav-link' . $visualTabClass . '" href="' . htmlspecialchars(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey !== '' ? $layoutKey : null, 'tab' => 'visual']), ENT_QUOTES, 'UTF-8') . '">Визуальные настройки</a></li>';
+    echo '<li class="nav-item"><a class="nav-link ajax-admin' . $layoutTabClass . '" href="' . htmlspecialchars(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey !== '' ? $layoutKey : null, 'tab' => 'layout']), ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($layoutTabLabel, ENT_QUOTES, 'UTF-8') . '</a></li>';
+    echo '<li class="nav-item"><a class="nav-link ajax-admin' . $visualTabClass . '" href="' . htmlspecialchars(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey !== '' ? $layoutKey : null, 'tab' => 'visual']), ENT_QUOTES, 'UTF-8') . '">Визуальные настройки</a></li>';
     echo '</ul>';
 
     if ($tab === 'visual') {
         global $visualFieldRepo;
         $visualFields = $visualFieldRepo->listAll();
-        $refreshUrl = buildAdminUrl([
-            'action' => 'layouts',
-            'layout' => $layoutKey !== '' ? $layoutKey : null,
-            'tab' => 'visual',
-            'partial' => 'visual_fields',
-        ]);
-        echo '<div id="visualFieldsBlock" data-refresh-url="' . htmlspecialchars($refreshUrl, ENT_QUOTES, 'UTF-8') . '">';
+        echo '<div id="visualFieldsBlock">';
         renderVisualFieldsContent($visualFields);
         echo '</div>';
         echo '</div></div>';
@@ -215,22 +180,21 @@ function renderLayoutsContentHtml(array $layouts, string $layoutKey, string $tab
     echo '</div></div>';
 }
 
+if (isAjaxRequest()) {
+    renderLayoutsContentHtml($layouts, $layoutKey, $tab);
+    exit;
+}
+
 AdminLayout::renderHeader('Макеты дизайна');
 
 AdminLayout::openSidebar();
-
-// IMPORTANT: do NOT use buildAdminUrl() here — it URL-encodes placeholders.
-$sidebarTpl = '/admin.php?action=layouts&layout={layout}&partial=sidebar';
-echo '<div id="left-sidebar" data-refresh-url-template="' . htmlspecialchars($sidebarTpl, ENT_QUOTES, 'UTF-8') . '">';
-renderLayoutsSidebarHtml($layouts, $layoutKey);
+echo '<div id="left-sidebar">';
+renderLayoutsSidebarHtml($layouts, $layoutKey, $tab);
 echo '</div>';
-
 AdminLayout::closeSidebar();
 
 AdminLayout::openContent();
-// IMPORTANT: do NOT use buildAdminUrl() here — it URL-encodes placeholders.
-$contentTpl = '/admin.php?action=layouts&layout={layout}&tab={tab}&partial=content';
-echo '<div id="content" data-refresh-url-template="' . htmlspecialchars($contentTpl, ENT_QUOTES, 'UTF-8') . '">';
+echo '<div id="content">';
 renderLayoutsContentHtml($layouts, $layoutKey, $tab);
 echo '</div>';
 AdminLayout::closeContent();
