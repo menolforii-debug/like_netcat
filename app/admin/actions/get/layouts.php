@@ -219,7 +219,8 @@ AdminLayout::renderHeader('Макеты дизайна');
 
 AdminLayout::openSidebar();
 
-// IMPORTANT: do NOT use buildAdminUrl() here — it URL-encodes placeholders.
+// IMPORTANT: buildAdminUrl() URL-кодирует плейсхолдеры {layout}/{tab} -> %7B..%7D,
+// что ломает подстановку шаблонов в admin.js.
 $sidebarTpl = '/admin.php?action=layouts&layout={layout}&partial=sidebar';
 echo '<div id="left-sidebar" data-refresh-url-template="' . htmlspecialchars($sidebarTpl, ENT_QUOTES, 'UTF-8') . '">';
 renderLayoutsSidebarHtml($layouts, $layoutKey);
@@ -228,7 +229,8 @@ echo '</div>';
 AdminLayout::closeSidebar();
 
 AdminLayout::openContent();
-// IMPORTANT: do NOT use buildAdminUrl() here — it URL-encodes placeholders.
+// IMPORTANT: buildAdminUrl() URL-кодирует плейсхолдеры {layout}/{tab} -> %7B..%7D,
+// что ломает подстановку шаблонов в admin.js.
 $contentTpl = '/admin.php?action=layouts&layout={layout}&tab={tab}&partial=content';
 echo '<div id="content" data-refresh-url-template="' . htmlspecialchars($contentTpl, ENT_QUOTES, 'UTF-8') . '">';
 renderLayoutsContentHtml($layouts, $layoutKey, $tab);

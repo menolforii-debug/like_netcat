@@ -116,6 +116,9 @@ POST-действия для страницы макетов (`/admin.php?action
 Шаблоны `data-refresh-url-template` на странице макетов должны хранить
 буквальные плейсхолдеры `{layout}` и `{tab}`: не используйте `buildAdminUrl()`,
 так как он URL-кодирует фигурные скобки.
+Пример шаблонов (используются в `app/admin/actions/get/layouts.php`):
+- `/admin.php?action=layouts&layout={layout}&partial=sidebar`
+- `/admin.php?action=layouts&layout={layout}&tab={tab}&partial=content`
 
 Поле шаблона макета может быть пустым: обработчики сохраняют даже пустой файл, чтобы
 можно было временно отключить разметку или подготовить файл под дальнейшую правку.
