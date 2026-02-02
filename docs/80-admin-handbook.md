@@ -3,7 +3,7 @@
 О чём документ: устройство админки, модель действий и правила безопасности.
 Когда читать: перед добавлением новых действий админки и интеграций.
 Кому полезно: разработчикам, расширяющим админку.
-Связанные документы: `docs/95-security.md`, `docs/90-database.md`.
+Связанные документы: `docs/81-admin-full-reload.md`, `docs/95-security.md`, `docs/90-database.md`.
 
 ## Архитектура действий админки
 Админка использует файловую модель:
@@ -31,58 +31,12 @@ app/admin/actions/post/<action>.php
 ## Форматы ответа
 Действие может:
 - сделать `redirectTo()`;
-- вывести строку (`echo` или `return` строку);
-- вернуть массив для `AJAX`‑запроса (при `X-Requested-With: XMLHttpRequest`).
+- вывести строку (`echo` или `return` строку).
 
 Полезные хелперы (в `AdminHelpers.php`):
-- `jsonResponse($payload, $status)`
-- `adminOk(string $message = '', array $focus = [], bool $withSidebar = true, array $extra = []): void`
 - `redirectTo($url)`
 - `csrf_token_field()`
 - `adminFlashSet($type, $message)` и `adminFlashConsume()` — краткоживущие сообщения об успехе/ошибке между редиректами.
-
-### Полезные поля JSON-ответа для `AJAX`
-`admin.js` поддерживает дополнительные поля в JSON-ответе:
-- `ok` — успех операции (булево значение).
-- `error` — текст ошибки, показывается в модальном окне или в глобальном уведомлении.
-- `message` — текст успешной операции (снэкбар).
-- `refresh` — массив CSS-селекторов, которые надо перезагрузить через `fetch`.
-- `focus` — объект для синхронизации URL (поддерживаются `section_id`, `component_id`, `layout`, `keyword`, `tab`, `view`).
-- `redirect` — полный URL, на который нужно сделать жёсткий переход после обработки.
-
-При ререндере блоков можно задавать:
-- `data-refresh-url` — фиксированный URL;
-- `data-refresh-url-template` — URL с плейсхолдерами `{layout}`, `{keyword}`, `{tab}`, `{section_id}`, `{component_id}`, `{view}`.
-
-Плейсхолдеры берутся из `window.adminRefreshContext` и обновляются из параметров URL
-или из `focus` в JSON-ответе.
-При формировании `data-refresh-url-template` используйте литеральные плейсхолдеры
-(`{component_id}` и т.д.): хелпер `buildAdminUrl()` кодирует значения, из-за чего
-плейсхолдеры превращаются в `%7B...%7D`. `admin.js` теперь поддерживает подстановку
-как литеральных, так и URL-кодированных плейсхолдеров, чтобы не ломать существующие
-ссылки.
-
-## Единый контракт AJAX (`adminOk`)
-Для успешных `POST`‑действий используйте `adminOk()` либо делайте явный `redirectTo()`:
-
-```php
-adminOk(string $message = '', array $focus = [], bool $withSidebar = true, array $extra = []): void
-```
-
-Поведение:
-- Формирует JSON `ok=true` и добавляет `message`/`focus`, если они переданы.
-- По умолчанию добавляет `refresh`:
-  - `withSidebar=true` → `['#left-sidebar', '#content']`;
-  - `withSidebar=false` → `['#content']`.
-- `$extra` добавляет или переопределяет ключи ответа (например, `redirect` или свой `refresh`).
-
-Стандарт контейнеров для перерисовки:
-- Для двухколоночных страниц: `#left-sidebar` (сайдбар) и `#content` (основной блок).
-- Для одноколоночных страниц: `#content`.
-Каждый обновляемый контейнер должен иметь `data-refresh-url` или `data-refresh-url-template`.
-
-Поддерживаемые ключи `focus` в текущем `admin.js`:
-`layout`, `keyword`, `tab`, `section_id`, `component_id`, `view`.
 
 ## `CSRF`
 Для `POST`‑действий (кроме `login`) проверяется `csrf_token`:
@@ -108,18 +62,15 @@ POST-действия для страницы макетов (`/admin.php?action
 - `layout_update` — обновляет шаблон макета и опциональный шаблон навигации.
 - `layout_delete` — удаляет файлы макета (кроме системных `default` и `home`).
 
-`GET`-страница макетов рендерит сайдбар и контент в полном режиме, а в
-`AJAX`-режиме отдаёт только основной контент без сайдбара и header/footer.
-Сайдбар не обновляется через `AJAX` — только при полной перезагрузке страницы.
+`GET`-страница макетов рендерит сайдбар и контент только в полном режиме
+с header и footer. Сайдбар обновляется исключительно при полной перезагрузке страницы.
 
 Поле шаблона макета может быть пустым: обработчики сохраняют даже пустой файл, чтобы
 можно было временно отключить разметку или подготовить файл под дальнейшую правку.
 
 Во всех формах используйте `csrf_token_field()` и валидируйте ключ макета через `layoutKeyIsValid()`.
-В `AJAX`-режиме используйте контракт SPA-light: при успехе возвращайте `redirectTo(...)`
-для операций, меняющих список макетов, либо `jsonResponse(['ok' => true])`, если
-состояние страницы не меняется. Ошибки возвращаются через
-`jsonResponse(['ok' => false, 'error' => '...'], HTTP_STATUS)`.
+Все `POST`-операции работают по схеме `POST → redirect → GET` и используют
+`adminFlashSet(...)` для сообщений.
 
 `writeLayoutTemplate()` и `writeLayoutNavTemplate()` дополнительно проверяют доступность директории
 `templates/layouts/` через пробную запись (файл `.write_probe`) и возвращают текст ошибки через
@@ -174,10 +125,12 @@ AdminLayout::renderFooter();
 ```php
 <?php
 if (!Auth::isAdmin()) {
-    jsonResponse(['ok' => false, 'error' => 'Недостаточно прав'], 403);
+    adminFlashSet('danger', 'Недостаточно прав');
+    redirectTo('/admin.php?action=hello');
 }
 // ... обработка данных ...
-jsonResponse(['ok' => true]);
+adminFlashSet('success', 'Сохранено');
+redirectTo('/admin.php?action=hello');
 ```
 
 ### Ссылка в админке
