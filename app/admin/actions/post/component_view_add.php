@@ -59,9 +59,7 @@ if (is_array($decodedFields)) {
 $componentRepo->update($componentId, (string) ($component['keyword'] ?? ''), (string) ($component['name'] ?? ''), $fields, $views);
 
 if (isAjaxRequest()) {
-    jsonResponse([
-        'ok' => true,
-        'message' => 'Шаблон добавлен',
+    adminOk('Шаблон добавлен', [], true, [
         'redirect' => buildAdminUrl([
             'action' => 'components',
             'component_id' => $componentId,

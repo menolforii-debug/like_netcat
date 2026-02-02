@@ -53,11 +53,6 @@ if (DB::hasTable('snippet')) {
 }
 
 if (isAjaxRequest()) {
-    jsonResponse([
-        'ok' => true,
-        'message' => 'Врезка удалена',
-        'focus' => ['keyword' => ''],
-        'refresh' => ['#snippetsSidebarBlock', '#snippetsContentBlock'],
-    ]);
+    adminOk('Врезка удалена', ['keyword' => ''], true);
 }
 redirectTo(buildAdminUrl(['action' => 'snippet_list']));

@@ -45,9 +45,7 @@ $options = [];
 $visualFieldRepo->create($name, $label, $type, $options, $sort);
 
 if ($isAjax) {
-    jsonResponse([
-        'ok' => true,
-        'message' => 'Поле создано',
+    adminOk('Поле создано', [], true, [
         'refresh' => ['#visualFieldsBlock'],
     ]);
 }

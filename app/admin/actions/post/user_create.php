@@ -41,10 +41,8 @@ if ($user) {
 }
 
 if (isAjaxRequest()) {
-    jsonResponse([
-        'ok' => true,
-        'message' => 'Пользователь создан',
-        'refresh' => ['#usersContentBlock'],
+    adminOk('Пользователь создан', [], false, [
+        'redirect' => buildAdminUrl(['action' => 'users_list']),
     ]);
 }
 

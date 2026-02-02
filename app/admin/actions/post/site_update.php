@@ -159,12 +159,7 @@ if ($user) {
 }
 
 if (isAjaxRequest()) {
-    jsonResponse([
-        'ok' => true,
-        'message' => 'Сайт обновлен',
-        'refresh' => ['#sidebarTree', '#contentPane'],
-        'focus' => ['section_id' => $id],
-    ]);
+    adminOk('Сайт обновлен', ['section_id' => $id], true);
 }
 $returnSiteTab = isset($_POST['return_site_tab']) ? (string) $_POST['return_site_tab'] : '';
 $returnDesignTab = isset($_POST['return_design_tab']) ? (string) $_POST['return_design_tab'] : '';

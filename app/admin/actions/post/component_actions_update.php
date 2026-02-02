@@ -34,9 +34,7 @@ if (!writeComponentActionTemplate((string) $component['keyword'], $actionsTpl, $
 }
 
 if (isAjaxRequest()) {
-    jsonResponse([
-        'ok' => true,
-        'message' => 'Шаблон действий сохранен',
+    adminOk('Шаблон действий сохранен', [], true, [
         'redirect' => buildAdminUrl([
             'action' => 'components',
             'component_id' => $componentId,

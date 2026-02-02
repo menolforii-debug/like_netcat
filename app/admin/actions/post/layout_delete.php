@@ -55,11 +55,8 @@ foreach ([$layoutPath, $navPath] as $path) {
 }
 
 if (isAjaxRequest()) {
-    jsonResponse([
-        'ok' => true,
-        'message' => 'Макет удалён',
-        'focus' => ['layout' => '', 'tab' => 'layout'],
-        'refresh' => ['#layoutsSidebarBlock', '#layoutsContentBlock'],
+    adminOk('Макет удалён', [], true, [
+        'redirect' => buildAdminUrl(['action' => 'layouts']),
     ]);
 }
 redirectTo(buildAdminUrl(['action' => 'layouts']));

@@ -26,9 +26,7 @@ try {
 }
 
 if (isAjaxRequest()) {
-    jsonResponse([
-        'ok' => true,
-        'message' => 'Поле удалено',
+    adminOk('Поле удалено', [], true, [
         'refresh' => ['#visualFieldsBlock'],
     ]);
 }

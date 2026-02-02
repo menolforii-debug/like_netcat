@@ -166,7 +166,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
 
     AdminLayout::openSidebar();
 
-    echo '<div class="card shadow-sm border-0">';
+    echo '<div id="left-sidebar" class="card shadow-sm border-0">';
     echo '<div class="card-body p-3">';
 
     echo '<div class="d-flex align-items-center justify-content-between mb-2">';
@@ -180,7 +180,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
         AdminLayout::closeSidebar();
 
         AdminLayout::openContent();
-        echo '<div class="card shadow-sm"><div class="card-body">';
+        echo '<div id="content" class="card shadow-sm"><div class="card-body">';
         if ($isNewComponent) {
             if ($errorMessage !== '') {
                 echo '<div class="mb-3 text-danger">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
@@ -283,7 +283,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
 
     AdminLayout::openContent();
 
-    echo '<div class="card shadow-sm">';
+    echo '<div id="content" class="card shadow-sm">';
     echo '<div class="card-body">';
 
     if ($errorMessage !== '') {

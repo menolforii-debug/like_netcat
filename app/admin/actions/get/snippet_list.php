@@ -195,7 +195,7 @@ echo '<div class="row g-4">';
 echo '<div class="col-12 col-lg-4">';
 
 $sidebarTpl = buildAdminUrl(['action' => 'snippet_list', 'keyword' => '{keyword}', 'partial' => 'sidebar']);
-echo '<div id="snippetsSidebarBlock" data-refresh-url-template="' . htmlspecialchars($sidebarTpl, ENT_QUOTES, 'UTF-8') . '">';
+echo '<div id="left-sidebar" data-refresh-url-template="' . htmlspecialchars($sidebarTpl, ENT_QUOTES, 'UTF-8') . '">';
 renderSnippetsSidebarHtml($snippets, $snippetNames, $keyword);
 echo '</div>';
 
@@ -203,7 +203,7 @@ echo '</div>';
 echo '<div class="col-12 col-lg-8">';
 
 $contentTpl = buildAdminUrl(['action' => 'snippet_list', 'keyword' => '{keyword}', 'partial' => 'content']);
-echo '<div id="snippetsContentBlock" data-refresh-url-template="' . htmlspecialchars($contentTpl, ENT_QUOTES, 'UTF-8') . '">';
+echo '<div id="content" data-refresh-url-template="' . htmlspecialchars($contentTpl, ENT_QUOTES, 'UTF-8') . '">';
 renderSnippetsContentHtml($snippets, $keyword, $snippetExists, $snippetName, $content, $error);
 echo '</div>';
 

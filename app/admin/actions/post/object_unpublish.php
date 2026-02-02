@@ -32,10 +32,8 @@ if ($id > 0) {
     }
 
     if (isAjaxRequest()) {
-        jsonResponse([
-            'ok' => true,
-            'message' => 'Объект снят с публикации',
-            'refresh' => ['#contentPane'],
+        adminOk('Объект снят с публикации', [], true, [
+            'refresh' => ['#content'],
         ]);
     }
 }

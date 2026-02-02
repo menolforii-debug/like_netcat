@@ -40,11 +40,7 @@ if ($user) {
 }
 
 if (isAjaxRequest()) {
-    jsonResponse([
-        'ok' => true,
-        'message' => 'Пользователь удален',
-        'refresh' => ['#usersContentBlock'],
-    ]);
+    adminOk('Пользователь удален', [], false);
 }
 
 redirectTo(buildAdminUrl(['action' => 'users_list']));

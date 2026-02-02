@@ -32,10 +32,8 @@ if ($id > 0) {
     }
 
     if (isAjaxRequest()) {
-        jsonResponse([
-            'ok' => true,
-            'message' => 'Объект восстановлен',
-            'refresh' => ['#contentPane'],
+        adminOk('Объект восстановлен', [], true, [
+            'refresh' => ['#content'],
         ]);
     }
 }

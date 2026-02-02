@@ -36,6 +36,7 @@ app/admin/actions/post/<action>.php
 
 Полезные хелперы (в `AdminHelpers.php`):
 - `jsonResponse($payload, $status)`
+- `adminOk(string $message = '', array $focus = [], bool $withSidebar = true, array $extra = []): void`
 - `redirectTo($url)`
 - `csrf_token_field()`
 - `adminFlashSet($type, $message)` и `adminFlashConsume()` — краткоживущие сообщения об успехе/ошибке между редиректами.
@@ -55,6 +56,28 @@ app/admin/actions/post/<action>.php
 
 Плейсхолдеры берутся из `window.adminRefreshContext` и обновляются из параметров URL
 или из `focus` в JSON-ответе.
+
+## Единый контракт AJAX (`adminOk`)
+Для успешных `POST`‑действий используйте `adminOk()` либо делайте явный `redirectTo()`:
+
+```php
+adminOk(string $message = '', array $focus = [], bool $withSidebar = true, array $extra = []): void
+```
+
+Поведение:
+- Формирует JSON `ok=true` и добавляет `message`/`focus`, если они переданы.
+- По умолчанию добавляет `refresh`:
+  - `withSidebar=true` → `['#left-sidebar', '#content']`;
+  - `withSidebar=false` → `['#content']`.
+- `$extra` добавляет или переопределяет ключи ответа (например, `redirect` или свой `refresh`).
+
+Стандарт контейнеров для перерисовки:
+- Для двухколоночных страниц: `#left-sidebar` (сайдбар) и `#content` (основной блок).
+- Для одноколоночных страниц: `#content`.
+Каждый обновляемый контейнер должен иметь `data-refresh-url` или `data-refresh-url-template`.
+
+Поддерживаемые ключи `focus` в текущем `admin.js`:
+`layout`, `keyword`, `tab`, `section_id`, `component_id`.
 
 ## `CSRF`
 Для `POST`‑действий (кроме `login`) проверяется `csrf_token`:

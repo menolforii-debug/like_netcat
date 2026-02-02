@@ -63,11 +63,6 @@ $stmt->execute([
 ]);
 
 if (isAjaxRequest()) {
-    jsonResponse([
-        'ok' => true,
-        'message' => 'Врезка сохранена',
-        'focus' => ['keyword' => $keyword],
-        'refresh' => ['#snippetsSidebarBlock', '#snippetsContentBlock'],
-    ]);
+    adminOk('Врезка сохранена', ['keyword' => $keyword], true);
 }
 redirectTo(buildAdminUrl(['action' => 'snippet_list', 'keyword' => $keyword]));

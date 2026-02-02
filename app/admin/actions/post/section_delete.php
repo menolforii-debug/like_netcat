@@ -32,11 +32,7 @@ if ($id > 0) {
             ]);
         }
         if (isAjaxRequest()) {
-            jsonResponse([
-                'ok' => true,
-                'message' => 'Узел удален',
-                'refresh' => ['#sidebarTree', '#contentPane'],
-            ]);
+            adminOk('Узел удален', [], true);
         }
         redirectTo(buildAdminUrl());
     } catch (Throwable $e) {

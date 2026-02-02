@@ -50,11 +50,6 @@ if (trim($layoutNavTpl) === '') {
 }
 
 if (isAjaxRequest()) {
-    jsonResponse([
-        'ok' => true,
-        'message' => 'Макет создан',
-        'focus' => ['layout' => $layoutKey, 'tab' => 'layout'],
-        'refresh' => ['#layoutsSidebarBlock', '#layoutsContentBlock'],
-    ]);
+    adminOk('Макет создан', ['layout' => $layoutKey, 'tab' => 'layout'], true);
 }
 redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey, 'tab' => 'layout']));

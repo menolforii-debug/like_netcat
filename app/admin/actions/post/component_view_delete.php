@@ -81,9 +81,7 @@ if ($baseReal !== false) {
 }
 
 if (isAjaxRequest()) {
-    jsonResponse([
-        'ok' => true,
-        'message' => 'Шаблон удален',
+    adminOk('Шаблон удален', [], true, [
         'refresh' => ['#components_block'],
     ]);
 }

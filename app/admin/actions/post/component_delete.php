@@ -86,9 +86,7 @@ if ($user) {
 }
 
 if (isAjaxRequest()) {
-    jsonResponse([
-        'ok' => true,
-        'message' => 'Компонент удален',
+    adminOk('Компонент удален', [], true, [
         'refresh' => ['#components_block'],
     ]);
 }

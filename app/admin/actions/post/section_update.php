@@ -230,12 +230,11 @@ if ($user) {
 $returnTab = isset($_POST['return_tab']) ? (string) $_POST['return_tab'] : '';
 $returnDesignTab = isset($_POST['return_design_tab']) ? (string) $_POST['return_design_tab'] : '';
 if (isAjaxRequest()) {
-    jsonResponse([
-        'ok' => true,
-        'message' => $isSystemRoot ? 'Системный раздел обновлен (english_name фиксирован)' : 'Раздел обновлен',
-        'refresh' => ['#sidebarTree', '#contentPane'],
-        'focus' => ['section_id' => $id],
-    ]);
+    adminOk(
+        $isSystemRoot ? 'Системный раздел обновлен (english_name фиксирован)' : 'Раздел обновлен',
+        ['section_id' => $id],
+        true
+    );
 }
 $params = ['section_id' => $id, 'tab' => 'section'];
 if ($returnTab !== '') {

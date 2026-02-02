@@ -607,6 +607,24 @@ function jsonResponse(array $payload, int $status = 200): void
     exit;
 }
 
+function adminOk(string $message = '', array $focus = [], bool $withSidebar = true, array $extra = []): void
+{
+    $payload = [
+        'ok' => true,
+    ];
+    if ($message !== '') {
+        $payload['message'] = $message;
+    }
+    if (!empty($focus)) {
+        $payload['focus'] = $focus;
+    }
+    $payload['refresh'] = $withSidebar ? ['#left-sidebar', '#content'] : ['#content'];
+
+    $payload = array_merge($payload, $extra);
+
+    jsonResponse($payload);
+}
+
 function normalizeComponentFieldsInput(array $fieldsInput): array
 {
     $normalized = [];

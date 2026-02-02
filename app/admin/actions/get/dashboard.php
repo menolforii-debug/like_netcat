@@ -657,13 +657,13 @@ if ($partial === 'content') {
 AdminLayout::renderHeader('Админка');
 
 AdminLayout::openSidebar();
-echo '<div id="sidebarTree" data-refresh-url="' . htmlspecialchars(buildAdminUrl(['partial' => 'sidebar', 'section_id' => $selectedId]), ENT_QUOTES, 'UTF-8') . '">';
+echo '<div id="left-sidebar" data-refresh-url="' . htmlspecialchars(buildAdminUrl(['partial' => 'sidebar', 'section_id' => $selectedId]), ENT_QUOTES, 'UTF-8') . '">';
 $renderSidebar();
 echo '</div>';
 AdminLayout::closeSidebar();
 
 AdminLayout::openContent();
-echo '<div id="contentPane" data-refresh-url="' . htmlspecialchars(buildAdminUrl(['partial' => 'content', 'section_id' => $selectedId, 'tab' => $tab]), ENT_QUOTES, 'UTF-8') . '">';
+echo '<div id="content" data-refresh-url="' . htmlspecialchars(buildAdminUrl(['partial' => 'content', 'section_id' => $selectedId, 'tab' => $tab]), ENT_QUOTES, 'UTF-8') . '">';
 $renderContent();
 echo '</div>';
 AdminLayout::closeContent();

@@ -1,8 +1,7 @@
 <?php
 
 if (isAjaxRequest()) {
-    jsonResponse([
-        'ok' => true,
+    adminOk('', [], true, [
         'redirect' => buildAdminUrl(['action' => 'components']),
     ]);
 }

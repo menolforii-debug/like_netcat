@@ -42,11 +42,7 @@ if ($user) {
 }
 
 if (isAjaxRequest()) {
-    jsonResponse([
-        'ok' => true,
-        'message' => 'Пароль обновлен',
-        'refresh' => ['#usersContentBlock'],
-    ]);
+    adminOk('Пароль обновлен', [], false);
 }
 
 redirectTo(buildAdminUrl(['action' => 'users_list']));

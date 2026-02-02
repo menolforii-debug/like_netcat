@@ -14,9 +14,7 @@ if ($sql === '') {
 function sqlAjaxOk(string $message): void
 {
     if (isAjaxRequest()) {
-        jsonResponse([
-            'ok' => true,
-            'message' => $message,
+        adminOk($message, [], false, [
             // результат/таблица хранится в $_SESSION, поэтому просто ведём на страницу просмотра
             'redirect' => buildAdminUrl(['action' => 'sql']),
         ]);

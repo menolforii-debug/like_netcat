@@ -66,11 +66,6 @@ if ($user) {
     ]);
 }
 if (isAjaxRequest()) {
-    jsonResponse([
-        'ok' => true,
-        'message' => 'Сайт создан',
-        'refresh' => ['#sidebarTree', '#contentPane'],
-        'focus' => ['section_id' => $siteId],
-    ]);
+    adminOk('Сайт создан', ['section_id' => $siteId], true);
 }
 redirectTo(buildAdminUrl(['section_id' => $siteId]));

@@ -115,10 +115,8 @@ if ($user) {
 }
 
 if (isAjaxRequest()) {
-    jsonResponse([
-        'ok' => true,
-        'message' => 'Объект создан',
-        'refresh' => ['#contentPane'],
+    adminOk('Объект создан', [], true, [
+        'refresh' => ['#content'],
     ]);
 }
 

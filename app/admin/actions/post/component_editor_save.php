@@ -83,9 +83,7 @@ foreach ($files as $fileName => $content) {
 }
 
 if (isAjaxRequest()) {
-    jsonResponse([
-        'ok' => true,
-        'message' => 'Шаблоны сохранены',
+    adminOk('Шаблоны сохранены', [], true, [
         'redirect' => buildAdminUrl([
             'action' => 'components',
             'component_id' => $componentId,

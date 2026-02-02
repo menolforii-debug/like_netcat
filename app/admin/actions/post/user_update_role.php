@@ -55,7 +55,7 @@ if ($user) {
 }
 
 if (isAjaxRequest()) {
-    jsonResponse(['ok' => true, 'message' => 'Роль обновлена', 'refresh' => ['#usersContentBlock']]);
+    adminOk('Роль обновлена', [], false);
 }
 
 redirectTo(buildAdminUrl(['action' => 'users_list']));

@@ -70,10 +70,6 @@ if ($user) {
 }
 
 if (isAjaxRequest()) {
-    jsonResponse([
-        'ok' => true,
-        'message' => 'Инфоблок обновлен',
-        'refresh' => ['#sidebarTree', '#contentPane'],
-    ]);
+    adminOk('Инфоблок обновлен', [], true);
 }
 redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks']));

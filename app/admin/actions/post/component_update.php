@@ -137,11 +137,8 @@ if ($user) {
 }
 
 if (isAjaxRequest()) {
-    jsonResponse([
-        'ok' => true,
-        'message' => 'Компонент обновлен',
-        'refresh' => ['#componentsSidebar', '#componentsContent'],
-        'focus' => ['component_id' => $componentId],
+    adminOk('Компонент обновлен', ['component_id' => $componentId], true, [
+        'refresh' => ['#components_block'],
     ]);
 }
 $returnTab = isset($_POST['return_tab']) ? (string) $_POST['return_tab'] : '';
