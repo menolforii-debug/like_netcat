@@ -12,6 +12,42 @@ if ($limit <= 0) {
 
 $logs = AdminLog::list($filters, $limit);
 
+function renderLogDetails(array $log): string
+{
+    $raw = (string) ($log['data_json'] ?? '');
+    if ($raw === '') {
+        return '';
+    }
+
+    $decoded = json_decode($raw, true);
+    if (!is_array($decoded)) {
+        return '<div class="text-muted small">data_json: ' . htmlspecialchars($raw, ENT_QUOTES, 'UTF-8') . '</div>';
+    }
+
+    if (($log['entity_type'] ?? '') === 'admin_error') {
+        $message = $decoded['message'] ?? '';
+        $file = $decoded['file'] ?? '';
+        $line = $decoded['line'] ?? '';
+        $trace = $decoded['trace'] ?? '';
+        $summary = trim($message !== '' ? $message : 'Ошибка');
+        $location = trim($file !== '' ? ($file . ($line !== '' ? ':' . $line : '')) : '');
+        $summaryEscaped = htmlspecialchars($summary, ENT_QUOTES, 'UTF-8');
+        $locationEscaped = htmlspecialchars($location, ENT_QUOTES, 'UTF-8');
+        $traceEscaped = htmlspecialchars($trace, ENT_QUOTES, 'UTF-8');
+
+        $details = '<div class="fw-semibold text-danger">' . $summaryEscaped . '</div>';
+        if ($locationEscaped !== '') {
+            $details .= '<div class="text-muted small">' . $locationEscaped . '</div>';
+        }
+        if ($traceEscaped !== '') {
+            $details .= '<details class="mt-1"><summary class="small text-muted">Trace</summary><pre class="small mb-0">' . $traceEscaped . '</pre></details>';
+        }
+        return $details;
+    }
+
+    return '<div class="text-muted small">data_json: ' . htmlspecialchars(json_encode($decoded, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8') . '</div>';
+}
+
 AdminLayout::renderHeader('Логи');
 echo '<div class="d-flex align-items-center justify-content-between mb-3">';
 echo '<h1 class="h4 mb-0">Логи администратора</h1>';
@@ -40,7 +76,7 @@ if (empty($logs)) {
     echo '<div class="card shadow-sm">';
     echo '<div class="table-responsive">';
     echo '<table class="table table-sm table-striped align-middle mb-0">';
-    echo '<thead><tr><th>Дата/время (UTC)</th><th>Пользователь</th><th>Действие</th><th>Сущность</th><th>ID сущности</th><th>IP</th></tr></thead><tbody>';
+    echo '<thead><tr><th>Дата/время (UTC)</th><th>Пользователь</th><th>Действие</th><th>Сущность</th><th>ID сущности</th><th>IP</th><th>Детали</th></tr></thead><tbody>';
     foreach ($logs as $log) {
         echo '<tr>';
         echo '<td>' . htmlspecialchars((string) $log['created_at'], ENT_QUOTES, 'UTF-8') . '</td>';
@@ -49,6 +85,7 @@ if (empty($logs)) {
         echo '<td>' . htmlspecialchars((string) $log['entity_type'], ENT_QUOTES, 'UTF-8') . '</td>';
         echo '<td>' . htmlspecialchars((string) ($log['entity_id'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>';
         echo '<td>' . htmlspecialchars((string) ($log['ip'] ?? ''), ENT_QUOTES, 'UTF-8') . '</td>';
+        echo '<td>' . renderLogDetails($log) . '</td>';
         echo '</tr>';
     }
     echo '</tbody></table></div>';
