@@ -161,12 +161,9 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
     $addView = $ctx['addView'];
 
     if ($wrap) {
-        $tpl = buildAdminUrl([
-            'action' => 'components_block',
-            'component_id' => '{component_id}',
-            'tab' => '{tab}',
-            'view' => '{view}',
-        ]);
+        // IMPORTANT: buildAdminUrl() urlencodes values and would turn {component_id} into %7Bcomponent_id%7D.
+        // For data-refresh-url-template we need literal placeholders.
+        $tpl = '/admin.php?action=components_block&component_id={component_id}&tab={tab}&view={view}';
         echo '<div id="components_block" data-refresh-url-template="' . htmlspecialchars($tpl, ENT_QUOTES, 'UTF-8') . '">';
     }
 

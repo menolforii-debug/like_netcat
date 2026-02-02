@@ -56,6 +56,9 @@ app/admin/actions/post/<action>.php
 
 Плейсхолдеры берутся из `window.adminRefreshContext` и обновляются из параметров URL
 или из `focus` в JSON-ответе.
+При формировании `data-refresh-url-template` используйте литеральные плейсхолдеры
+(`{component_id}` и т.д.): хелпер `buildAdminUrl()` кодирует значения, из-за чего
+плейсхолдеры превращаются в `%7B...%7D` и перестают подставляться.
 
 ## Единый контракт AJAX (`adminOk`)
 Для успешных `POST`‑действий используйте `adminOk()` либо делайте явный `redirectTo()`:
