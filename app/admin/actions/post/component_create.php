@@ -118,7 +118,7 @@ if ($user) {
 }
 
 if (isAjaxRequest()) {
-    adminOk('Компонент создан', ['component_id' => $componentId], true, [
+    adminOk('Компонент создан', ['component_id' => $componentId, 'tab' => 'general'], true, [
         'refresh' => ['#components_block'],
     ]);
 }

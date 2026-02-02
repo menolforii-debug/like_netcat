@@ -7,9 +7,15 @@ function initAdminRefreshContextFromUrl() {
     const layout = url.searchParams.get('layout');
     const keyword = url.searchParams.get('keyword');
     const tab = url.searchParams.get('tab');
+    const componentId = url.searchParams.get('component_id');
+    const sectionId = url.searchParams.get('section_id');
+    const view = url.searchParams.get('view');
     if (layout !== null) window.adminRefreshContext.layout = layout;
     if (keyword !== null) window.adminRefreshContext.keyword = keyword;
     if (tab !== null) window.adminRefreshContext.tab = tab;
+    if (componentId !== null) window.adminRefreshContext.component_id = componentId;
+    if (sectionId !== null) window.adminRefreshContext.section_id = sectionId;
+    if (view !== null) window.adminRefreshContext.view = view;
   } catch (e) {}
 }
 
@@ -18,7 +24,10 @@ function applyRefreshUrlTemplate(template) {
   return (template || '')
     .replaceAll('{layout}', encodeURIComponent(ctx.layout || ''))
     .replaceAll('{keyword}', encodeURIComponent(ctx.keyword || ''))
-    .replaceAll('{tab}', encodeURIComponent(ctx.tab || ''));
+    .replaceAll('{tab}', encodeURIComponent(ctx.tab || ''))
+    .replaceAll('{component_id}', encodeURIComponent(ctx.component_id || ''))
+    .replaceAll('{section_id}', encodeURIComponent(ctx.section_id || ''))
+    .replaceAll('{view}', encodeURIComponent(ctx.view || ''));
 }
 
 function initVisualInheritToggles(scope) {
@@ -402,9 +411,8 @@ function handleAjaxResponse(payload, context) {
       window.adminRefreshContext.keyword = payload.focus.keyword;
     }
 
-    if (payload.refresh) {
-      refreshAdminBlocks(payload.refresh);
-    }
+    // IMPORTANT: apply section/component focus BEFORE refresh,
+    // so data-refresh-url-template can use updated context.
     if (payload.focus && payload.focus.section_id) {
       const url = new URL(window.location.href);
       url.searchParams.set('section_id', payload.focus.section_id);
@@ -415,11 +423,27 @@ function handleAjaxResponse(payload, context) {
         }
       }
       window.history.replaceState({}, '', url);
+      window.adminRefreshContext.section_id = payload.focus.section_id;
+      if (payload.focus.tab) window.adminRefreshContext.tab = payload.focus.tab;
     }
     if (payload.focus && payload.focus.component_id) {
       const url = new URL(window.location.href);
       url.searchParams.set('component_id', payload.focus.component_id);
+      // keep tab if backend provided it
+      if (payload.focus.tab) {
+        url.searchParams.set('tab', payload.focus.tab);
+      }
+      if (payload.focus.view) {
+        url.searchParams.set('view', payload.focus.view);
+        window.adminRefreshContext.view = payload.focus.view;
+      }
       window.history.replaceState({}, '', url);
+      window.adminRefreshContext.component_id = payload.focus.component_id;
+      if (payload.focus.tab) window.adminRefreshContext.tab = payload.focus.tab;
+    }
+
+    if (payload.refresh) {
+      refreshAdminBlocks(payload.refresh);
     }
     // Optional hard redirect if backend asks
     if (payload.redirect) {

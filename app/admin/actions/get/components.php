@@ -161,7 +161,13 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
     $addView = $ctx['addView'];
 
     if ($wrap) {
-        echo '<div id="components_block" data-refresh-url="' . htmlspecialchars(buildAdminUrl(['action' => 'components_block', 'component_id' => $componentId, 'tab' => $tab, 'view' => $selectedView]), ENT_QUOTES, 'UTF-8') . '">';
+        $tpl = buildAdminUrl([
+            'action' => 'components_block',
+            'component_id' => '{component_id}',
+            'tab' => '{tab}',
+            'view' => '{view}',
+        ]);
+        echo '<div id="components_block" data-refresh-url-template="' . htmlspecialchars($tpl, ENT_QUOTES, 'UTF-8') . '">';
     }
 
     AdminLayout::openSidebar();

@@ -47,12 +47,12 @@ app/admin/actions/post/<action>.php
 - `error` — текст ошибки, показывается в модальном окне или в глобальном уведомлении.
 - `message` — текст успешной операции (снэкбар).
 - `refresh` — массив CSS-селекторов, которые надо перезагрузить через `fetch`.
-- `focus` — объект для синхронизации URL (поддерживаются `section_id`, `component_id`, `layout`, `keyword`, `tab`).
+- `focus` — объект для синхронизации URL (поддерживаются `section_id`, `component_id`, `layout`, `keyword`, `tab`, `view`).
 - `redirect` — полный URL, на который нужно сделать жёсткий переход после обработки.
 
 При ререндере блоков можно задавать:
 - `data-refresh-url` — фиксированный URL;
-- `data-refresh-url-template` — URL с плейсхолдерами `{layout}`, `{keyword}`, `{tab}`.
+- `data-refresh-url-template` — URL с плейсхолдерами `{layout}`, `{keyword}`, `{tab}`, `{section_id}`, `{component_id}`, `{view}`.
 
 Плейсхолдеры берутся из `window.adminRefreshContext` и обновляются из параметров URL
 или из `focus` в JSON-ответе.
@@ -77,7 +77,7 @@ adminOk(string $message = '', array $focus = [], bool $withSidebar = true, array
 Каждый обновляемый контейнер должен иметь `data-refresh-url` или `data-refresh-url-template`.
 
 Поддерживаемые ключи `focus` в текущем `admin.js`:
-`layout`, `keyword`, `tab`, `section_id`, `component_id`.
+`layout`, `keyword`, `tab`, `section_id`, `component_id`, `view`.
 
 ## `CSRF`
 Для `POST`‑действий (кроме `login`) проверяется `csrf_token`:
