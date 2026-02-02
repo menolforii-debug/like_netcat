@@ -28,6 +28,21 @@ app/admin/actions/post/<action>.php
 - `$selectedId`, `$tab`
 - репозитории: `$sectionRepo`, `$infoblockRepo`, `$componentRepo`, `$objectRepo`, `$userRepo`, `$visualFieldRepo`
 
+## Логирование ошибок админки
+`AdminRouter` фиксирует ошибки исполнения `action`‑файлов двумя путями:
+
+- `AdminLog::log(...)` записывает ошибку в таблицу `admin_log` (если класс доступен).
+- `ErrorLogger::log('admin_error', $data)` пишет JSON‑строки в файл `var/logs/admin_error.log`
+  на случай, когда системная таблица недоступна или запись в неё падает.
+
+Формат строки в файле:
+
+```json
+{"created_at":"2026-02-02T16:49:11+00:00","channel":"admin_error","data":{"action":"layouts","method":"GET","user_id":1,"request_uri":"/admin.php?action=layouts&tab=visual","message":"..."}}
+```
+
+Поле `data` содержит минимум: `action`, `method`, `user_id`, `request_uri`, `message`, `file`, `line`, `trace`.
+
 ## Форматы ответа
 Действие может:
 - сделать `redirectTo()`;
