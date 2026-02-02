@@ -54,9 +54,4 @@ foreach ([$layoutPath, $navPath] as $path) {
     @unlink($real);
 }
 
-if (isAjaxRequest()) {
-    adminOk('Макет удалён', [], true, [
-        'redirect' => buildAdminUrl(['action' => 'layouts']),
-    ]);
-}
 redirectTo(buildAdminUrl(['action' => 'layouts']));

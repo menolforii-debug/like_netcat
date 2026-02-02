@@ -49,6 +49,6 @@ if (trim($layoutNavTpl) === '') {
 }
 
 if (isAjaxRequest()) {
-    adminOk('Изменения сохранены', ['layout' => $layoutKey, 'tab' => 'layout'], true);
+    jsonResponse(['ok' => true]);
 }
 redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey, 'tab' => 'layout']));

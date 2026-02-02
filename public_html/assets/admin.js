@@ -397,33 +397,16 @@ function handleAjaxResponse(payload, context) {
     return;
   }
   if (payload.ok) {
-    // Optional hard redirect if backend asks
-    if (payload.redirect) {
-      if (isModalForm && modalEl) {
-        // modal will be closed below; redirect after close
-        const modalInstance = window.bootstrap ? window.bootstrap.Modal.getOrCreateInstance(modalEl) : null;
-        if (modalInstance) modalInstance.hide();
-      }
-      window.location.href = payload.redirect;
-      return;
+    if (payload.message) {
+      showGlobalSnackbar('success', payload.message);
     }
     if (isModalForm && modalEl) {
       const modalInstance = window.bootstrap ? window.bootstrap.Modal.getOrCreateInstance(modalEl) : null;
-      if (payload.message && modalInstance) {
-        modalEl.addEventListener(
-          'hidden.bs.modal',
-          () => {
-            showGlobalSnackbar('success', payload.message);
-          },
-          { once: true }
-        );
-      }
       if (modalInstance) {
         modalInstance.hide();
       }
-    } else if (payload.message) {
-      showGlobalSnackbar('success', payload.message);
     }
+    ajaxLoad(window.location.href, { push: false });
   }
 }
 
@@ -535,8 +518,15 @@ function submitAjaxForm(form) {
     body: formData,
     headers: { 'X-Requested-With': 'XMLHttpRequest' },
   })
-    .then((res) => res.json())
+    .then((res) => {
+      if (res.redirected) {
+        ajaxLoad(res.url, { push: true });
+        return null;
+      }
+      return res.json();
+    })
     .then((payload) => {
+      if (!payload) return;
       handleAjaxResponse(payload, { isModalForm, modalEl });
     })
     .catch(() => {

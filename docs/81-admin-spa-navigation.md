@@ -97,6 +97,26 @@ if (isAjaxRequest() && $_GET['partial'] === 'content') { ... }
 - `initAdminUI(rootElement)` — повторно инициализирует UI внутри `#content` (визуальные переключатели, инфоблоки, code editor и т.д.).
 - `ajaxLoad(url, { push = true })` — загружает content-only HTML, заменяет `#content`, синхронизирует URL и вызывает `initAdminUI`.
 
+## Контракт POST-действий (SPA-light)
+
+Формы с `data-ajax="true"` отправляются через `fetch` и обрабатываются по единому правилу:
+
+### A) Redirect (предпочтительно)
+
+- Сервер возвращает `redirectTo(<url>)`.
+- JS **не** делает `window.location`, а вызывает `ajaxLoad(<url>)`.
+- Используйте для операций, меняющих набор данных (создание/удаление).
+
+### B) JSON `{"ok": true}`
+
+- Допустимо, если состояние страницы не меняется.
+- JS вызывает `ajaxLoad(currentUrl)` для полной перерисовки `#content`.
+
+### Ошибки
+
+Возвращайте `jsonResponse(['ok' => false, 'error' => '...'], HTTP_STATUS)`.  
+`refresh`, selector-based обновления и любые `partial`-механики запрещены.
+
 ## Стратегия миграции
 
 - Миграция выполняется **постранично**.

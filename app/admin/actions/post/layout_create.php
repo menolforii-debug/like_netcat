@@ -49,7 +49,4 @@ if (trim($layoutNavTpl) === '') {
     }
 }
 
-if (isAjaxRequest()) {
-    adminOk('Макет создан', ['layout' => $layoutKey, 'tab' => 'layout'], true);
-}
 redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey, 'tab' => 'layout']));
