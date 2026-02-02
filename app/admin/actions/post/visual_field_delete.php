@@ -1,34 +1,22 @@
 <?php
 
 if (!Auth::isAdmin()) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Недостаточно прав']);
-    }
-    // fallback без сообщений
+    adminFlashSet('danger', 'Недостаточно прав');
     redirectTo(buildAdminUrl([]));
 }
 
 $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
 if ($id <= 0) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Поле не найдено']);
-    }
+    adminFlashSet('danger', 'Поле не найдено');
     redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual']));
 }
 
 try {
     $visualFieldRepo->delete($id);
 } catch (Throwable $e) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => $e->getMessage()]);
-    }
+    adminFlashSet('danger', $e->getMessage());
     redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual']));
 }
 
-if (isAjaxRequest()) {
-    adminOk('Поле удалено', [], true, [
-        'refresh' => ['#visualFieldsBlock'],
-    ]);
-}
-
+adminFlashSet('success', 'Поле удалено');
 redirectTo(buildAdminUrl(['action' => 'layouts', 'tab' => 'visual']));

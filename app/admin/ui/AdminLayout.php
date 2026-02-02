@@ -125,6 +125,14 @@ final class AdminLayout
             echo "</div>\n";
         }
 
+        $flashItems = adminFlashConsume();
+        $flashJson = htmlspecialchars(
+            json_encode($flashItems, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT),
+            ENT_QUOTES,
+            'UTF-8'
+        );
+        echo '<div id="admin-flash" data-flash="' . $flashJson . '"></div>';
+
         echo '<div class="modal fade" id="adminModal" tabindex="-1" aria-hidden="true">';
         echo '<div class="modal-dialog modal-xl modal-dialog-scrollable">';
         echo '<div class="modal-content">';

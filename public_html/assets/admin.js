@@ -239,37 +239,27 @@ function initAdminUI(rootElement) {
   if (window.initCodeEditors) window.initCodeEditors(root);
 }
 
-function ajaxLoad(url, { push = true } = {}) {
-  fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-    .then((res) => {
-      if (!res.ok) {
-        throw new Error('Bad response');
-      }
-      return res.text();
-    })
-    .then((html) => {
-      const content = document.getElementById('content');
-      if (!content) {
-        window.location.href = url;
-        return;
-      }
-      content.innerHTML = html;
-      if (push) {
-        window.history.pushState({}, '', url);
-      } else {
-        window.history.replaceState({}, '', url);
-      }
-      initAdminRefreshContextFromUrl();
-      initAdminUI(content);
-    })
-    .catch(() => {
-      window.location.href = url;
-    });
-}
-
 document.addEventListener('DOMContentLoaded', () => {
   initAdminUI(document);
   initAdminRefreshContextFromUrl();
+  const flashContainer = document.getElementById('admin-flash');
+  if (flashContainer) {
+    const rawFlash = flashContainer.getAttribute('data-flash') || '';
+    if (rawFlash) {
+      try {
+        const flashItems = JSON.parse(rawFlash);
+        if (Array.isArray(flashItems)) {
+          flashItems.forEach((item) => {
+            if (!item || typeof item !== 'object') return;
+            const type = item.type || 'info';
+            const message = item.message || '';
+            showGlobalSnackbar(type, message);
+          });
+        }
+      } catch (e) {}
+    }
+    flashContainer.remove();
+  }
 });
 
 const ADMIN_SNACKBAR_DURATION = 3500;
@@ -384,32 +374,6 @@ function clearModalError() {
   parts.errorEl.classList.add('d-none');
 }
 
-function handleAjaxResponse(payload, context) {
-  const isModalForm = context && context.isModalForm;
-  const modalEl = context && context.modalEl;
-  if (!payload || typeof payload !== 'object') return;
-  if (payload.error) {
-    if (isModalForm) {
-      showModalError(payload.error);
-    } else {
-      showGlobalSnackbar('danger', payload.error);
-    }
-    return;
-  }
-  if (payload.ok) {
-    if (payload.message) {
-      showGlobalSnackbar('success', payload.message);
-    }
-    if (isModalForm && modalEl) {
-      const modalInstance = window.bootstrap ? window.bootstrap.Modal.getOrCreateInstance(modalEl) : null;
-      if (modalInstance) {
-        modalInstance.hide();
-      }
-    }
-    ajaxLoad(window.location.href, { push: false });
-  }
-}
-
 function openAdminModal(url) {
   const parts = getAdminModalParts();
   if (!parts) return;
@@ -454,89 +418,15 @@ document.addEventListener('click', (e) => {
   }
 });
 
-document.addEventListener('click', (event) => {
-  const link = event.target.closest('a.ajax-admin');
-  if (!link) return;
-  if (event.defaultPrevented) return;
-  if (event.button !== 0) return;
-  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-  const target = link.getAttribute('target');
-  if (target && target !== '_self') return;
-  const href = link.getAttribute('href');
-  if (!href) return;
-  const url = new URL(href, window.location.href);
-  if (url.origin !== window.location.origin) return;
-  event.preventDefault();
-  ajaxLoad(url.toString(), { push: true });
-});
-
-window.addEventListener('popstate', () => {
-  ajaxLoad(window.location.href, { push: false });
-});
-
-document.addEventListener('submit', (e) => {
-  const form = e.target;
+document.addEventListener('submit', (event) => {
+  const form = event.target;
   if (!(form instanceof HTMLFormElement)) return;
-  if (!form.dataset.ajax) return;
-
-  e.preventDefault();
   const confirmMessage = form.getAttribute('data-confirm');
-  if (confirmMessage) {
-    const confirmModal = document.getElementById('adminConfirmModal');
-    if (!confirmModal) return;
-    const confirmBody = confirmModal.querySelector('.modal-body');
-    if (confirmBody) {
-      confirmBody.textContent = confirmMessage;
-    }
-    const confirmBtn = confirmModal.querySelector('[data-confirm-action="true"]');
-    if (confirmBtn) {
-      confirmBtn.onclick = () => {
-        const modalInstance = window.bootstrap ? window.bootstrap.Modal.getOrCreateInstance(confirmModal) : null;
-        if (modalInstance) modalInstance.hide();
-        submitAjaxForm(form);
-      };
-    }
-    const modalInstance = window.bootstrap ? window.bootstrap.Modal.getOrCreateInstance(confirmModal) : null;
-    if (modalInstance) modalInstance.show();
-    return;
+  if (!confirmMessage) return;
+  if (!window.confirm(confirmMessage)) {
+    event.preventDefault();
   }
-
-  submitAjaxForm(form);
 });
-
-function submitAjaxForm(form) {
-  const modalEl = document.getElementById('adminModal');
-  const isModalForm = !!(modalEl && modalEl.contains(form));
-  if (isModalForm) {
-    clearModalError();
-  }
-  const action = form.getAttribute('action') || window.location.href;
-  const method = (form.getAttribute('method') || 'POST').toUpperCase();
-  const formData = new FormData(form);
-  fetch(action, {
-    method,
-    body: formData,
-    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-  })
-    .then((res) => {
-      if (res.redirected) {
-        ajaxLoad(res.url, { push: true });
-        return null;
-      }
-      return res.json();
-    })
-    .then((payload) => {
-      if (!payload) return;
-      handleAjaxResponse(payload, { isModalForm, modalEl });
-    })
-    .catch(() => {
-      if (isModalForm) {
-        showModalError('Ошибка запроса. Попробуйте еще раз.');
-      } else {
-        showGlobalSnackbar('danger', 'Ошибка запроса. Попробуйте еще раз.');
-      }
-    });
-}
 
 // SectionTree: toggle expand/collapse by chevron (no navigation)
 document.addEventListener('click', (e) => {

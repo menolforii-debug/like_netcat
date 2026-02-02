@@ -43,7 +43,7 @@ function renderVisualFieldsContent(array $visualFields): void
             echo '</div>';
             echo '<div class="d-flex gap-2">';
             echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars(buildAdminUrl(['action' => 'visual_field_form', 'id' => (int) $field['id']]), ENT_QUOTES, 'UTF-8') . '">Редактировать</button>';
-            echo '<form method="post" action="/admin.php?action=visual_field_delete" data-ajax="true" data-confirm="Удалить поле?">';
+            echo '<form method="post" action="/admin.php?action=visual_field_delete" data-confirm="Удалить поле?">';
             echo csrf_token_field();
             echo '<input type="hidden" name="id" value="' . (int) $field['id'] . '">';
             echo '<button class="btn btn-sm btn-outline-danger" type="submit">Удалить</button>';
@@ -62,7 +62,7 @@ function renderLayoutsSidebarHtml(array $layouts, string $layoutKey, string $tab
     echo '<div class="card-body p-3">';
     echo '<div class="d-flex align-items-center justify-content-between mb-2">';
     echo '<div class="fw-semibold">Макеты дизайна</div>';
-    echo '<a class="btn btn-icon-square btn-outline-primary ajax-admin" href="' . htmlspecialchars(buildAdminUrl(['action' => 'layouts', 'layout' => '_new', 'tab' => $tab]), ENT_QUOTES, 'UTF-8') . '" title="Добавить макет" aria-label="Добавить макет">+</a>';
+    echo '<a class="btn btn-icon-square btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'layouts', 'layout' => '_new', 'tab' => $tab]), ENT_QUOTES, 'UTF-8') . '" title="Добавить макет" aria-label="Добавить макет">+</a>';
     echo '</div>';
 
     if (empty($layouts)) {
@@ -75,7 +75,7 @@ function renderLayoutsSidebarHtml(array $layouts, string $layoutKey, string $tab
             $link = buildAdminUrl(['action' => 'layouts', 'layout' => $layout, 'tab' => $tab]);
             $activeClass = $isActive ? ' fw-bold' : '';
             echo '<li class="nav-item">';
-            echo '<a class="nav-link text-decoration-none text-truncate ajax-admin' . $activeClass . '" href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">';
+            echo '<a class="nav-link text-decoration-none text-truncate' . $activeClass . '" href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">';
             echo htmlspecialchars($layout, ENT_QUOTES, 'UTF-8');
             echo '</a>';
             echo '</li>';
@@ -98,8 +98,8 @@ function renderLayoutsContentHtml(array $layouts, string $layoutKey, string $tab
     $layoutTabLabel = $layoutKey === '_new' ? 'Новый макет' : 'Редактирование макета';
     $layoutTabClass = $tab === 'layout' ? ' active' : '';
     $visualTabClass = $tab === 'visual' ? ' active' : '';
-    echo '<li class="nav-item"><a class="nav-link ajax-admin' . $layoutTabClass . '" href="' . htmlspecialchars(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey !== '' ? $layoutKey : null, 'tab' => 'layout']), ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($layoutTabLabel, ENT_QUOTES, 'UTF-8') . '</a></li>';
-    echo '<li class="nav-item"><a class="nav-link ajax-admin' . $visualTabClass . '" href="' . htmlspecialchars(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey !== '' ? $layoutKey : null, 'tab' => 'visual']), ENT_QUOTES, 'UTF-8') . '">Визуальные настройки</a></li>';
+    echo '<li class="nav-item"><a class="nav-link' . $layoutTabClass . '" href="' . htmlspecialchars(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey !== '' ? $layoutKey : null, 'tab' => 'layout']), ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($layoutTabLabel, ENT_QUOTES, 'UTF-8') . '</a></li>';
+    echo '<li class="nav-item"><a class="nav-link' . $visualTabClass . '" href="' . htmlspecialchars(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey !== '' ? $layoutKey : null, 'tab' => 'visual']), ENT_QUOTES, 'UTF-8') . '">Визуальные настройки</a></li>';
     echo '</ul>';
 
     if ($tab === 'visual') {
@@ -115,7 +115,7 @@ function renderLayoutsContentHtml(array $layouts, string $layoutKey, string $tab
     if ($layoutKey === '_new') {
         $defaultLayoutTemplate = readDefaultLayoutTemplateFile() ?? '';
         $defaultLayoutNavTemplate = readDefaultLayoutNavTemplateFile() ?? '';
-        echo '<form method="post" action="/admin.php?action=layout_create" data-ajax="true">';
+        echo '<form method="post" action="/admin.php?action=layout_create">';
         echo csrf_token_field();
         echo '<div class="mb-3"><label class="form-label">Ключ макета</label><input class="form-control" name="layout_key" required></div>';
         echo '<div class="mb-3 js-code-editor-wrapper">';
@@ -142,7 +142,7 @@ function renderLayoutsContentHtml(array $layouts, string $layoutKey, string $tab
         if ($content === null) {
             echo '<div class="text-muted">Макет не найден.</div>';
         } else {
-            echo '<form method="post" action="/admin.php?action=layout_update" data-ajax="true">';
+            echo '<form method="post" action="/admin.php?action=layout_update">';
             echo csrf_token_field();
             echo '<div class="mb-3"><label class="form-label">Ключ макета</label><input class="form-control" name="layout_key" value="' . htmlspecialchars($layoutKey, ENT_QUOTES, 'UTF-8') . '" readonly></div>';
             echo '<div class="mb-3 js-code-editor-wrapper">';
@@ -164,7 +164,7 @@ function renderLayoutsContentHtml(array $layouts, string $layoutKey, string $tab
             echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
             echo '</form>';
             if (!in_array($layoutKey, ['default', 'home'], true)) {
-                echo '<form class="mt-2" method="post" action="/admin.php?action=layout_delete" data-ajax="true" data-confirm="Удалить макет? Это действие необратимо.">';
+                echo '<form class="mt-2" method="post" action="/admin.php?action=layout_delete" data-confirm="Удалить макет? Это действие необратимо.">';
                 echo csrf_token_field();
                 echo '<input type="hidden" name="layout_key" value="' . htmlspecialchars($layoutKey, ENT_QUOTES, 'UTF-8') . '">';
                 echo '<button class="btn btn-outline-danger" type="submit">Удалить</button>';
@@ -178,11 +178,6 @@ function renderLayoutsContentHtml(array $layouts, string $layoutKey, string $tab
     }
 
     echo '</div></div>';
-}
-
-if (isAjaxRequest()) {
-    renderLayoutsContentHtml($layouts, $layoutKey, $tab);
-    exit;
 }
 
 AdminLayout::renderHeader('Макеты дизайна');
