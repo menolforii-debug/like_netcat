@@ -4,6 +4,35 @@ if (!Auth::isAdmin()) {
     redirectTo(buildAdminUrl([]));
 }
 
+// ===============================
+// AJAX PARTIALS (MUST BE FIRST)
+// ===============================
+
+$partial = isset($_GET['partial']) ? (string) $_GET['partial'] : '';
+$layoutKey = isset($_GET['layout']) ? trim((string) $_GET['layout']) : '';
+$tab = isset($_GET['tab']) ? (string) $_GET['tab'] : 'layout';
+
+if ($partial !== '' && isAjaxRequest()) {
+    $layouts = LayoutCatalog::listLayouts();
+
+    if ($partial === 'sidebar') {
+        renderLayoutsSidebarHtml($layouts, $layoutKey);
+        exit;
+    }
+
+    if ($partial === 'content') {
+        renderLayoutsContentHtml($layouts, $layoutKey, $tab);
+        exit;
+    }
+
+    if ($partial === 'visual_fields') {
+        global $visualFieldRepo;
+        $visualFields = $visualFieldRepo->listAll();
+        renderVisualFieldsContent($visualFields);
+        exit;
+    }
+}
+
 $layouts = LayoutCatalog::listLayouts();
 $layoutKey = isset($_GET['layout']) ? trim((string) $_GET['layout']) : '';
 $tab = isset($_GET['tab']) ? (string) $_GET['tab'] : 'layout';
@@ -184,22 +213,6 @@ function renderLayoutsContentHtml(array $layouts, string $layoutKey, string $tab
     }
 
     echo '</div></div>';
-}
-
-if (isset($_GET['partial']) && (string) $_GET['partial'] === 'visual_fields') {
-    $visualFields = $visualFieldRepo->listAll();
-    renderVisualFieldsContent($visualFields);
-    exit;
-}
-
-// Layouts partials for AJAX refresh
-if (isAjaxRequest() && isset($_GET['partial']) && (string) $_GET['partial'] === 'sidebar') {
-    renderLayoutsSidebarHtml($layouts, $layoutKey);
-    exit;
-}
-if (isAjaxRequest() && isset($_GET['partial']) && (string) $_GET['partial'] === 'content') {
-    renderLayoutsContentHtml($layouts, $layoutKey, $tab);
-    exit;
 }
 
 AdminLayout::renderHeader('Макеты дизайна');
