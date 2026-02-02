@@ -21,13 +21,23 @@ function initAdminRefreshContextFromUrl() {
 
 function applyRefreshUrlTemplate(template) {
   const ctx = window.adminRefreshContext || {};
-  return (template || '')
-    .replaceAll('{layout}', encodeURIComponent(ctx.layout || ''))
-    .replaceAll('{keyword}', encodeURIComponent(ctx.keyword || ''))
-    .replaceAll('{tab}', encodeURIComponent(ctx.tab || ''))
-    .replaceAll('{component_id}', encodeURIComponent(ctx.component_id || ''))
-    .replaceAll('{section_id}', encodeURIComponent(ctx.section_id || ''))
-    .replaceAll('{view}', encodeURIComponent(ctx.view || ''));
+  let out = (template || '');
+
+  const replaceToken = (name, value) => {
+    const rawToken = '{' + name + '}';
+    const encToken = '%7B' + name + '%7D';
+    const v = encodeURIComponent(value || '');
+    out = out.replaceAll(rawToken, v).replaceAll(encToken, v);
+  };
+
+  replaceToken('layout', ctx.layout || '');
+  replaceToken('keyword', ctx.keyword || '');
+  replaceToken('tab', ctx.tab || '');
+  replaceToken('component_id', ctx.component_id || '');
+  replaceToken('section_id', ctx.section_id || '');
+  replaceToken('view', ctx.view || '');
+
+  return out;
 }
 
 function initVisualInheritToggles(scope) {
