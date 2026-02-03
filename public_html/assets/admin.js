@@ -361,17 +361,27 @@ function getAdminModalParts() {
 }
 
 function showModalError(message) {
-  const parts = getAdminModalParts();
-  if (!parts || !message) return;
-  parts.errorEl.textContent = message;
-  parts.errorEl.classList.remove('d-none');
+  showModalAlert('danger', message);
 }
 
 function clearModalError() {
   const parts = getAdminModalParts();
   if (!parts) return;
   parts.errorEl.textContent = '';
-  parts.errorEl.classList.add('d-none');
+  parts.errorEl.className = 'admin-modal-error d-none text-danger fw-semibold mb-3';
+}
+
+function showModalAlert(type, message) {
+  const parts = getAdminModalParts();
+  if (!parts || !message) return;
+  let alertClass = 'alert-info';
+  if (type === 'danger' || type === 'error') {
+    alertClass = 'alert-danger';
+  } else if (type === 'success') {
+    alertClass = 'alert-success';
+  }
+  parts.errorEl.textContent = message;
+  parts.errorEl.className = 'admin-modal-error alert ' + alertClass + ' mb-3';
 }
 
 function openAdminModal(url) {
@@ -421,11 +431,62 @@ document.addEventListener('click', (e) => {
 document.addEventListener('submit', (event) => {
   const form = event.target;
   if (!(form instanceof HTMLFormElement)) return;
+  if (form.getAttribute('data-ajax') !== 'true') return;
+  if (!form.closest('#adminModal')) return;
+  event.preventDefault();
+  clearModalError();
+  const formData = new FormData(form);
+  fetch(form.action, {
+    method: form.method || 'POST',
+    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    body: formData,
+  })
+    .then((res) => res.json())
+    .then((payload) => {
+      if (!payload || payload.ok !== true) {
+        const message = payload && payload.error ? payload.error : 'Не удалось сохранить изменения.';
+        showModalAlert('danger', message);
+        return;
+      }
+      if (payload.message) {
+        showModalAlert('success', payload.message);
+        setTimeout(() => {
+          window.location.reload();
+        }, 600);
+        return;
+      }
+      window.location.reload();
+    })
+    .catch(() => {
+      showModalAlert('danger', 'Не удалось сохранить изменения.');
+    });
+});
+
+document.addEventListener('submit', (event) => {
+  const form = event.target;
+  if (!(form instanceof HTMLFormElement)) return;
+  if (form.dataset.confirmSkip === '1') {
+    delete form.dataset.confirmSkip;
+    return;
+  }
   const confirmMessage = form.getAttribute('data-confirm');
   if (!confirmMessage) return;
-  if (!window.confirm(confirmMessage)) {
-    event.preventDefault();
+  event.preventDefault();
+  const modalEl = document.getElementById('adminConfirmModal');
+  if (!modalEl) return;
+  const modalBody = modalEl.querySelector('.modal-body');
+  if (modalBody) {
+    modalBody.textContent = confirmMessage;
   }
+  const confirmButton = modalEl.querySelector('[data-confirm-action="true"]');
+  if (confirmButton) {
+    confirmButton.onclick = () => {
+      form.dataset.confirmSkip = '1';
+      form.submit();
+    };
+  }
+  const modal = window.bootstrap ? window.bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+  if (modal) modal.show();
 });
 
 // SectionTree: toggle expand/collapse by chevron (no navigation)

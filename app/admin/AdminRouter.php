@@ -159,7 +159,11 @@ final class AdminRouter
         $method = $isPost ? 'POST' : 'GET';
         $trace = self::shortenTrace($e->getTraceAsString());
         $data = [
+            'action' => $action,
             'method' => $method,
+            'user_id' => $user['id'] ?? null,
+            'request_uri' => $_SERVER['REQUEST_URI'] ?? null,
+            'query_string' => $_SERVER['QUERY_STRING'] ?? null,
             'message' => $e->getMessage(),
             'file' => $e->getFile(),
             'line' => $e->getLine(),
@@ -174,6 +178,14 @@ final class AdminRouter
             }
         } catch (Throwable $logError) {
             $data['log_error'] = $logError->getMessage();
+        }
+
+        try {
+            if (class_exists('ErrorLogger')) {
+                ErrorLogger::log('admin_error', $data);
+            }
+        } catch (Throwable $logError) {
+            $data['file_log_error'] = $logError->getMessage();
         }
 
         $message = sprintf(
