@@ -5,6 +5,7 @@ if (!Auth::isAdmin()) {
         jsonResponse(['ok' => false, 'error' => 'Недостаточно прав']);
     }
     // fallback без сообщений
+    adminFlashSet('danger', 'Недостаточно прав');
     redirectTo(buildAdminUrl([]));
 }
 
@@ -18,6 +19,7 @@ if ($componentId <= 0) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
     }
+    adminFlashSet('danger', 'Компонент не найден');
     redirectTo(buildAdminUrl(['action' => 'components']));
 }
 
@@ -26,6 +28,7 @@ if ($component === null) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
     }
+    adminFlashSet('danger', 'Компонент не найден');
     redirectTo(buildAdminUrl(['action' => 'components']));
 }
 
@@ -34,6 +37,7 @@ if ($keyword === '' || $name === '') {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Заполните ключ и название']);
     }
+    adminFlashSet('danger', 'Заполните ключ и название');
     redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId]));
 }
 
@@ -44,6 +48,7 @@ if (empty($fieldsInput) && $fieldsJson !== '') {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => 'Поля должны быть корректным JSON']);
         }
+        adminFlashSet('danger', 'Поля должны быть корректным JSON');
         redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId]));
     }
     $fieldsInput = normalizeComponentFieldsInput($decoded['fields'] ?? $decoded);
@@ -66,12 +71,14 @@ foreach ($fieldsInput as $row) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => 'Имя поля должно быть URL-безопасным']);
         }
+        adminFlashSet('danger', 'Имя поля должно быть URL-безопасным');
         redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => 'fields']));
     }
     if (isset($fieldNames[$fieldName])) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => 'Имя поля должно быть уникальным']);
         }
+        adminFlashSet('danger', 'Имя поля должно быть уникальным');
         redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => 'fields']));
     }
     $fieldNames[$fieldName] = true;
@@ -115,6 +122,7 @@ if ($existing !== null && (int) $existing['id'] !== $componentId) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Компонент с таким ключом уже существует']);
     }
+    adminFlashSet('danger', 'Компонент с таким ключом уже существует');
     redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId]));
 }
 
@@ -141,6 +149,7 @@ if (isAjaxRequest()) {
         'refresh' => ['#components_block'],
     ]);
 }
+adminFlashSet('success', 'Компонент обновлен');
 $returnTab = isset($_POST['return_tab']) ? (string) $_POST['return_tab'] : '';
 $tab = $returnTab !== '' ? $returnTab : 'general';
 redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => $tab]));

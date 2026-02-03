@@ -5,6 +5,7 @@ if (!Auth::isAdmin()) {
         jsonResponse(['ok' => false, 'error' => 'Недостаточно прав']);
     }
     // fallback без сообщений
+    adminFlashSet('danger', 'Недостаточно прав');
     redirectTo(buildAdminUrl([]));
 }
 
@@ -15,6 +16,7 @@ if ($componentId <= 0) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
     }
+    adminFlashSet('danger', 'Компонент не найден');
     redirectTo(buildAdminUrl(['action' => 'components']));
 }
 
@@ -22,6 +24,7 @@ if ($view === '' || !preg_match('/^[A-Za-z0-9_-]+$/', $view)) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Некорректное имя шаблона']);
     }
+    adminFlashSet('danger', 'Некорректное имя шаблона');
     redirectTo(buildAdminUrl(['action' => 'components', 'component_id' => $componentId, 'tab' => 'templates']));
 }
 
@@ -30,6 +33,7 @@ if ($component === null) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
     }
+    adminFlashSet('danger', 'Компонент не найден');
     redirectTo(buildAdminUrl(['action' => 'components']));
 }
 
@@ -68,6 +72,7 @@ if (isAjaxRequest()) {
         ]),
     ]);
 }
+adminFlashSet('success', 'Шаблон добавлен');
 
 redirectTo(buildAdminUrl([
     'action' => 'components',

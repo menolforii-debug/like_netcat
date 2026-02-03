@@ -7,6 +7,7 @@ if ($section === null || $section['parent_id'] === null) {
         jsonResponse(['ok' => false, 'error' => 'Раздел не найден']);
     }
     // fallback без сообщений
+    adminFlashSet('danger', 'Раздел не найден');
     redirectTo(buildAdminUrl([]));
 }
 
@@ -36,5 +37,6 @@ if ($user) {
 if (isAjaxRequest()) {
     adminOk('SEO обновлено', ['section_id' => $id, 'tab' => 'seo'], true);
 }
+adminFlashSet('success', 'SEO обновлено');
 
 redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'seo']));
