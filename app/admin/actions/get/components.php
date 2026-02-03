@@ -143,7 +143,7 @@ if ($selectedComponent !== null) {
     }
 }
 
-function renderComponentsBlock(array $ctx, bool $wrap): void
+function renderComponentsBlock(array $ctx): void
 {
     $components = $ctx['components'];
     $componentId = $ctx['componentId'];
@@ -159,13 +159,6 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
     $componentKey = $ctx['componentKey'];
     $templateError = $ctx['templateError'];
     $addView = $ctx['addView'];
-
-    if ($wrap) {
-        // IMPORTANT: buildAdminUrl() urlencodes values and would turn {component_id} into %7Bcomponent_id%7D.
-        // For data-refresh-url-template we need literal placeholders.
-        $tpl = '/admin.php?action=components_block&component_id={component_id}&tab={tab}&view={view}';
-        echo '<div id="components_block" data-refresh-url-template="' . htmlspecialchars($tpl, ENT_QUOTES, 'UTF-8') . '">';
-    }
 
     AdminLayout::openSidebar();
 
@@ -188,7 +181,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
             if ($errorMessage !== '') {
                 echo '<div class="mb-3 text-danger">' . htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') . '</div>';
             }
-            echo '<form method="post" action="/admin.php?action=component_create" data-ajax="true">';
+            echo '<form method="post" action="/admin.php?action=component_create">';
             echo csrf_token_field();
             echo '<div class="mb-3"><label class="form-label">Ключ</label><input class="form-control" name="keyword" required></div>';
             echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" name="name" required></div>';
@@ -200,9 +193,6 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
         echo '</div></div>';
         AdminLayout::closeContent();
 
-        if ($wrap) {
-            echo '</div>';
-        }
         return;
     }
 
@@ -306,7 +296,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
     }
 
     if ($isNewComponent) {
-        echo '<form method="post" action="/admin.php?action=component_create" data-ajax="true">';
+        echo '<form method="post" action="/admin.php?action=component_create">';
         echo csrf_token_field();
         echo '<div class="mb-3"><label class="form-label">Ключ</label><input class="form-control" name="keyword" required></div>';
         echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" name="name" required></div>';
@@ -340,7 +330,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
     }
 
     if ($tab === 'general') {
-        echo '<form method="post" action="/admin.php?action=component_update" data-ajax="true">';
+        echo '<form method="post" action="/admin.php?action=component_update">';
         echo csrf_token_field();
         echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
         echo '<input type="hidden" name="return_tab" value="general">';
@@ -366,7 +356,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
         echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
         echo '</form>';
 
-        echo '<form class="mt-3" method="post" action="/admin.php?action=component_delete" data-ajax="true" data-confirm="Удалить компонент?">';
+        echo '<form class="mt-3" method="post" action="/admin.php?action=component_delete" data-confirm="Удалить компонент?">';
         echo csrf_token_field();
         echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
         echo '<button class="btn btn-outline-danger" type="submit">Удалить компонент</button>';
@@ -374,7 +364,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
     }
 
     if ($tab === 'fields') {
-        echo '<form method="post" action="/admin.php?action=component_update" data-ajax="true">';
+        echo '<form method="post" action="/admin.php?action=component_update">';
         echo csrf_token_field();
         echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
         echo '<input type="hidden" name="return_tab" value="fields">';
@@ -449,7 +439,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
         }
 
         if ($addView === '1') {
-            echo '<form method="post" action="/admin.php?action=component_view_add" class="mb-4" data-ajax="true">';
+            echo '<form method="post" action="/admin.php?action=component_view_add" class="mb-4">';
             echo csrf_token_field();
             echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
             echo '<div class="mb-3"><label class="form-label">Название шаблона</label><input class="form-control" name="view" required></div>';
@@ -461,7 +451,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
             echo 'templates/component/' . htmlspecialchars($componentKey, ENT_QUOTES, 'UTF-8') . '/' . htmlspecialchars($selectedView, ENT_QUOTES, 'UTF-8') . '/';
             echo '</div>';
 
-            echo '<form method="post" action="/admin.php?action=component_editor_save" data-ajax="true">';
+            echo '<form method="post" action="/admin.php?action=component_editor_save">';
             echo csrf_token_field();
             echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
             echo '<input type="hidden" name="view" value="' . htmlspecialchars($selectedView, ENT_QUOTES, 'UTF-8') . '">';
@@ -497,7 +487,7 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
             echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
             echo '</form>';
 
-            echo '<form method="post" action="/admin.php?action=component_view_delete" data-ajax="true" data-confirm="Удалить шаблон и файлы шаблонов?">';
+            echo '<form method="post" action="/admin.php?action=component_view_delete" data-confirm="Удалить шаблон и файлы шаблонов?">';
             echo csrf_token_field();
             echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
             echo '<input type="hidden" name="view" value="' . htmlspecialchars($selectedView, ENT_QUOTES, 'UTF-8') . '">';
@@ -520,9 +510,6 @@ function renderComponentsBlock(array $ctx, bool $wrap): void
     echo '</div></div>';
     AdminLayout::closeContent();
 
-    if ($wrap) {
-        echo '</div>';
-    }
 }
 
 $ctx = [
@@ -542,14 +529,8 @@ $ctx = [
     'addView' => $addView,
 ];
 
-$partial = isset($_GET['partial']) ? (string) $_GET['partial'] : '';
-if ($partial === 'block' || (isAjaxRequest() && $partial === '1')) {
-    renderComponentsBlock($ctx, false);
-    return;
-}
-
 AdminLayout::renderHeader('Компоненты');
 
-renderComponentsBlock($ctx, true);
+renderComponentsBlock($ctx);
 
 AdminLayout::renderFooter();
