@@ -206,7 +206,11 @@ function renderFieldInput(array $field, array $data, array $uploadContext = []):
     $html = '<label class="form-label">' . $label . '</label>';
     switch ($type) {
         case 'textarea':
-            $html .= '<textarea class="form-control" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" rows="4">' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '</textarea>';
+            $textareaClass = 'form-control';
+            if (($uploadContext['context'] ?? '') === 'component') {
+                $textareaClass .= ' js-tinymce';
+            }
+            $html .= '<textarea class="' . $textareaClass . '" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" rows="4">' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '</textarea>';
             break;
         case 'number':
             $html .= '<input class="form-control" type="number" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '">';

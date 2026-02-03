@@ -166,7 +166,8 @@ final class AdminLayout
 
        
         echo "<script src=\"/assets/sow/js/core.min.js\"></script>\n";
-         echo "<script src=\"/assets/sow/js/vendor_bundle.min.js\"></script>\n";
+        echo "<script src=\"/assets/sow/js/vendor_bundle.min.js\"></script>\n";
+        echo "<script src=\"https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js\" referrerpolicy=\"origin\"></script>\n";
         echo "<script src=\"/assets/admin.js\"></script>\n";
 
         // CodeMirror core

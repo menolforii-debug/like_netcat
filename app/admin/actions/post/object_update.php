@@ -9,6 +9,7 @@ if ($object === null) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Объект не найден']);
     }
+    adminFlashSet('danger', 'Объект не найден');
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Объект не найден']));
 }
 
@@ -17,6 +18,7 @@ if ($infoblock === null) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Инфоблок не найден']);
     }
+    adminFlashSet('danger', 'Инфоблок не найден');
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Инфоблок не найден']));
 }
 
@@ -24,6 +26,7 @@ if (!Permission::canAction($user, $infoblock, 'edit')) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Недостаточно прав']);
     }
+    adminFlashSet('danger', 'Недостаточно прав');
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Недостаточно прав']));
 }
 
@@ -32,6 +35,7 @@ if ($component === null) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
     }
+    adminFlashSet('danger', 'Компонент не найден');
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Компонент не найден']));
 }
 
@@ -64,6 +68,7 @@ foreach ($fields as $field) {
             if (isAjaxRequest()) {
                 jsonResponse(['ok' => false, 'error' => $error]);
             }
+            adminFlashSet('danger', $error);
             redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => $error]));
         }
         if ($storedPath !== null) {
@@ -85,6 +90,7 @@ try {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => $e->getMessage()]);
     }
+    adminFlashSet('danger', $e->getMessage());
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => $e->getMessage()]));
 }
 
@@ -96,6 +102,7 @@ if ($isEnabled && $currentStatus !== 'published') {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => 'Недостаточно прав для публикации']);
         }
+        adminFlashSet('danger', 'Недостаточно прав для публикации');
         redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Недостаточно прав для публикации']));
     }
     $objectRepo->publish($id);
@@ -104,6 +111,7 @@ if ($isEnabled && $currentStatus !== 'published') {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => 'Недостаточно прав для снятия с публикации']);
         }
+        adminFlashSet('danger', 'Недостаточно прав для снятия с публикации');
         redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Недостаточно прав для снятия с публикации']));
     }
     $objectRepo->unpublish($id);
@@ -120,5 +128,6 @@ if (isAjaxRequest()) {
         'refresh' => ['#content'],
     ]);
 }
+adminFlashSet('success', 'Объект обновлен');
 
 redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));

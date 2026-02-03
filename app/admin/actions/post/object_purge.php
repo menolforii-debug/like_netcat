@@ -8,6 +8,7 @@ if ($id > 0) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => 'Объект не найден']);
         }
+        adminFlashSet('danger', 'Объект не найден');
         redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));
     }
 
@@ -16,6 +17,7 @@ if ($id > 0) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => 'Инфоблок не найден']);
         }
+        adminFlashSet('danger', 'Инфоблок не найден');
         redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));
     }
 
@@ -23,6 +25,7 @@ if ($id > 0) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => 'Недостаточно прав']);
         }
+        adminFlashSet('danger', 'Недостаточно прав');
         redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));
     }
 
@@ -38,6 +41,7 @@ if ($id > 0) {
             'refresh' => ['#contentPane'],
         ]);
     }
+    adminFlashSet('success', 'Объект удален навсегда');
 }
 
 redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));

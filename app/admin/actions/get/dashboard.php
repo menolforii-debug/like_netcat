@@ -153,7 +153,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
         echo '</ul>';
 
         if ($isAdmin) {
-            echo '<form method="post" action="/admin.php?action=site_update" enctype="multipart/form-data" data-ajax="true">';
+            echo '<form method="post" action="/admin.php?action=site_update" enctype="multipart/form-data">';
             echo csrf_token_field();
             echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
             if ($siteTab !== 'settings') {
@@ -253,7 +253,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
             }
             if ($isAdmin) {
                 $isSystemRoot = in_array($selected['english_name'], ['index', '404'], true);
-                echo '<form method="post" action="/admin.php?action=section_update" enctype="multipart/form-data" data-ajax="true">';
+                echo '<form method="post" action="/admin.php?action=section_update" enctype="multipart/form-data">';
                 echo csrf_token_field();
                 echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
                 echo '<div class="mb-3"><label class="form-label">Название</label><input class="form-control" type="text" name="title" value="' . htmlspecialchars((string) $selected['title'], ENT_QUOTES, 'UTF-8') . '" required></div>';
@@ -347,7 +347,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                 $layoutNote = ' (по умолчанию)';
             }
             if ($isAdmin) {
-                echo '<form method="post" action="/admin.php?action=section_update" enctype="multipart/form-data" data-ajax="true">';
+                echo '<form method="post" action="/admin.php?action=section_update" enctype="multipart/form-data">';
                 echo csrf_token_field();
                 if ($designTab === 'visual') {
                     echo '<input type="hidden" name="return_tab" value="design">';
@@ -383,7 +383,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
             $extra = Utils::decodeExtra($selected);
             echo '<h1 class="h5">SEO</h1>';
             if ($isAdmin) {
-                echo '<form method="post" action="/admin.php?action=seo_update" data-ajax="true">';
+                echo '<form method="post" action="/admin.php?action=seo_update">';
                 echo csrf_token_field();
                 echo '<input type="hidden" name="id" value="' . (int) $selected['id'] . '">';
                 echo '<div class="mb-3"><label class="form-label">SEO заголовок</label><input class="form-control" type="text" name="seo_title" value="' . htmlspecialchars((string) ($extra['seo_title'] ?? ''), ENT_QUOTES, 'UTF-8') . '"></div>';
@@ -501,7 +501,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                                 }
                                 if (!$isDeleted && $status === 'draft') {
                                     if ($canPublish) {
-                                        echo '<form method="post" action="/admin.php?action=object_publish" data-ajax="true">';
+                                        echo '<form method="post" action="/admin.php?action=object_publish">';
                                         echo csrf_token_field();
                                         echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
                                         echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
@@ -510,7 +510,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                                     }
                                 } elseif (!$isDeleted) {
                                     if ($canUnpublish) {
-                                        echo '<form method="post" action="/admin.php?action=object_unpublish" data-ajax="true">';
+                                        echo '<form method="post" action="/admin.php?action=object_unpublish">';
                                         echo csrf_token_field();
                                         echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
                                         echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
@@ -522,7 +522,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                                     echo '<a class="btn btn-sm btn-outline-secondary" href="' . htmlspecialchars($previewUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank">Предпросмотр</a>';
                                 }
                                 if ($canDelete && !$isDeleted) {
-                                    echo '<form method="post" action="/admin.php?action=object_delete" data-ajax="true" data-confirm="Удалить объект?">';
+                                    echo '<form method="post" action="/admin.php?action=object_delete" data-confirm="Удалить объект?">';
                                     echo csrf_token_field();
                                     echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
                                     echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
@@ -531,7 +531,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                                 }
                                 if ($isDeleted) {
                                     if ($canRestore) {
-                                        echo '<form method="post" action="/admin.php?action=object_restore" data-ajax="true">';
+                                        echo '<form method="post" action="/admin.php?action=object_restore">';
                                         echo csrf_token_field();
                                         echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
                                         echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
@@ -539,7 +539,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                                         echo '</form>';
                                     }
                                     if ($canPurge) {
-                                        echo '<form method="post" action="/admin.php?action=object_purge" data-ajax="true" data-confirm="Удалить объект окончательно?">';
+                                        echo '<form method="post" action="/admin.php?action=object_purge" data-confirm="Удалить объект окончательно?">';
                                         echo csrf_token_field();
                                         echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
                                         echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
@@ -570,7 +570,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
 
                         if ($canDelete) {
                             echo '<div class="d-flex justify-content-end mt-3">';
-                            echo '<form method="post" action="/admin.php?action=object_delete_all" data-ajax="true" data-confirm="Вы уверены? Это удалит все объекты.">';
+                            echo '<form method="post" action="/admin.php?action=object_delete_all" data-confirm="Вы уверены? Это удалит все объекты.">';
                             echo csrf_token_field();
                             echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
                             echo '<input type="hidden" name="infoblock_id" value="' . (int) $infoblock['id'] . '">';
@@ -618,7 +618,7 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
                         if ($isAdmin) {
                             $editUrl = buildAdminUrl(['action' => 'infoblock_form', 'id' => (int) $infoblock['id'], 'section_id' => $selectedId]);
                             echo '<button class="btn btn-sm btn-outline-primary" data-modal-url="' . htmlspecialchars($editUrl, ENT_QUOTES, 'UTF-8') . '">Редактировать</button>';
-                            echo '<form method="post" action="/admin.php?action=infoblock_delete" data-ajax="true" data-confirm="Удалить инфоблок?">';
+                            echo '<form method="post" action="/admin.php?action=infoblock_delete" data-confirm="Удалить инфоблок?">';
                             echo csrf_token_field();
                             echo '<input type="hidden" name="id" value="' . (int) $infoblock['id'] . '">';
                             echo '<input type="hidden" name="section_id" value="' . (int) $selected['id'] . '">';
@@ -644,26 +644,16 @@ $renderContent = function () use ($selected, $selectedId, $tab, $sectionRepo, $i
     echo '</div>';
 };
 
-$partial = isset($_GET['partial']) ? (string) $_GET['partial'] : '';
-if ($partial === 'sidebar') {
-    $renderSidebar();
-    return;
-}
-if ($partial === 'content') {
-    $renderContent();
-    return;
-}
-
 AdminLayout::renderHeader('Админка');
 
 AdminLayout::openSidebar();
-echo '<div id="left-sidebar" data-refresh-url="' . htmlspecialchars(buildAdminUrl(['partial' => 'sidebar', 'section_id' => $selectedId]), ENT_QUOTES, 'UTF-8') . '">';
+echo '<div id="left-sidebar">';
 $renderSidebar();
 echo '</div>';
 AdminLayout::closeSidebar();
 
 AdminLayout::openContent();
-echo '<div id="content" data-refresh-url="' . htmlspecialchars(buildAdminUrl(['partial' => 'content', 'section_id' => $selectedId, 'tab' => $tab]), ENT_QUOTES, 'UTF-8') . '">';
+echo '<div id="content">';
 $renderContent();
 echo '</div>';
 AdminLayout::closeContent();
