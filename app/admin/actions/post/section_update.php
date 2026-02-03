@@ -7,6 +7,7 @@ if ($section === null || $section['parent_id'] === null) {
         jsonResponse(['ok' => false, 'error' => 'Раздел не найден']);
     }
     // fallback без сообщений
+    adminFlashSet('danger', 'Раздел не найден');
     redirectTo(buildAdminUrl([]));
 }
 
@@ -40,6 +41,7 @@ if ($title === '' || $englishName === '') {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Название и english_name обязательны']);
     }
+    adminFlashSet('danger', 'Название и english_name обязательны');
     redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Название и english_name обязательны']));
 }
 
@@ -47,6 +49,7 @@ if (!englishNameIsValid($englishName)) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'English name должен быть URL-безопасным']);
     }
+    adminFlashSet('danger', 'English name должен быть URL-безопасным');
     redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'English name должен быть URL-безопасным']));
 }
 
@@ -56,6 +59,7 @@ if (!$isSystemRoot) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => 'Нужен родительский раздел']);
         }
+        adminFlashSet('danger', 'Нужен родительский раздел');
         redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Нужен родительский раздел']));
     }
 
@@ -64,6 +68,7 @@ if (!$isSystemRoot) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => 'Нельзя выбрать текущий раздел или его потомка родителем']);
         }
+        adminFlashSet('danger', 'Нельзя выбрать текущий раздел или его потомка родителем');
         redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Нельзя выбрать текущий раздел или его потомка родителем']));
     }
 
@@ -72,6 +77,7 @@ if (!$isSystemRoot) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => 'Родитель должен относиться к тому же сайту']);
         }
+        adminFlashSet('danger', 'Родитель должен относиться к тому же сайту');
         redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'Родитель должен относиться к тому же сайту']));
     }
 }
@@ -80,6 +86,7 @@ if ($sectionRepo->existsSiblingEnglishName($siteId, $parentId, $englishName, $id
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'English name должен быть уникальным в пределах родительского раздела']);
     }
+    adminFlashSet('danger', 'English name должен быть уникальным в пределах родительского раздела');
     redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => 'English name должен быть уникальным в пределах родительского раздела']));
 }
 
@@ -161,6 +168,7 @@ if ($hasVisualInput) {
                         if (isAjaxRequest()) {
                             jsonResponse(['ok' => false, 'error' => $error]);
                         }
+                        adminFlashSet('danger', $error);
                         redirectTo(buildAdminUrl(['section_id' => $id, 'tab' => 'section', 'error' => $error]));
                     }
                     if ($storedPath !== null) {
@@ -236,6 +244,7 @@ if (isAjaxRequest()) {
         true
     );
 }
+adminFlashSet('success', $isSystemRoot ? 'Системный раздел обновлен' : 'Раздел обновлен');
 $params = ['section_id' => $id, 'tab' => 'section'];
 if ($returnTab !== '') {
     $params['tab'] = $returnTab;

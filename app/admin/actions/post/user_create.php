@@ -1,10 +1,7 @@
 <?php
 
 if (!Auth::isAdmin()) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Недостаточно прав']);
-    }
-    // fallback без сообщений
+    adminFlashSet('danger', 'Недостаточно прав');
     redirectTo(buildAdminUrl([]));
 }
 
@@ -13,16 +10,12 @@ $password = isset($_POST['password']) ? (string) $_POST['password'] : '';
 $role = isset($_POST['role']) ? trim((string) $_POST['role']) : null;
 
 if ($login === '' || $password === '') {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Заполните логин и пароль']);
-    }
+    adminFlashSet('danger', 'Заполните логин и пароль');
     redirectTo(buildAdminUrl(['action' => 'users_list']));
 }
 
 if ($userRepo->findByLogin($login)) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Пользователь с таким логином уже существует']);
-    }
+    adminFlashSet('danger', 'Пользователь с таким логином уже существует');
     redirectTo(buildAdminUrl(['action' => 'users_list']));
 }
 
@@ -40,10 +33,6 @@ if ($user) {
     ]);
 }
 
-if (isAjaxRequest()) {
-    adminOk('Пользователь создан', [], false, [
-        'redirect' => buildAdminUrl(['action' => 'users_list']),
-    ]);
-}
+adminFlashSet('success', 'Пользователь создан');
 
 redirectTo(buildAdminUrl(['action' => 'users_list']));

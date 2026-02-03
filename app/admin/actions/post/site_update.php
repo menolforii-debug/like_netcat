@@ -7,6 +7,7 @@ if ($site === null || $site['parent_id'] !== null) {
         jsonResponse(['ok' => false, 'error' => 'Сайт не найден']);
     }
     // fallback без сообщений
+    adminFlashSet('danger', 'Сайт не найден');
     redirectTo(buildAdminUrl([]));
 }
 
@@ -44,6 +45,7 @@ foreach ($candidates as $candidate) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => $message]);
         }
+        adminFlashSet('danger', $message);
         redirectTo(buildAdminUrl(['section_id' => $id]));
     }
 }
@@ -99,6 +101,7 @@ if ($hasVisualInput) {
                         if (isAjaxRequest()) {
                             jsonResponse(['ok' => false, 'error' => $error]);
                         }
+                        adminFlashSet('danger', $error);
                         redirectTo(buildAdminUrl(['section_id' => $id]));
                     }
                     if ($storedPath !== null) {
@@ -161,6 +164,7 @@ if ($user) {
 if (isAjaxRequest()) {
     adminOk('Сайт обновлен', ['section_id' => $id], true);
 }
+adminFlashSet('success', 'Сайт обновлен');
 $returnSiteTab = isset($_POST['return_site_tab']) ? (string) $_POST['return_site_tab'] : '';
 $returnDesignTab = isset($_POST['return_design_tab']) ? (string) $_POST['return_design_tab'] : '';
 $params = ['section_id' => $id];
