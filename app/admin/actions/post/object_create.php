@@ -17,6 +17,7 @@ if ($infoblock === null) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Инфоблок не найден']);
     }
+    adminFlashSet('danger', 'Инфоблок не найден');
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Инфоблок не найден']));
 }
 
@@ -24,6 +25,7 @@ if (!Permission::canAction($user, $infoblock, 'create')) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Недостаточно прав']);
     }
+    adminFlashSet('danger', 'Недостаточно прав');
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Недостаточно прав']));
 }
 
@@ -31,6 +33,7 @@ if ($isEnabled && !Permission::canAction($user, $infoblock, 'publish')) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Недостаточно прав для публикации']);
     }
+    adminFlashSet('danger', 'Недостаточно прав для публикации');
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Недостаточно прав для публикации']));
 }
 
@@ -39,6 +42,7 @@ if ($component === null) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
     }
+    adminFlashSet('danger', 'Компонент не найден');
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Компонент не найден']));
 }
 
@@ -63,6 +67,7 @@ foreach ($fields as $field) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => $error]);
         }
+        adminFlashSet('danger', $error);
         redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => $error]));
     }
     if ($storedPath !== null) {
@@ -75,6 +80,7 @@ try {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => $e->getMessage()]);
     }
+    adminFlashSet('danger', $e->getMessage());
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => $e->getMessage()]));
 }
 
@@ -98,6 +104,7 @@ if (is_file($actionTemplatePath)) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => 'Ошибка выполнения шаблона действий: ' . $e->getMessage()]);
         }
+        adminFlashSet('danger', 'Ошибка выполнения шаблона действий: ' . $e->getMessage());
         redirectTo(buildAdminUrl([
             'section_id' => $sectionId,
             'tab' => 'content',
@@ -119,5 +126,6 @@ if (isAjaxRequest()) {
         'refresh' => ['#content'],
     ]);
 }
+adminFlashSet('success', 'Объект создан');
 
 redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content']));

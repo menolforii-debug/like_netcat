@@ -4,6 +4,7 @@ if (!Auth::isAdmin()) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Недостаточно прав']);
     }
+    adminFlashSet('danger', 'Недостаточно прав');
     redirectTo(buildAdminUrl(['action' => 'snippet_list']));
 }
 
@@ -15,6 +16,7 @@ if ($keyword === '' || !preg_match('/^[A-Za-z0-9_-]+$/', $keyword)) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Некорректный ключ врезки']);
     }
+    adminFlashSet('danger', 'Некорректный ключ врезки');
     redirectTo(buildAdminUrl(['action' => 'snippet_list']));
 }
 
@@ -29,6 +31,7 @@ if ($baseReal === false) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Не удалось создать папку для врезок']);
     }
+    adminFlashSet('danger', 'Не удалось создать папку для врезок');
     redirectTo(buildAdminUrl(['action' => 'snippet_list', 'keyword' => $keyword]));
 }
 $baseReal = rtrim($baseReal, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
@@ -39,6 +42,7 @@ if ($snippetDirReal === false || strpos($snippetDirReal . DIRECTORY_SEPARATOR, $
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Некорректный путь к файлу врезки']);
     }
+    adminFlashSet('danger', 'Некорректный путь к файлу врезки');
     redirectTo(buildAdminUrl(['action' => 'snippet_list', 'keyword' => $keyword]));
 }
 
@@ -49,6 +53,7 @@ if ($ok === false) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Не удалось записать файл врезки: ' . $msg]);
     }
+    adminFlashSet('danger', 'Не удалось записать файл врезки: ' . $msg);
     redirectTo(buildAdminUrl(['action' => 'snippet_list', 'keyword' => $keyword]));
 }
 
@@ -65,4 +70,5 @@ $stmt->execute([
 if (isAjaxRequest()) {
     adminOk('Врезка сохранена', ['keyword' => $keyword], true);
 }
+adminFlashSet('success', 'Врезка сохранена');
 redirectTo(buildAdminUrl(['action' => 'snippet_list', 'keyword' => $keyword]));

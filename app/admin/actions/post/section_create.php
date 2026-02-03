@@ -16,6 +16,7 @@ if ($parentId <= 0) {
         jsonResponse(['ok' => false, 'error' => 'Родитель не найден']);
     }
     // fallback без сообщений
+    adminFlashSet('danger', 'Родитель не найден');
     redirectTo(buildAdminUrl([]));
 }
 
@@ -25,6 +26,7 @@ if ($parent === null) {
         jsonResponse(['ok' => false, 'error' => 'Родитель не найден']);
     }
     // fallback без сообщений
+    adminFlashSet('danger', 'Родитель не найден');
     redirectTo(buildAdminUrl([]));
 }
 
@@ -32,6 +34,7 @@ if ($title === '' || $englishName === '') {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Название и english_name обязательны']);
     }
+    adminFlashSet('danger', 'Название и english_name обязательны');
     redirectTo(buildAdminUrl(['action' => 'section_new', 'parent_id' => $parentId, 'error' => 'Название и english_name обязательны']));
 }
 
@@ -39,6 +42,7 @@ if (!englishNameIsValid($englishName)) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'English name должен быть URL-безопасным']);
     }
+    adminFlashSet('danger', 'English name должен быть URL-безопасным');
     redirectTo(buildAdminUrl(['action' => 'section_new', 'parent_id' => $parentId, 'error' => 'English name должен быть URL-безопасным']));
 }
 
@@ -47,6 +51,7 @@ if ($sectionRepo->existsSiblingEnglishName($siteId, $parentId, $englishName)) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'English name должен быть уникальным в пределах родительского раздела']);
     }
+    adminFlashSet('danger', 'English name должен быть уникальным в пределах родительского раздела');
     redirectTo(buildAdminUrl(['action' => 'section_new', 'parent_id' => $parentId, 'error' => 'English name должен быть уникальным в пределах родительского раздела']));
 }
 
@@ -75,6 +80,7 @@ if ($componentId > 0) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
         }
+        adminFlashSet('danger', 'Компонент не найден');
         redirectTo(buildAdminUrl(['action' => 'section_new', 'parent_id' => $parentId, 'error' => 'Компонент не найден']));
     }
     $views = componentViews($component);
@@ -108,4 +114,5 @@ if ($user) {
 if (isAjaxRequest()) {
     adminOk('Раздел создан', ['section_id' => $sectionId, 'tab' => 'section'], true);
 }
+adminFlashSet('success', 'Раздел создан');
 redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'section']));

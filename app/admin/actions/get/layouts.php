@@ -89,7 +89,7 @@ function renderLayoutsSidebarHtml(array $layouts, string $layoutKey, string $tab
     echo '</div>';
 }
 
-function renderLayoutsContentHtml(array $layouts, string $layoutKey, string $tab): void
+function renderLayoutsContentHtml(array $layouts, string $layoutKey, string $tab, VisualFieldRepo $visualFieldRepo): void
 {
     echo '<div class="card shadow-sm">';
     echo '<div class="card-body">';
@@ -103,7 +103,6 @@ function renderLayoutsContentHtml(array $layouts, string $layoutKey, string $tab
     echo '</ul>';
 
     if ($tab === 'visual') {
-        global $visualFieldRepo;
         $visualFields = $visualFieldRepo->listAll();
         echo '<div id="visualFieldsBlock">';
         renderVisualFieldsContent($visualFields);
@@ -190,7 +189,7 @@ AdminLayout::closeSidebar();
 
 AdminLayout::openContent();
 echo '<div id="content">';
-renderLayoutsContentHtml($layouts, $layoutKey, $tab);
+renderLayoutsContentHtml($layouts, $layoutKey, $tab, $visualFieldRepo);
 echo '</div>';
 AdminLayout::closeContent();
 
