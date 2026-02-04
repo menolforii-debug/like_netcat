@@ -16,6 +16,7 @@ if ($section === null || $componentId === 0 || $name === '' || $key === '') {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Заполните обязательные поля']);
     }
+    adminFlashSet('danger', 'Заполните обязательные поля');
     redirectTo(buildAdminUrl(['action' => 'infoblock_new', 'section_id' => $sectionId]));
 }
 
@@ -24,6 +25,7 @@ if ($component === null) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
     }
+    adminFlashSet('danger', 'Компонент не найден');
     redirectTo(buildAdminUrl(['action' => 'infoblock_new', 'section_id' => $sectionId]));
 }
 
@@ -41,6 +43,7 @@ if (!Utils::isUrlSafe($key)) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => $message]);
     }
+    adminFlashSet('danger', $message);
     redirectTo(buildAdminUrl(['action' => 'infoblock_new', 'section_id' => $sectionId]));
 }
 
@@ -53,6 +56,7 @@ if ($existing !== null) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => $message]);
     }
+    adminFlashSet('danger', $message);
     redirectTo(buildAdminUrl(['action' => 'infoblock_new', 'section_id' => $sectionId]));
 }
 
@@ -91,4 +95,5 @@ if ($user) {
 if (isAjaxRequest()) {
     adminOk('Инфоблок создан', [], true);
 }
+adminFlashSet('success', 'Инфоблок создан');
 redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks']));

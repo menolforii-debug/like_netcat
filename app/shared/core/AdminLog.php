@@ -51,4 +51,20 @@ final class AdminLog
 
         return DB::fetchAll($sql, $params);
     }
+
+    public static function trimToLimit(int $limit = 500): void
+    {
+        $limit = $limit > 0 ? $limit : 500;
+        $pdo = DB::pdo();
+        $stmt = $pdo->prepare('SELECT id FROM admin_log ORDER BY created_at DESC, id DESC LIMIT 1 OFFSET :offset');
+        $stmt->bindValue(':offset', $limit - 1, PDO::PARAM_INT);
+        $stmt->execute();
+        $row = $stmt->fetch();
+        if (!$row || !isset($row['id'])) {
+            return;
+        }
+        $cutoffId = (int) $row['id'];
+        $delete = $pdo->prepare('DELETE FROM admin_log WHERE id < :cutoff');
+        $delete->execute(['cutoff' => $cutoffId]);
+    }
 }

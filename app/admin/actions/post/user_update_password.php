@@ -1,10 +1,7 @@
 <?php
 
 if (!Auth::isAdmin()) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Недостаточно прав']);
-    }
-    // fallback без сообщений
+    adminFlashSet('danger', 'Недостаточно прав');
     redirectTo(buildAdminUrl([]));
 }
 
@@ -12,24 +9,18 @@ $userId = isset($_POST['user_id']) ? (int) $_POST['user_id'] : 0;
 $password = isset($_POST['password']) ? (string) $_POST['password'] : '';
 
 if ($userId <= 0) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Пользователь не найден']);
-    }
+    adminFlashSet('danger', 'Пользователь не найден');
     redirectTo(buildAdminUrl(['action' => 'users_list']));
 }
 
 if ($password === '') {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Введите новый пароль']);
-    }
+    adminFlashSet('danger', 'Введите новый пароль');
     redirectTo(buildAdminUrl(['action' => 'users_list']));
 }
 
 $targetUser = $userRepo->findById($userId);
 if ($targetUser === null) {
-    if (isAjaxRequest()) {
-        jsonResponse(['ok' => false, 'error' => 'Пользователь не найден']);
-    }
+    adminFlashSet('danger', 'Пользователь не найден');
     redirectTo(buildAdminUrl(['action' => 'users_list']));
 }
 
@@ -41,8 +32,6 @@ if ($user) {
     ]);
 }
 
-if (isAjaxRequest()) {
-    adminOk('Пароль обновлен', [], false);
-}
+adminFlashSet('success', 'Пароль обновлен');
 
 redirectTo(buildAdminUrl(['action' => 'users_list']));
