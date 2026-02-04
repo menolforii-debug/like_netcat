@@ -84,6 +84,8 @@ function renderTextareaValue($value): string
 function renderSnippetsSidebarHtml(array $snippets, array $snippetNames, string $keyword): void
 {
     $createLink = buildAdminUrl(['action' => 'snippet_list', 'new' => 1]);
+    echo '<div class="card shadow-sm border-0">';
+    echo '<div class="card-body p-3">';
     echo '<div class="d-flex align-items-center justify-content-between mb-2">';
     echo '<div class="fw-semibold">Врезки</div>';
     echo '<a class="btn btn-icon-square btn-outline-primary" href="' . htmlspecialchars($createLink, ENT_QUOTES, 'UTF-8') . '" title="Добавить врезку" aria-label="Добавить врезку">+</a>';
@@ -91,6 +93,7 @@ function renderSnippetsSidebarHtml(array $snippets, array $snippetNames, string 
 
     if (empty($snippets)) {
         echo '<div class="text-muted">Врезки пока не созданы.</div>';
+        echo '</div></div>';
         return;
     }
 
@@ -116,6 +119,8 @@ function renderSnippetsSidebarHtml(array $snippets, array $snippetNames, string 
     }
     echo '</ul>';
     echo '</nav>';
+    echo '</div>';
+    echo '</div>';
 }
 
 function renderSnippetsContentHtml(
@@ -126,15 +131,18 @@ function renderSnippetsContentHtml(
     string $content,
     string $error
 ): void {
+    echo '<div class="card shadow-sm">';
+    echo '<div class="card-body">';
     if ($error !== '') {
-        echo '<script>window.showGlobalSnackbar(' . json_encode((string) $error, JSON_UNESCAPED_UNICODE) . ', "error");</script>';
+        echo '<div class="alert alert-danger">' . htmlspecialchars($error, ENT_QUOTES, 'UTF-8') . '</div>';
     }
     if ($keyword === '' && $snippets === []) {
         echo '<div class="text-muted">Врезки пока не созданы.</div>';
+        echo '</div></div>';
         return;
     }
 
-    echo '<form method="post" action="/admin.php?action=snippet_save" data-ajax="true">';
+    echo '<form method="post" action="/admin.php?action=snippet_save">';
     echo csrf_token_field();
 
     echo '<div class="mb-3">';
@@ -164,53 +172,29 @@ function renderSnippetsContentHtml(
     echo '<button class="btn btn-primary" type="submit">Сохранить</button>';
     echo '</form>';
     if ($snippetExists) {
-        echo '<form method="post" action="/admin.php?action=snippet_delete" data-ajax="true" data-confirm="Удалить врезку? Это действие необратимо.">';
+        echo '<form method="post" action="/admin.php?action=snippet_delete" data-confirm="Удалить врезку? Это действие необратимо.">';
         echo csrf_token_field();
         echo '<input type="hidden" name="keyword" value="' . htmlspecialchars($keyword, ENT_QUOTES, 'UTF-8') . '">';
         echo '<button class="btn btn-outline-danger" type="submit">Удалить</button>';
         echo '</form>';
     }
     echo '</div>';
-}
-
-// Snippets partials for AJAX refresh
-if (isAjaxRequest() && isset($_GET['partial']) && (string) $_GET['partial'] === 'sidebar') {
-    renderSnippetsSidebarHtml($snippets, $snippetNames, $keyword);
-    exit;
-}
-if (isAjaxRequest() && isset($_GET['partial']) && (string) $_GET['partial'] === 'content') {
-    renderSnippetsContentHtml($snippets, $keyword, $snippetExists, $snippetName, $content, $error);
-    exit;
+    echo '</div>';
+    echo '</div>';
 }
 
 AdminLayout::renderHeader('Врезки');
 
-echo '<div class="card shadow-sm">';
-echo '<div class="card-body">';
-echo '<div class="d-flex align-items-center justify-content-between mb-3">';
-echo '<h1 class="h5 mb-0">Врезки</h1>';
-echo '</div>';
-
-echo '<div class="row g-4">';
-echo '<div class="col-12 col-lg-4">';
-
-$sidebarTpl = buildAdminUrl(['action' => 'snippet_list', 'keyword' => '{keyword}', 'partial' => 'sidebar']);
-echo '<div id="left-sidebar" data-refresh-url-template="' . htmlspecialchars($sidebarTpl, ENT_QUOTES, 'UTF-8') . '">';
+AdminLayout::openSidebar();
+echo '<div id="left-sidebar">';
 renderSnippetsSidebarHtml($snippets, $snippetNames, $keyword);
 echo '</div>';
+AdminLayout::closeSidebar();
 
-echo '</div>';
-echo '<div class="col-12 col-lg-8">';
-
-$contentTpl = buildAdminUrl(['action' => 'snippet_list', 'keyword' => '{keyword}', 'partial' => 'content']);
-echo '<div id="content" data-refresh-url-template="' . htmlspecialchars($contentTpl, ENT_QUOTES, 'UTF-8') . '">';
+AdminLayout::openContent();
+echo '<div id="content">';
 renderSnippetsContentHtml($snippets, $keyword, $snippetExists, $snippetName, $content, $error);
 echo '</div>';
-
-echo '</div>';
-echo '</div>';
-
-echo '</div>';
-echo '</div>';
+AdminLayout::closeContent();
 
 AdminLayout::renderFooter();

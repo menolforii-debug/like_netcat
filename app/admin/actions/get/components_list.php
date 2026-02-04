@@ -122,7 +122,7 @@ foreach (['general' => 'Общее', 'fields' => 'Поля', 'views' => 'Шаб�
 echo '</ul>';
 
 if ($tab === 'general') {
-    echo '<form method="post" action="/admin.php?action=component_update" data-ajax="true">';
+    echo '<form method="post" action="/admin.php?action=component_update">';
     echo csrf_token_field();
     echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
     echo '<div class="mb-3"><label class="form-label">Ключ</label><input class="form-control" name="keyword" value="' . htmlspecialchars((string) $selectedComponent['keyword'], ENT_QUOTES, 'UTF-8') . '" required></div>';
@@ -149,7 +149,7 @@ if ($tab === 'general') {
 }
 
 if ($tab === 'fields') {
-    echo '<form method="post" action="/admin.php?action=component_update" data-ajax="true">';
+    echo '<form method="post" action="/admin.php?action=component_update">';
     echo csrf_token_field();
     echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
     echo '<input type="hidden" name="keyword" value="' . htmlspecialchars((string) $selectedComponent['keyword'], ENT_QUOTES, 'UTF-8') . '">';
@@ -217,7 +217,7 @@ if ($tab === 'fields') {
 }
 
 if ($tab === 'views') {
-    echo '<form method="post" action="/admin.php?action=component_update" data-ajax="true">';
+    echo '<form method="post" action="/admin.php?action=component_update">';
     echo csrf_token_field();
     echo '<input type="hidden" name="component_id" value="' . (int) $selectedComponent['id'] . '">';
     echo '<input type="hidden" name="keyword" value="' . htmlspecialchars((string) $selectedComponent['keyword'], ENT_QUOTES, 'UTF-8') . '">';

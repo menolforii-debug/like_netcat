@@ -166,7 +166,9 @@ final class AdminLayout
 
        
         echo "<script src=\"/assets/sow/js/core.min.js\"></script>\n";
-         echo "<script src=\"/assets/sow/js/vendor_bundle.min.js\"></script>\n";
+        echo "<script src=\"/assets/sow/js/vendor_bundle.min.js\"></script>\n";
+        echo "<script src=\"https://cdn.jsdelivr.net/npm/tinymce@8.3.2/tinymce.min.js\"></script>\n";
+        echo "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/tinymce@8.3.2/skins/ui/oxide/content.min.css\">\n";
         echo "<script src=\"/assets/admin.js\"></script>\n";
 
         // CodeMirror core
