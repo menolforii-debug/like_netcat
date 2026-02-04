@@ -8,6 +8,7 @@ if ($id > 0) {
             jsonResponse(['ok' => false, 'error' => 'Узел не найден']);
         }
         // fallback без сообщений
+        adminFlashSet('danger', 'Узел не найден');
         redirectTo(buildAdminUrl([]));
     }
 
@@ -16,6 +17,7 @@ if ($id > 0) {
             if (isAjaxRequest()) {
                 jsonResponse(['ok' => false, 'error' => 'Нельзя удалить системный раздел']);
             }
+            adminFlashSet('danger', 'Нельзя удалить системный раздел');
             redirectTo(buildAdminUrl(['section_id' => $id]));
         }
         if ($section['parent_id'] === null) {
@@ -34,11 +36,13 @@ if ($id > 0) {
         if (isAjaxRequest()) {
             adminOk('Узел удален', [], true);
         }
+        adminFlashSet('success', 'Узел удален');
         redirectTo(buildAdminUrl());
     } catch (Throwable $e) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => $e->getMessage()]);
         }
+        adminFlashSet('danger', $e->getMessage());
         redirectTo(buildAdminUrl(['section_id' => $selectedId]));
     }
 }
@@ -47,4 +51,5 @@ if (isAjaxRequest()) {
     jsonResponse(['ok' => false, 'error' => 'Узел не найден']);
 }
 // fallback без сообщений
+adminFlashSet('danger', 'Узел не найден');
 redirectTo(buildAdminUrl([]));

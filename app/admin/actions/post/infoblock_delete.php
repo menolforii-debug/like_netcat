@@ -7,6 +7,7 @@ if ($id === 0) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Инфоблок не найден']);
     }
+    adminFlashSet('danger', 'Инфоблок не найден');
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks']));
 }
 
@@ -16,6 +17,7 @@ try {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => $e->getMessage()]);
     }
+    adminFlashSet('danger', $e->getMessage());
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks']));
 }
 
@@ -29,5 +31,6 @@ if ($user) {
 if (isAjaxRequest()) {
     adminOk('Инфоблок удален', [], true);
 }
+adminFlashSet('success', 'Инфоблок удален');
 
 redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'infoblocks']));
