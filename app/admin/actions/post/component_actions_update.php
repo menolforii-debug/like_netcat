@@ -9,6 +9,7 @@ if ($componentId === 0) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
     }
+    adminFlashSet('danger', 'Компонент не найден');
     redirectTo(buildAdminUrl(['action' => 'components']));
 }
 
@@ -17,6 +18,7 @@ if ($component === null) {
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => 'Компонент не найден']);
     }
+    adminFlashSet('danger', 'Компонент не найден');
     redirectTo(buildAdminUrl(['action' => 'components']));
 }
 
@@ -25,6 +27,7 @@ if (!writeComponentActionTemplate((string) $component['keyword'], $actionsTpl, $
     if (isAjaxRequest()) {
         jsonResponse(['ok' => false, 'error' => $error ?? 'Не удалось сохранить шаблон действий']);
     }
+    adminFlashSet('danger', $error ?? 'Не удалось сохранить шаблон действий');
     redirectTo(buildAdminUrl([
         'action' => 'components',
         'component_id' => $componentId,
@@ -43,6 +46,7 @@ if (isAjaxRequest()) {
         ]),
     ]);
 }
+adminFlashSet('success', 'Шаблон действий сохранен');
 
 redirectTo(buildAdminUrl([
     'action' => 'components',

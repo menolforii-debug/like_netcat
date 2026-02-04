@@ -9,6 +9,7 @@ require __DIR__ . '/../shared/runtime_guard.php';
 require __DIR__ . '/../shared/bootstrap.php';
 require __DIR__ . '/../shared/core/Auth.php';
 require __DIR__ . '/../shared/core/AdminLog.php';
+require __DIR__ . '/../shared/core/ErrorLogger.php';
 require __DIR__ . '/../shared/core/Permission.php';
 require __DIR__ . '/../shared/ui/LayoutCatalog.php';
 

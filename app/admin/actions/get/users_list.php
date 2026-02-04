@@ -40,7 +40,7 @@ function renderUsersListCardHtml(array $users, array $roles, bool $hasRole, int 
             echo '<div class="row g-2">';
             if ($hasRole) {
                 echo '<div class="col-md-6">';
-                echo '<form method="post" action="/admin.php?action=user_update_role" data-ajax="true">';
+                echo '<form method="post" action="/admin.php?action=user_update_role">';
                 echo csrf_token_field();
                 echo '<input type="hidden" name="user_id" value="' . $userId . '">';
                 echo '<label class="form-label">Роль</label>';
@@ -61,7 +61,7 @@ function renderUsersListCardHtml(array $users, array $roles, bool $hasRole, int 
             }
 
             echo '<div class="col-md-6">';
-            echo '<form method="post" action="/admin.php?action=user_update_password" data-ajax="true">';
+            echo '<form method="post" action="/admin.php?action=user_update_password">';
             echo csrf_token_field();
             echo '<input type="hidden" name="user_id" value="' . $userId . '">';
             echo '<label class="form-label">Новый пароль</label>';
@@ -73,7 +73,7 @@ function renderUsersListCardHtml(array $users, array $roles, bool $hasRole, int 
             echo '</div>';
             echo '</div>';
 
-            echo '<form method="post" action="/admin.php?action=user_delete" class="mt-3" data-ajax="true" data-confirm="Удалить пользователя?">';
+            echo '<form method="post" action="/admin.php?action=user_delete" class="mt-3" data-confirm="Удалить пользователя?">';
             echo csrf_token_field();
             echo '<input type="hidden" name="user_id" value="' . $userId . '">';
             $disabledAttr = $isLastAdmin ? ' disabled' : '';
@@ -90,11 +90,6 @@ function renderUsersListCardHtml(array $users, array $roles, bool $hasRole, int 
     echo '</div>';
 }
 
-if (isAjaxRequest() && isset($_GET['partial']) && (string) $_GET['partial'] === 'content') {
-    renderUsersListCardHtml($users, $roles, $hasRole, $adminCount);
-    exit;
-}
-
 AdminLayout::renderHeader('Пользователи');
 
 echo '<div class="d-flex justify-content-between align-items-center mb-3">';
@@ -102,8 +97,7 @@ echo '<h1 class="h4 mb-0">Пользователи</h1>';
 echo '<a class="btn btn-sm btn-outline-primary" href="' . htmlspecialchars(buildAdminUrl(['action' => 'users_create']), ENT_QUOTES, 'UTF-8') . '">Добавить</a>';
 echo '</div>';
 
-$refreshUrl = buildAdminUrl(['action' => 'users_list', 'partial' => 'content']);
-echo '<div id="content" class="card shadow-sm" data-refresh-url="' . htmlspecialchars($refreshUrl, ENT_QUOTES, 'UTF-8') . '">';
+echo '<div id="content" class="card shadow-sm">';
 renderUsersListCardHtml($users, $roles, $hasRole, $adminCount);
 echo '</div>';
 
