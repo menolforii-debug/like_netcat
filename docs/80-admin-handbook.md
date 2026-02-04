@@ -129,16 +129,27 @@ POST-действия для страницы макетов (`/admin.php?action
 Все формы на странице работают через `POST → redirect → GET`, а результаты показываются тостами
 через `adminFlashSet(...)`.
 
-### Объекты: редактор TinyMCE для текстовых полей
-При создании и редактировании объектов `textarea`‑поля компонента получают класс `js-tinymce`,
-который инициализирует редактор TinyMCE через `initTinyMceEditors()` в `public_html/assets/admin.js`.
+### Объекты: редактор CKEditor для текстовых полей
+При создании и редактировании объектов `textarea`‑поля компонента получают класс `js-ckeditor`
+и уникальный `id="editor-<field>"`, который инициализирует редактор CKEditor через
+`initCkeditorEditors()` в `public_html/assets/admin.js`.
 В админском layout подключается скрипт:
 
 ```
-<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
 ```
 
-Инициализация выполняется при загрузке страницы и при открытии форм в модалке.
+Инициализация выполняется при загрузке страницы и при открытии форм в модалке
+через `openAdminModal()` → `initCkeditorEditors()` в `public_html/assets/admin.js`.
+
+Настройки по умолчанию:
+
+```
+CKEDITOR.replace('editor-<field>', {
+  extraPlugins: 'table,image',
+  removePlugins: 'cloudservices'
+});
+```
 
 ### Пользователи: full-reload и тосты
 Раздел пользователей работает без `partial`‑блоков и `data-ajax`. Все операции обновления роли,

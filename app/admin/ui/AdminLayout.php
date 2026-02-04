@@ -167,7 +167,7 @@ final class AdminLayout
        
         echo "<script src=\"/assets/sow/js/core.min.js\"></script>\n";
         echo "<script src=\"/assets/sow/js/vendor_bundle.min.js\"></script>\n";
-        echo "<script src=\"/assets/tinymce/tinymce.min.js\"></script>\n";
+        echo "<script src=\"https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js\"></script>\n";
         echo "<script src=\"/assets/admin.js\"></script>\n";
 
         // CodeMirror core

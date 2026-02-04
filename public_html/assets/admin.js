@@ -229,17 +229,18 @@ function initCodeEditorTabIndentation(scope) {
   });
 }
 
-function initTinyMceEditors(scope) {
-  if (!window.tinymce) return;
+function initCkeditorEditors(scope) {
+  if (!window.CKEDITOR) return;
   const root = scope || document;
-  root.querySelectorAll('textarea.js-tinymce').forEach((textarea) => {
-    if (textarea.dataset.tinymceInitialized === '1') return;
-    textarea.dataset.tinymceInitialized = '1';
-    window.tinymce.init({
-      target: textarea,
-      height: 280,
-      menubar: false,
-      statusbar: false,
+  root.querySelectorAll('textarea.js-ckeditor').forEach((textarea) => {
+    if (textarea.dataset.ckeditorInitialized === '1') return;
+    textarea.dataset.ckeditorInitialized = '1';
+    if (!textarea.id) {
+      textarea.id = 'editor-' + Math.random().toString(36).slice(2, 10);
+    }
+    window.CKEDITOR.replace(textarea, {
+      extraPlugins: 'table,image',
+      removePlugins: 'cloudservices',
     });
   });
 }
@@ -251,7 +252,7 @@ function initAdminUI(rootElement) {
   initInfoblockViewSelects(root);
   initInfoblockKeyAutofill(root);
   initCodeEditorFullscreen(root);
-  initTinyMceEditors(root);
+  initCkeditorEditors(root);
   if (window.initCodeEditors) window.initCodeEditors(root);
 }
 

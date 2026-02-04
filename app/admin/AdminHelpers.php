@@ -207,10 +207,13 @@ function renderFieldInput(array $field, array $data, array $uploadContext = []):
     switch ($type) {
         case 'textarea':
             $textareaClass = 'form-control';
+            $textareaId = '';
             if (($uploadContext['context'] ?? '') === 'component') {
-                $textareaClass .= ' js-tinymce';
+                $textareaClass .= ' js-ckeditor';
+                $textareaId = 'editor-' . $safeId;
             }
-            $html .= '<textarea class="' . $textareaClass . '" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" rows="4">' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '</textarea>';
+            $idAttr = $textareaId !== '' ? ' id="' . $textareaId . '"' : '';
+            $html .= '<textarea class="' . $textareaClass . '"' . $idAttr . ' name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" rows="4">' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '</textarea>';
             break;
         case 'number':
             $html .= '<input class="form-control" type="number" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '">';
