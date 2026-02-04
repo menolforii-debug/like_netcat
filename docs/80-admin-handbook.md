@@ -138,7 +138,8 @@ POST-действия для страницы макетов (`/admin.php?action
 <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 ```
 
-Инициализация выполняется при загрузке страницы и при открытии форм в модалке.
+Инициализация выполняется при загрузке страницы и при открытии форм в модалке
+через `openAdminModal()` → `initTinyMceEditors()` в `public_html/assets/admin.js`.
 
 ### Пользователи: full-reload и тосты
 Раздел пользователей работает без `partial`‑блоков и `data-ajax`. Все операции обновления роли,
