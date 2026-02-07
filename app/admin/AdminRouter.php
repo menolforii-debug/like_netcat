@@ -118,23 +118,11 @@ final class AdminRouter
             return;
         }
 
-        if (is_array($result) && self::isAjaxRequest()) {
+        if (is_array($result) && function_exists('isAjaxRequest') && isAjaxRequest()) {
             header('Content-Type: application/json; charset=UTF-8');
             echo json_encode($result, JSON_UNESCAPED_UNICODE);
             exit;
         }
-    }
-
-    /**
-     * Проверяет, является ли текущий запрос AJAX.
-     */
-    private static function isAjaxRequest(): bool
-    {
-        $requestedWith = $_SERVER['HTTP_X_REQUESTED_WITH'] ?? '';
-        if (strtolower((string) $requestedWith) === 'xmlhttprequest') {
-            return true;
-        }
-        return false;
     }
 
     /**
