@@ -17,7 +17,7 @@ if (in_array($layoutKey, ['default', 'home'], true)) {
     redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => $layoutKey]));
 }
 
-if (!LayoutCatalog::layoutExists($layoutKey)) {
+if (!Layout::layoutExists($layoutKey)) {
     adminFlashSet('danger', 'Макет не найден');
     redirectTo(buildAdminUrl(['action' => 'layouts']));
 }

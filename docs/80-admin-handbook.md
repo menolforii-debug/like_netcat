@@ -94,8 +94,8 @@ app/admin/actions/post/<action>.php
 - `Permission::canAction($user, $infoblock, $action)` читает `infoblock.extra_json.permissions`.
 - Если прав нет, действие блокируется в интерфейсе.
 
-## `LayoutCatalog` и пагинация в админке
-- `LayoutCatalog::listLayouts()` используется для списка макетов.
+## `Layout` и пагинация в админке
+- `Layout::listLayouts()` используется для списка макетов.
 - `browse_messages()` применяется в списках объектов (см. `dashboard`).
 
 ### Управление макетами в админке
@@ -150,6 +150,9 @@ CKEDITOR.replace('editor-<field>', {
   removePlugins: 'cloudservices'
 });
 ```
+
+Другие редакторы (MediumEditor, Summernote, Quill, MarkdownEditor из пакета SOW) в админке
+не используются и их локальные ассеты удалены.
 
 ### Пользователи: full-reload и тосты
 Раздел пользователей работает без `partial`‑блоков и `data-ajax`. Все операции обновления роли,

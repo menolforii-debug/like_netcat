@@ -56,7 +56,7 @@ if ($sectionRepo->existsSiblingEnglishName($siteId, $parentId, $englishName)) {
 }
 
 $extra = [];
-if ($layout !== '' && LayoutCatalog::layoutExists($layout)) {
+if ($layout !== '' && Layout::layoutExists($layout)) {
     $extra['layout'] = $layout;
 }
 if ($h1 !== '') {

@@ -14,7 +14,7 @@ if ($layoutKey === '' || !layoutKeyIsValid($layoutKey)) {
     redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => '_new']));
 }
 
-if (LayoutCatalog::layoutExists($layoutKey)) {
+if (Layout::layoutExists($layoutKey)) {
     adminFlashSet('danger', 'Макет с таким ключом уже существует');
     redirectTo(buildAdminUrl(['action' => 'layouts', 'layout' => '_new']));
 }

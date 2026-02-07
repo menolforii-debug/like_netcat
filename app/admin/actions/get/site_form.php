@@ -16,7 +16,7 @@ $mirrorsText = isset($extra['site_mirrors']) && is_array($extra['site_mirrors'])
 $enabled = $site ? !empty($extra['site_enabled']) : true;
 $offlineHtml = isset($extra['site_offline_html']) ? (string) $extra['site_offline_html'] : '';
 $currentLayout = isset($extra['layout']) ? (string) $extra['layout'] : '';
-$layouts = LayoutCatalog::listLayouts();
+$layouts = Layout::listLayouts();
 if ($currentLayout !== '' && !in_array($currentLayout, $layouts, true)) {
     $currentLayout = '';
 }
