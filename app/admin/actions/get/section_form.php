@@ -45,7 +45,7 @@ if ($site !== null) {
 }
 
 $extra = $section ? Utils::decodeExtra($section) : [];
-$layouts = LayoutCatalog::listLayouts();
+$layouts = Layout::listLayouts();
 $currentLayout = isset($extra['layout']) ? (string) $extra['layout'] : '';
 if ($currentLayout !== '' && !in_array($currentLayout, $layouts, true)) {
     $currentLayout = '';

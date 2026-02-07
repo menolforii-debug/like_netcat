@@ -11,7 +11,7 @@ require __DIR__ . '/../shared/core/Auth.php';
 require __DIR__ . '/../shared/core/AdminLog.php';
 require __DIR__ . '/../shared/core/ErrorLogger.php';
 require __DIR__ . '/../shared/core/Permission.php';
-require __DIR__ . '/../shared/ui/LayoutCatalog.php';
+require __DIR__ . '/../shared/ui/Layout.php';
 
 // admin runtime
 require __DIR__ . '/AdminHelpers.php';

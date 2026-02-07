@@ -94,8 +94,8 @@ app/admin/actions/post/<action>.php
 - `Permission::canAction($user, $infoblock, $action)` читает `infoblock.extra_json.permissions`.
 - Если прав нет, действие блокируется в интерфейсе.
 
-## `LayoutCatalog` и пагинация в админке
-- `LayoutCatalog::listLayouts()` используется для списка макетов.
+## `Layout` и пагинация в админке
+- `Layout::listLayouts()` используется для списка макетов.
 - `browse_messages()` применяется в списках объектов (см. `dashboard`).
 
 ### Управление макетами в админке

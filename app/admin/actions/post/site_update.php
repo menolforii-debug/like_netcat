@@ -55,7 +55,7 @@ $extra['site_domain'] = $normalizedDomain;
 $extra['site_mirrors'] = $normalizedMirrors;
 $extra['site_enabled'] = $siteEnabled;
 $extra['site_offline_html'] = $offlineHtml;
-if ($layout !== '' && LayoutCatalog::layoutExists($layout)) {
+if ($layout !== '' && Layout::layoutExists($layout)) {
     $extra['layout'] = $layout;
 } else {
     unset($extra['layout']);
@@ -69,7 +69,7 @@ if ($hasVisualInput) {
     $deleteVisual = isset($_POST['visual_settings_delete']) && is_array($_POST['visual_settings_delete'])
         ? $_POST['visual_settings_delete']
         : [];
-    $layoutKey = isset($extra['layout']) && LayoutCatalog::layoutExists((string) $extra['layout']) ? (string) $extra['layout'] : 'default';
+    $layoutKey = isset($extra['layout']) && Layout::layoutExists((string) $extra['layout']) ? (string) $extra['layout'] : 'default';
     foreach ($visualFields as $field) {
         $name = (string) $field['name'];
         if (isset($visualInherit[$name])) {

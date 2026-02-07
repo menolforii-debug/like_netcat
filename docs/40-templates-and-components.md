@@ -125,6 +125,20 @@ echo browse_messages($cc_env, 7, [
 ]);
 ```
 
+## Хелпер `resize_image()`
+Функция `resize_image()` из `app/shared/core/functions.php` уменьшает изображение до заданных габаритов.
+Если исходник меньше лимитов, она возвращает исходный путь без изменений.
+
+Пример:
+
+```php
+<?php
+$publicPath = __DIR__ . '/uploads/photo.jpg';
+$publicUrl = '/uploads/photo.jpg';
+resize_image($publicPath, 1200, 1200);
+echo '<img src="' . htmlspecialchars($publicUrl, ENT_QUOTES, 'UTF-8') . '" alt="">';
+```
+
 ## Дополнительная точка расширения: `actions.php`
 Если существует файл `templates/component/<keyword>/actions.php`, он будет выполнен
 после создания объекта в админке. Контекст: `$message` (ID объекта), `$object` (запись объекта).
