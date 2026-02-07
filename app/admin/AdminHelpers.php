@@ -337,28 +337,12 @@ function englishNameIsValid(string $englishName): bool
 
 function componentKeyIsValid(string $componentKey): bool
 {
-    if (!preg_match('/^[A-Za-z0-9_-]+$/', $componentKey)) {
-        return false;
-    }
-
-    if (str_contains($componentKey, '..') || str_contains($componentKey, '/') || str_contains($componentKey, '\\')) {
-        return false;
-    }
-
-    return true;
+    return adminKeyIsValid($componentKey);
 }
 
 function snippetKeyIsValid(string $snippetKey): bool
 {
-    if (!preg_match('/^[A-Za-z0-9_-]+$/', $snippetKey)) {
-        return false;
-    }
-
-    if (str_contains($snippetKey, '..') || str_contains($snippetKey, '/') || str_contains($snippetKey, '\\')) {
-        return false;
-    }
-
-    return true;
+    return adminKeyIsValid($snippetKey);
 }
 
 function parseVisualFieldOptions(string $value): array
@@ -397,11 +381,16 @@ function parseVisualFieldOptions(string $value): array
 
 function layoutKeyIsValid(string $layoutKey): bool
 {
-    if (!preg_match('/^[A-Za-z0-9_-]+$/', $layoutKey)) {
+    return adminKeyIsValid($layoutKey);
+}
+
+function adminKeyIsValid(string $key): bool
+{
+    if (!preg_match('/^[A-Za-z0-9_-]+$/', $key)) {
         return false;
     }
 
-    if (str_contains($layoutKey, '..') || str_contains($layoutKey, '/') || str_contains($layoutKey, '\\')) {
+    if (str_contains($key, '..') || str_contains($key, '/') || str_contains($key, '\\')) {
         return false;
     }
 
