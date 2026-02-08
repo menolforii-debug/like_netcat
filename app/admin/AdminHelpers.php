@@ -199,8 +199,6 @@ function renderFieldInput(array $field, array $data, array $uploadContext = []):
     $label = htmlspecialchars((string) ($field['label'] ?? $name), ENT_QUOTES, 'UTF-8');
     $value = isset($data[$name]) ? (string) $data[$name] : '';
     $safeId = preg_replace('/[^A-Za-z0-9_-]/', '_', (string) $name);
-    $previewId = 'file-preview-' . $safeId;
-    $clearId = 'file-clear-' . $safeId;
 
     $html = '<label class="form-label">' . $label . '</label>';
     switch ($type) {
@@ -237,18 +235,14 @@ function renderFieldInput(array $field, array $data, array $uploadContext = []):
             $html .= '</select>';
             break;
         case 'file':
-            $inputId = 'file-input-' . $safeId;
-            $deleteId = 'file-delete-' . $safeId;
-            $html .= '<input class="form-control" id="' . $inputId . '" type="file" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" data-file-preview-container="#' . $previewId . '" data-file-preview-show-info="true" data-file-btn-clear="#' . $clearId . '">';
-            $html .= '<div id="' . $previewId . '" class="mt-2"></div>';
-            $html .= '<button class="btn btn-sm btn-outline-secondary mt-2" type="button" id="' . $clearId . '">Очистить</button>';
-            if ($value !== '') {
-                $html .= '<div class="form-text">Текущий файл: <a href="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener">' . htmlspecialchars(basename($value), ENT_QUOTES, 'UTF-8') . '</a></div>';
-                $html .= '<div class="form-check mt-2">';
-                $html .= '<input class="form-check-input" type="checkbox" name="delete_files[' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ']" value="1" id="' . $deleteId . '">';
-                $html .= '<label class="form-check-label" for="' . $deleteId . '">Удалить файл</label>';
-                $html .= '</div>';
-            }
+            $html .= renderFileInput(
+                (string) $name,
+                $value,
+                [
+                    'id_base' => $safeId,
+                    'delete_name' => 'delete_files[' . (string) $name . ']',
+                ]
+            );
             break;
         default:
             $html .= '<input class="form-control" type="text" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '">';
@@ -260,6 +254,30 @@ function renderFieldInput(array $field, array $data, array $uploadContext = []):
     }
 
     return '<div class="mb-3">' . $html . '</div>';
+}
+
+function renderFileInput(string $name, string $value, array $options = []): string
+{
+    $idBase = $options['id_base'] ?? preg_replace('/[^A-Za-z0-9_-]/', '_', $name);
+    $inputId = $options['input_id'] ?? 'file-input-' . $idBase;
+    $previewId = $options['preview_id'] ?? 'file-preview-' . $idBase;
+    $clearId = $options['clear_id'] ?? 'file-clear-' . $idBase;
+    $deleteName = $options['delete_name'] ?? null;
+    $deleteId = $options['delete_id'] ?? 'file-delete-' . $idBase;
+    $inputAttributes = $options['input_attributes'] ?? '';
+
+    $html = '<input class="form-control" id="' . htmlspecialchars($inputId, ENT_QUOTES, 'UTF-8') . '" type="file" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '"' . $inputAttributes . ' data-file-preview-container="#' . htmlspecialchars($previewId, ENT_QUOTES, 'UTF-8') . '" data-file-preview-show-info="true" data-file-btn-clear="#' . htmlspecialchars($clearId, ENT_QUOTES, 'UTF-8') . '">';
+    $html .= '<div id="' . htmlspecialchars($previewId, ENT_QUOTES, 'UTF-8') . '" class="mt-2"></div>';
+    $html .= '<button class="btn btn-sm btn-outline-secondary mt-2" type="button" id="' . htmlspecialchars($clearId, ENT_QUOTES, 'UTF-8') . '">Очистить</button>';
+    if ($value !== '' && $deleteName !== null) {
+        $html .= '<div class="form-text">Текущий файл: <a href="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener">' . htmlspecialchars(basename($value), ENT_QUOTES, 'UTF-8') . '</a></div>';
+        $html .= '<div class="form-check mt-2">';
+        $html .= '<input class="form-check-input" type="checkbox" name="' . htmlspecialchars($deleteName, ENT_QUOTES, 'UTF-8') . '" value="1" id="' . htmlspecialchars($deleteId, ENT_QUOTES, 'UTF-8') . '">';
+        $html .= '<label class="form-check-label" for="' . htmlspecialchars($deleteId, ENT_QUOTES, 'UTF-8') . '">Удалить файл</label>';
+        $html .= '</div>';
+    }
+
+    return $html;
 }
 
 function ensurePreviewToken(): string
