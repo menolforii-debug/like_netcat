@@ -255,7 +255,6 @@ final class Renderer
         $cc_env = isset($infoblock['cc_env']) && is_array($infoblock['cc_env']) ? $infoblock['cc_env'] : [];
         $message_select = isset($infoblock['message_select']) ? (string) $infoblock['message_select'] : '';
         $fields = [];
-        $fieldTypes = [];
         $fieldsJson = $component['fields_json'] ?? '';
         $decodedFields = json_decode((string) $fieldsJson, true);
         if (is_array($decodedFields)) {
@@ -264,13 +263,11 @@ final class Renderer
                 foreach ($rawFields as $field) {
                     if (is_string($field)) {
                         $fields[$field] = '';
-                        $fieldTypes[$field] = 'string';
                         continue;
                     }
                     if (is_array($field) && !empty($field['name'])) {
                         $name = (string) $field['name'];
                         $fields[$name] = '';
-                        $fieldTypes[$name] = isset($field['type']) ? (string) $field['type'] : 'text';
                     }
                 }
             }
@@ -281,7 +278,7 @@ final class Renderer
         }
         unset($value);
 
-        $setFields = static function (array $item) use ($cc_env, &$fields, &$fullLink, $fieldTypes): void {
+        $setFields = static function (array $item) use ($cc_env, &$fields, &$fullLink): void {
             $data = $item['data'] ?? [];
             if (!is_array($data)) {
                 return;
@@ -303,7 +300,7 @@ final class Renderer
             $setFields($object);
         }
 
-        $templatePath = $this->resolveTemplatePath(
+        $templatePath = resolveTemplatePath(
             (string) ($component['keyword'] ?? ''),
             (string) $infoblock['view_template'],
             $isSingle
@@ -546,47 +543,6 @@ final class Renderer
         }
 
         return is_file($dir . '/list.php') || is_file($dir . '/single.php');
-    }
-
-    private function resolveTemplatePath(string $componentKey, string $view, bool $isSingle): string
-    {
-        if ($componentKey === '' || $view === '') {
-            return '';
-        }
-
-        if (!preg_match('/^[A-Za-z0-9_-]+$/', $componentKey)) {
-            return '';
-        }
-        if (!preg_match('/^[A-Za-z0-9_-]+$/', $view)) {
-            return '';
-        }
-
-        $baseDir = __DIR__ . '/../../../templates/component';
-        $baseReal = realpath($baseDir);
-        if ($baseReal === false) {
-            return '';
-        }
-        $baseReal = rtrim($baseReal, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
-
-        $dir = $baseReal . $componentKey . '/' . $view;
-        $realDir = realpath($dir);
-        if ($realDir === false || strpos($realDir . DIRECTORY_SEPARATOR, $baseReal) !== 0) {
-            return '';
-        }
-
-        $singlePath = $realDir . '/single.php';
-        $listPath = $realDir . '/list.php';
-        if ($isSingle && is_file($singlePath)) {
-            return $singlePath;
-        }
-        if (is_file($listPath)) {
-            return $listPath;
-        }
-        if (is_file($singlePath)) {
-            return $singlePath;
-        }
-
-        return '';
     }
 
     private function resolveSystemPath(string $componentKey, string $view): string
