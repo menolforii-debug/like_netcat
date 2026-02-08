@@ -91,9 +91,9 @@ $text = (string) ($object['data']['text'] ?? '');
 ```php
 <?php
 // Доступны переменные: $section, $site, $infoblock, $component, $isSingle
-return [
-    'query_order' => 'a.created_at DESC',
-];
+// Пример системных настроек:
+// $query_order = 'a.created_at DESC';
+$query_order = 'a.created_at DESC';
 ```
 
 Подробный контракт `system.php` — в `docs/50-system-php-contract.md`.
@@ -146,6 +146,7 @@ echo '<img src="' . htmlspecialchars($publicUrl, ENT_QUOTES, 'UTF-8') . '" alt="
 ## Хелпер `objects_list()`
 Функция `objects_list()` из `app/public/helpers.php` рендерит шаблоны компонента вручную.
 Минимальные входные параметры — `infoblock_id` или `component_id`.
+Нормализация записей объектов выполняется через `ObjectRepo::normalizeItems()` — это общий маппер, который используется и в `Renderer`.
 
 Пример:
 

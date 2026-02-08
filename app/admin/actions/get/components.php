@@ -97,6 +97,11 @@ $templateContents = [
     'single' => '',
     'system' => '',
 ];
+$templateExists = [
+    'list' => false,
+    'single' => false,
+    'system' => false,
+];
 $componentKey = '';
 $templateError = '';
 
@@ -124,6 +129,7 @@ if ($selectedComponent !== null) {
                 if (!is_file($filePath)) {
                     continue;
                 }
+                $templateExists[$key] = true;
                 $realFile = realpath($filePath);
                 if ($realFile !== false && strpos($realFile, $baseReal) === 0) {
                     $templateContents[$key] = file_get_contents($realFile) ?: '';
@@ -132,6 +138,62 @@ if ($selectedComponent !== null) {
                     break;
                 }
             }
+        }
+    }
+
+    $defaultListContent = <<<'PHP'
+<?php
+/** @var array $items */
+?>
+<div class="component-list">
+    <?php foreach ($items as $item): ?>
+        <?php $title = (string) ($item['data']['title'] ?? ''); ?>
+        <?php $text = (string) ($item['data']['text'] ?? ''); ?>
+        <article class="component-item">
+            <h3><?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?></h3>
+            <?php if ($text !== ''): ?>
+                <p><?php echo nl2br(htmlspecialchars($text, ENT_QUOTES, 'UTF-8')); ?></p>
+            <?php endif; ?>
+        </article>
+    <?php endforeach; ?>
+</div>
+PHP;
+
+    $defaultSingleContent = <<<'PHP'
+<?php
+/** @var array|null $object */
+if ($object === null) {
+    return;
+}
+$title = (string) ($object['data']['title'] ?? '');
+$text = (string) ($object['data']['text'] ?? '');
+?>
+<article class="component-single">
+    <h1><?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?></h1>
+    <?php if ($text !== ''): ?>
+        <div class="content"><?php echo nl2br(htmlspecialchars($text, ENT_QUOTES, 'UTF-8')); ?></div>
+    <?php endif; ?>
+</article>
+PHP;
+
+    $defaultSystemContent = <<<'PHP'
+<?php
+// Доступны переменные: $section, $site, $infoblock, $component, $isSingle
+// Пример системных настроек:
+// $query_order = 'a.created_at DESC';
+// $query_limit = '10';
+// $distinct = 'DISTINCT';
+PHP;
+
+    $defaultTemplates = [
+        'list' => $defaultListContent,
+        'single' => $defaultSingleContent,
+        'system' => $defaultSystemContent,
+    ];
+
+    foreach ($defaultTemplates as $key => $content) {
+        if (!$templateExists[$key] && $templateContents[$key] === '') {
+            $templateContents[$key] = $content;
         }
     }
 }
