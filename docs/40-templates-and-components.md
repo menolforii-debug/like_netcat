@@ -146,6 +146,7 @@ echo '<img src="' . htmlspecialchars($publicUrl, ENT_QUOTES, 'UTF-8') . '" alt="
 ## Хелпер `objects_list()`
 Функция `objects_list()` из `app/public/helpers.php` рендерит шаблоны компонента вручную.
 Минимальные входные параметры — `infoblock_id` или `component_id`.
+Нормализация записей объектов выполняется через `ObjectRepo::normalizeItems()` — это общий маппер, который используется и в `Renderer`.
 
 Пример:
 
