@@ -18,5 +18,7 @@ require __DIR__ . '/AdminHelpers.php';
 require __DIR__ . '/AdminRouter.php';
 require __DIR__ . '/ui/AdminLayout.php';
 require __DIR__ . '/ui/SectionTree.php';
+require __DIR__ . '/ui/SnippetListView.php';
+require __DIR__ . '/ui/UsersListView.php';
 
 Auth::start();

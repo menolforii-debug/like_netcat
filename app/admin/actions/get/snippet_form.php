@@ -38,13 +38,6 @@ if ($keyword !== '') {
     }
 }
 
-function renderTextareaValue($value): string
-{
-    $s = (string) $value;
-    $s = preg_replace('~</textarea~i', '&lt;/textarea', $s);
-    return $s ?? '';
-}
-
 AdminLayout::renderHeader('Врезки');
 
 echo '<div class="card shadow-sm">';

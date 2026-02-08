@@ -23,13 +23,6 @@ $allowedFiles = [
     'system' => 'system.php',
 ];
 
-function renderTextareaValue($value): string
-{
-    $s = (string) $value;
-    $s = preg_replace('~</textarea~i', '&lt;/textarea', $s);
-    return $s ?? '';
-}
-
 $selectedComponent = null;
 foreach ($components as $component) {
     if ((int) $component['id'] === $componentId) {

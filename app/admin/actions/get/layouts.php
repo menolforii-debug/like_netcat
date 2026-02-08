@@ -15,13 +15,6 @@ if ($layoutKey !== '' && $layoutKey !== '_new' && !in_array($layoutKey, $layouts
     $layoutKey = '';
 }
 
-function renderTextareaValue($value): string
-{
-    $s = (string) $value;
-    $s = preg_replace('~</textarea~i', '&lt;/textarea', $s);
-    return $s ?? '';
-}
-
 function renderVisualFieldsContent(array $visualFields): void
 {
     echo '<div class="mb-4">';

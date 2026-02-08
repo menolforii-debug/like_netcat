@@ -198,6 +198,16 @@ CKEDITOR.replace('editor-<field>', {
 её используют и `renderFieldInput()`, и `app/admin/actions/get/dashboard.php` для визуальных
 настроек. Новые сценарии с файлами следует собирать через этот хелпер, чтобы не плодить копии.
 
+### Единый helper для textarea-содержимого
+`renderTextareaValue()` вынесен в `app/admin/AdminHelpers.php` и используется во всех формах,
+где нужно безопасно вставлять шаблоны в `<textarea>` (экранирование `</textarea>`). Не дублируйте
+эту функцию в action-файлах.
+
+### UI-рендеры должны жить в app/admin/ui
+Рендеринг списков и карточек (например, список врезок и список пользователей) вынесен в
+`app/admin/ui` (`SnippetListView`, `UsersListView`). Новую HTML-логику списка/карточки
+размещайте там, а action-файлы оставляйте для подготовки данных.
+
 `writeLayoutTemplate()` и `writeLayoutNavTemplate()` дополнительно проверяют доступность директории
 `templates/layouts/` через пробную запись (файл `.write_probe`) и возвращают текст ошибки через
 `$error`, если папка недоступна или блокируется настройками вроде `open_basedir`.

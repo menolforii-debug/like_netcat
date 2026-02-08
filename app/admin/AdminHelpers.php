@@ -631,11 +631,17 @@ function adminOk(string $message = '', array $focus = [], bool $withSidebar = tr
     if (!empty($focus)) {
         $payload['focus'] = $focus;
     }
-    $payload['refresh'] = $withSidebar ? ['#left-sidebar', '#content'] : ['#content'];
 
     $payload = array_merge($payload, $extra);
 
     jsonResponse($payload);
+}
+
+function renderTextareaValue($value): string
+{
+    $s = (string) $value;
+    $s = preg_replace('~</textarea~i', '&lt;/textarea', $s);
+    return $s ?? '';
 }
 
 function normalizeComponentFieldsInput(array $fieldsInput): array
