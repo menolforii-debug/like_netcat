@@ -124,8 +124,9 @@ if ($user) {
 }
 
 if (isAjaxRequest()) {
-    adminOk('Объект обновлен', [], true, [
-        'refresh' => ['#content'],
+    jsonResponse([
+        'ok' => true,
+        'message' => 'Объект обновлен',
     ]);
 }
 adminFlashSet('success', 'Объект обновлен');
