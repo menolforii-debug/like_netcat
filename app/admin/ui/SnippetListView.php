@@ -4,7 +4,7 @@ final class SnippetListView
 {
     public static function renderSidebar(array $snippets, array $snippetNames, string $keyword): void
     {
-        $createLink = buildAdminUrl(['action' => 'snippet_list', 'new' => 1]);
+        $createLink = buildAdminUrl(['action' => 'snippet_form']);
         echo '<div class="card shadow-sm border-0">';
         echo '<div class="card-body p-3">';
         echo '<div class="d-flex align-items-center justify-content-between mb-2">';

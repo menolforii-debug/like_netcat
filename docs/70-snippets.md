@@ -35,6 +35,7 @@ templates/snippets/<name>.php
 
 ## Управление в админке
 В админке доступно создание и удаление врезок:
+- создание/редактирование формы открывается через `/admin.php?action=snippet_form`;
 - сохранение выполняет `/admin.php?action=snippet_save`;
 - удаление выполняет `/admin.php?action=snippet_delete`.
 
@@ -43,9 +44,9 @@ templates/snippets/<name>.php
 Все операции работают по схеме `POST → redirect → GET` и используют `adminFlashSet(...)`
 для тостов об успехе/ошибке.
 
-`GET`-страница врезок рендерит две колонки:
-- `renderSnippetsSidebarHtml()` — список врезок в левой колонке;
-- `renderSnippetsContentHtml()` — форма редактирования/создания в правой колонке.
+`GET`-страница списка врезок (`/admin.php?action=snippet_list`) рендерит две колонки:
+- левая колонка — список врезок;
+- правая колонка — форма редактирования выбранной врезки.
 
 ## Пример: врезка футера
 `templates/snippets/footer.php`:
