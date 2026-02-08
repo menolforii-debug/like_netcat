@@ -41,29 +41,37 @@ templates/component/<keyword>/<view>/
 - `$cc_env` — параметры пагинации (`current_page`, `total_pages`, `base_url`, `query_params`, `per_page`, `total_items`).
 - `$message_select` — `SQL`‑текст последней выборки (для отладки).
 - `$helpers` — массив `helpers` из `system.php`.
-- `$setFields` — функция для назначения `$GLOBALS['f_*']`.
+- `$setFields` — функция для назначения `$GLOBALS['f_*']` и `$GLOBALS['fullLink']`.
 
 ### Переменные `f_*`
 Функция `$setFields($item)` записывает данные объекта в глобальные переменные `$f_<field>`.
-`Renderer` вызывает `$setFields()` автоматически для объекта в `single`‑режиме.
+В `list.php` её нужно вызывать для каждого элемента перед использованием `$f_*`, а в `single.php` `Renderer` вызывает `$setFields()` автоматически.
+Данные через `$item['data']` или `$object['data']` в шаблонах не читаются — используйте только `$f_*`.
+
+### Переменная `$fullLink` в `list.php`
+`$fullLink` — строка со ссылкой на `single`‑режим текущего объекта. Её устанавливает `$setFields($item)` на каждой итерации списка (формируется в `Renderer` на основе `$cc_env`), вручную ссылку собирать не нужно.
 
 ## Пример компонента `news`: список (`list.php`)
 
 ```php
 <?php
 /** @var array $items */
+/** @var callable $setFields */
 ?>
 <div class="news-list">
     <?php foreach ($items as $item): ?>
-        <?php $title = (string) ($item['data']['title'] ?? ''); ?>
-        <?php $text = (string) ($item['data']['text'] ?? ''); ?>
+        <?php $setFields($item); ?>
         <article class="news-item">
             <h3>
-                <a href="?object_id=<?php echo (int) $item['id']; ?>">
-                    <?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?>
-                </a>
+                <?php if (!empty($fullLink)): ?>
+                    <a href="<?php echo htmlspecialchars((string) $fullLink, ENT_QUOTES, 'UTF-8'); ?>">
+                        <?php echo htmlspecialchars((string) ($f_title ?? ''), ENT_QUOTES, 'UTF-8'); ?>
+                    </a>
+                <?php else: ?>
+                    <?php echo htmlspecialchars((string) ($f_title ?? ''), ENT_QUOTES, 'UTF-8'); ?>
+                <?php endif; ?>
             </h3>
-            <p><?php echo nl2br(htmlspecialchars($text, ENT_QUOTES, 'UTF-8')); ?></p>
+            <p><?php echo nl2br(htmlspecialchars((string) ($f_text ?? ''), ENT_QUOTES, 'UTF-8')); ?></p>
         </article>
     <?php endforeach; ?>
 </div>
@@ -77,8 +85,8 @@ templates/component/<keyword>/<view>/
 if ($object === null) {
     return;
 }
-$title = (string) ($object['data']['title'] ?? '');
-$text = (string) ($object['data']['text'] ?? '');
+$title = (string) ($f_title ?? '');
+$text = (string) ($f_text ?? '');
 ?>
 <article class="news-single">
     <h1><?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?></h1>

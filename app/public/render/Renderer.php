@@ -254,7 +254,7 @@ final class Renderer
         $settings = $infoblock['settings'] ?? [];
         $cc_env = isset($infoblock['cc_env']) && is_array($infoblock['cc_env']) ? $infoblock['cc_env'] : [];
         $message_select = isset($infoblock['message_select']) ? (string) $infoblock['message_select'] : '';
-        $setFields = static function (array $item): void {
+        $setFields = static function (array $item) use ($cc_env): void {
             $data = $item['data'] ?? [];
             if (!is_array($data)) {
                 return;
@@ -265,6 +265,10 @@ final class Renderer
                 }
                 $GLOBALS['f_' . $key] = $value;
             }
+            $params = $cc_env['query_params'] ?? [];
+            $params['object_id'] = (int) ($item['id'] ?? 0);
+            $qs = http_build_query($params);
+            $GLOBALS['fullLink'] = (string) ($cc_env['base_url'] ?? '') . ($qs !== '' ? ('?' . $qs) : '');
         };
         if ($object !== null) {
             $setFields($object);

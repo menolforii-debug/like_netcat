@@ -144,15 +144,23 @@ if ($selectedComponent !== null) {
     $defaultListContent = <<<'PHP'
 <?php
 /** @var array $items */
+/** @var callable $setFields */
 ?>
 <div class="component-list">
     <?php foreach ($items as $item): ?>
-        <?php $title = (string) ($item['data']['title'] ?? ''); ?>
-        <?php $text = (string) ($item['data']['text'] ?? ''); ?>
+        <?php $setFields($item); ?>
         <article class="component-item">
-            <h3><?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?></h3>
-            <?php if ($text !== ''): ?>
-                <p><?php echo nl2br(htmlspecialchars($text, ENT_QUOTES, 'UTF-8')); ?></p>
+            <h3>
+                <?php if (!empty($fullLink)): ?>
+                    <a href="<?php echo htmlspecialchars((string) $fullLink, ENT_QUOTES, 'UTF-8'); ?>">
+                        <?php echo htmlspecialchars((string) ($f_title ?? ''), ENT_QUOTES, 'UTF-8'); ?>
+                    </a>
+                <?php else: ?>
+                    <?php echo htmlspecialchars((string) ($f_title ?? ''), ENT_QUOTES, 'UTF-8'); ?>
+                <?php endif; ?>
+            </h3>
+            <?php if (!empty($f_text)): ?>
+                <p><?php echo nl2br(htmlspecialchars((string) $f_text, ENT_QUOTES, 'UTF-8')); ?></p>
             <?php endif; ?>
         </article>
     <?php endforeach; ?>
@@ -165,8 +173,8 @@ PHP;
 if ($object === null) {
     return;
 }
-$title = (string) ($object['data']['title'] ?? '');
-$text = (string) ($object['data']['text'] ?? '');
+$title = (string) ($f_title ?? '');
+$text = (string) ($f_text ?? '');
 ?>
 <article class="component-single">
     <h1><?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?></h1>
