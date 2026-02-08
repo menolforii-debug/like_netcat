@@ -45,25 +45,39 @@ templates/component/<keyword>/<view>/
 
 ### Переменные `f_*`
 Функция `$setFields($item)` записывает данные объекта в глобальные переменные `$f_<field>`.
-`Renderer` вызывает `$setFields()` автоматически для объекта в `single`‑режиме.
+В `list.php` её нужно вызывать для каждого элемента перед использованием `$f_*`, а в `single.php` `Renderer` вызывает `$setFields()` автоматически.
+
+### Переменная `$fullLink` в `list.php`
+`$fullLink` — строка со ссылкой на `single`‑режим текущего объекта. Формируется в `list.php` после вызова `$setFields($item)` на каждой итерации, используя `$cc_env['base_url']` и `$cc_env['query_params']`.
 
 ## Пример компонента `news`: список (`list.php`)
 
 ```php
 <?php
 /** @var array $items */
+/** @var callable $setFields */
+/** @var array $cc_env */
 ?>
 <div class="news-list">
     <?php foreach ($items as $item): ?>
-        <?php $title = (string) ($item['data']['title'] ?? ''); ?>
-        <?php $text = (string) ($item['data']['text'] ?? ''); ?>
+        <?php $setFields($item); ?>
+        <?php
+        $params = $cc_env['query_params'] ?? [];
+        $params['object_id'] = (int) $item['id'];
+        $qs = http_build_query($params);
+        $fullLink = (string) ($cc_env['base_url'] ?? '') . ($qs !== '' ? ('?' . $qs) : '');
+        ?>
         <article class="news-item">
             <h3>
-                <a href="?object_id=<?php echo (int) $item['id']; ?>">
-                    <?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?>
-                </a>
+                <?php if ($fullLink !== ''): ?>
+                    <a href="<?php echo htmlspecialchars($fullLink, ENT_QUOTES, 'UTF-8'); ?>">
+                        <?php echo htmlspecialchars((string) ($f_title ?? ''), ENT_QUOTES, 'UTF-8'); ?>
+                    </a>
+                <?php else: ?>
+                    <?php echo htmlspecialchars((string) ($f_title ?? ''), ENT_QUOTES, 'UTF-8'); ?>
+                <?php endif; ?>
             </h3>
-            <p><?php echo nl2br(htmlspecialchars($text, ENT_QUOTES, 'UTF-8')); ?></p>
+            <p><?php echo nl2br(htmlspecialchars((string) ($f_text ?? ''), ENT_QUOTES, 'UTF-8')); ?></p>
         </article>
     <?php endforeach; ?>
 </div>
@@ -77,8 +91,8 @@ templates/component/<keyword>/<view>/
 if ($object === null) {
     return;
 }
-$title = (string) ($object['data']['title'] ?? '');
-$text = (string) ($object['data']['text'] ?? '');
+$title = (string) ($f_title ?? '');
+$text = (string) ($f_text ?? '');
 ?>
 <article class="news-single">
     <h1><?php echo htmlspecialchars($title, ENT_QUOTES, 'UTF-8'); ?></h1>

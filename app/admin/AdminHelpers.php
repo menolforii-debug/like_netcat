@@ -289,6 +289,9 @@ function ensurePreviewToken(): string
     return (string) $_SESSION['preview_token'];
 }
 
+/**
+ * Удаляет загруженный файл, нормализуя путь к виду /files/ и ограничивая удаление папкой public_html/files.
+ */
 function deleteUploadedFile(string $publicPath): void
 {
     $path = trim($publicPath);
@@ -309,10 +312,6 @@ function deleteUploadedFile(string $publicPath): void
     if (!str_starts_with($path, '/files/')) {
         // Старые данные могли быть без ведущего слеша.
         $path = '/files/' . ltrim($path, '/');
-    }
-    if (!str_starts_with($path, '/files/')) {
-        error_log('deleteUploadedFile: not in /files/ path=' . $path);
-        return;
     }
     error_log('deleteUploadedFile: normalized=' . $path);
 
