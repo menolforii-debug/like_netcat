@@ -67,12 +67,11 @@ function is_valid_csrf_token(?string $token): bool
 
 function collectSections(SectionRepo $repo, int $parentId): array
 {
-    $items = [];
-    $children = $repo->listChildren($parentId);
-    foreach ($children as $child) {
-        $items[] = $child;
-        $items = array_merge($items, collectSections($repo, (int) $child['id']));
+    $items = collectSectionTree($repo, $parentId);
+    foreach ($items as &$item) {
+        unset($item['depth']);
     }
+    unset($item);
 
     return $items;
 }
