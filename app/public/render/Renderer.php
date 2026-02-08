@@ -149,7 +149,7 @@ final class Renderer
             }
             $infoblock['message_select'] = $messageSelect;
 
-            $items = $this->decodeItems($objects);
+            $items = $objectRepo->normalizeItems($objects);
             $totalItems = 0;
             $totalPages = 0;
             if (!$isSingle && empty($systemSettings['ignore_all']) && $perPage > 0) {
@@ -370,29 +370,6 @@ final class Renderer
         }
 
         return 'default';
-    }
-
-    private function decodeItems(array $objects): array
-    {
-        $items = [];
-
-        foreach ($objects as $object) {
-            $data = json_decode((string) $object['data_json'], true);
-            if (!is_array($data)) {
-                $data = [];
-            }
-
-            $items[] = [
-                'id' => $object['id'],
-                'data' => $data,
-                'status' => $object['status'] ?? 'draft',
-                'created_at' => $object['created_at'],
-                'updated_at' => $object['updated_at'],
-                'controls' => [],
-            ];
-        }
-
-        return $items;
     }
 
     private function resolveSeo(array $section, array $infoblocks, array $infoblockViews, string $itemTitle): array
