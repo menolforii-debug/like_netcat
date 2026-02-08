@@ -4,6 +4,29 @@ final class ObjectRepo
 {
     private ?string $lastSelectQuery = null;
 
+    public function normalizeItems(array $rows): array
+    {
+        $items = [];
+
+        foreach ($rows as $row) {
+            $data = json_decode((string) ($row['data_json'] ?? ''), true);
+            if (!is_array($data)) {
+                $data = [];
+            }
+
+            $items[] = [
+                'id' => $row['id'],
+                'data' => $data,
+                'status' => $row['status'] ?? 'draft',
+                'created_at' => $row['created_at'],
+                'updated_at' => $row['updated_at'],
+                'controls' => [],
+            ];
+        }
+
+        return $items;
+    }
+
     public function listForInfoblock($infoblockId, bool $includeDeleted = false, ?string $status = null): array
     {
         $where = 'infoblock_id = :infoblock_id';

@@ -11,6 +11,7 @@ if (!Auth::isAdmin()) {
 $keyword = isset($_POST['keyword']) ? trim((string) $_POST['keyword']) : '';
 $content = isset($_POST['content']) ? (string) $_POST['content'] : '';
 $name = isset($_POST['name']) ? trim((string) $_POST['name']) : '';
+$isExisting = isset($_POST['snippet_exists']) && (string) $_POST['snippet_exists'] === '1';
 
 if ($keyword === '' || !preg_match('/^[A-Za-z0-9_-]+$/', $keyword)) {
     if (isAjaxRequest()) {
@@ -44,6 +45,14 @@ if ($snippetDirReal === false || strpos($snippetDirReal . DIRECTORY_SEPARATOR, $
     }
     adminFlashSet('danger', 'Некорректный путь к файлу врезки');
     redirectTo(buildAdminUrl(['action' => 'snippet_list', 'keyword' => $keyword]));
+}
+
+if (!$isExisting && is_file($snippetPath)) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Врезка с таким ключом уже существует']);
+    }
+    adminFlashSet('danger', 'Врезка с таким ключом уже существует');
+    redirectTo(buildAdminUrl(['action' => 'snippet_form', 'keyword' => $keyword]));
 }
 
 $ok = @file_put_contents($snippetPath, $content, LOCK_EX);
