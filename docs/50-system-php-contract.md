@@ -8,35 +8,35 @@
 ## Базовые правила
 - `system.php` лежит в `templates/component/<keyword>/<view>/system.php`.
 - Внутри доступны переменные: `$section`, `$site`, `$infoblock`, `$component`, `$isSingle`.
-- Файл должен **возвращать массив**. Если ничего не вернуть — это считается пустыми настройками.
-- Любой другой тип результата приводится к пустому массиву (с записью в лог).
+- Настройки задаются **через переменные** (без `return` массива).
+- Если переменные не заданы — считаем настройки пустыми.
 
-## Поддерживаемые ключи (реально используемые)
-`Renderer` нормализует только следующие ключи:
+## Поддерживаемые настройки (реально используемые)
+`Renderer` нормализует только следующие переменные:
 
 ### Фильтры
-- `ignore_sub` — не фильтровать по `infoblock_id`.
-- `ignore_cc` — если `ignore_sub = 1`, также не фильтровать по `component_id`.
-- `ignore_check` — отключить фильтр `status`.
-- `ignore_all` — полностью отключить выборку (вернётся пустой список).
-- `ignore_limit` — игнорировать пагинацию (`per_page/offset`).
+- `$ignore_sub` — не фильтровать по `infoblock_id`.
+- `$ignore_cc` — если `ignore_sub = 1`, также не фильтровать по `component_id`.
+- `$ignore_check` — отключить фильтр `status`.
+- `$ignore_all` — полностью отключить выборку (вернётся пустой список).
+- `$ignore_limit` — игнорировать пагинацию (`per_page/offset`).
 
 ### `SQL`‑фрагменты
 Все части вставляются в `SQL` **как есть**:
-- `query_select`
-- `query_from`
-- `query_join`
-- `query_where`
-- `query_group`
-- `query_having`
-- `query_order`
-- `query_limit`
+- `$query_select`
+- `$query_from`
+- `$query_join`
+- `$query_where`
+- `$query_group`
+- `$query_having`
+- `$query_order`
+- `$query_limit`
 
 ### DISTINCT
-- `distinct` — если непустая строка, используется как есть (например `DISTINCT`).
+- `$distinct` — если непустая строка, используется как есть (например `DISTINCT`).
 
 ### Хелперы
-- `helpers` — произвольный массив, доступный в шаблоне как `$helpers`.
+- `$helpers` — произвольный массив, доступный в шаблоне как `$helpers`.
 
 ## Как устроен `SQL`‑шаблон
 `ObjectRepo` строит запрос вида:
@@ -64,95 +64,74 @@ LIMIT query_limit
 ### 1. Сортировка по дате публикации
 ```php
 <?php
-return [
-    'query_order' => 'a.published_at DESC, a.id DESC',
-];
+$query_order = 'a.published_at DESC, a.id DESC';
 ```
 
 ### 2. Отбор по статусу без системной проверки
 ```php
 <?php
-return [
-    'ignore_check' => true,
-    'query_where' => "a.status IN ('draft','published')",
-];
+$ignore_check = true;
+$query_where = "a.status IN ('draft','published')";
 ```
 
 ### 3. Отключить все объекты
 ```php
 <?php
-return [
-    'ignore_all' => true,
-];
+$ignore_all = true;
 ```
 
 ### 4. Жёсткий лимит вне пагинации
 ```php
 <?php
-return [
-    'ignore_limit' => true,
-    'query_limit' => '5',
-];
+$ignore_limit = true;
+$query_limit = '5';
 ```
 
 ### 5. Разная логика для single‑режима
 ```php
 <?php
 if ($isSingle) {
-    return [
-        'query_order' => 'a.id DESC',
-    ];
+    $query_order = 'a.id DESC';
+    return;
 }
-return [
-    'query_order' => 'a.created_at DESC',
-];
+$query_order = 'a.created_at DESC';
 ```
 
 ### 6. Использование `ignore_sub` для выборки по компоненту
 ```php
 <?php
-return [
-    'ignore_sub' => true,
-    // при ignore_sub компонент будет фильтроваться по component_id
-];
+$ignore_sub = true;
+// при ignore_sub компонент будет фильтроваться по component_id
 ```
 
 ### 7. Выборка без фильтра компонента и инфоблока
 ```php
 <?php
-return [
-    'ignore_sub' => true,
-    'ignore_cc' => true,
-];
+$ignore_sub = true;
+$ignore_cc = true;
 ```
 
 ### 8. DISTINCT
 ```php
 <?php
-return [
-    'distinct' => 'DISTINCT',
-];
+$distinct = 'DISTINCT';
 ```
 
 ### 9. Helpers для шаблона
 ```php
 <?php
-return [
-    'helpers' => [
-        'formatDate' => static function (string $iso): string {
-            $dt = new DateTimeImmutable($iso);
-            return $dt->format('d.m.Y');
-        },
-    ],
+$helpers = [
+    'formatDate' => static function (string $iso): string {
+        $dt = new DateTimeImmutable($iso);
+        return $dt->format('d.m.Y');
+    },
 ];
 ```
 
 ### 10. Простой фильтр по JSON‑полю (строковый поиск)
 ```php
 <?php
-return [
-    'query_where' => 'a.data_json LIKE "%\"category\":\"news\"%"',
-];
+$query_where = 'a.data_json LIKE "%\"category\":\"news\"%"';
 ```
 
 > Важно: `query_*` не экранируются. Это прямые SQL‑фрагменты, используйте их аккуратно.

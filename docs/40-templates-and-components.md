@@ -91,9 +91,7 @@ $text = (string) ($object['data']['text'] ?? '');
 ```php
 <?php
 // Доступны переменные: $section, $site, $infoblock, $component, $isSingle
-return [
-    'query_order' => 'a.created_at DESC',
-];
+$query_order = 'a.created_at DESC';
 ```
 
 Подробный контракт `system.php` — в `docs/50-system-php-contract.md`.

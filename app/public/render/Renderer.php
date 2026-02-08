@@ -301,40 +301,68 @@ final class Renderer
             return $this->normalizeSystemSettings([]);
         }
 
-        $context = [
-            'section' => $section,
-            'site' => $site,
-            'infoblock' => $infoblock,
-            'component' => $component,
-            'isSingle' => $isSingle,
-        ];
-        extract($context, EXTR_SKIP);
+        $ignore_sub = null;
+        $ignore_cc = null;
+        $ignore_check = null;
+        $ignore_all = null;
+        $ignore_limit = null;
+        $query_select = null;
+        $query_from = null;
+        $query_join = null;
+        $query_where = null;
+        $query_group = null;
+        $query_having = null;
+        $query_order = null;
+        $query_limit = null;
+        $distinct = null;
+        $helpers = null;
+
         $result = require $systemPath;
 
-        // system.php может быть пустым (без return) — тогда require вернёт 1.
-        // Это валидный кейс: считаем настройки пустыми.
-        if ($result === 1 || $result === null) {
-            $result = [];
-        }
-
-        // Любые другие типы — не валим публичку, но логируем для отладки.
-        if (!is_array($result)) {
+        if (is_array($result)) {
+            $ignore_sub = $ignore_sub ?? ($result['ignore_sub'] ?? null);
+            $ignore_cc = $ignore_cc ?? ($result['ignore_cc'] ?? null);
+            $ignore_check = $ignore_check ?? ($result['ignore_check'] ?? null);
+            $ignore_all = $ignore_all ?? ($result['ignore_all'] ?? null);
+            $ignore_limit = $ignore_limit ?? ($result['ignore_limit'] ?? null);
+            $query_select = $query_select ?? ($result['query_select'] ?? null);
+            $query_from = $query_from ?? ($result['query_from'] ?? null);
+            $query_join = $query_join ?? ($result['query_join'] ?? null);
+            $query_where = $query_where ?? ($result['query_where'] ?? null);
+            $query_group = $query_group ?? ($result['query_group'] ?? null);
+            $query_having = $query_having ?? ($result['query_having'] ?? null);
+            $query_order = $query_order ?? ($result['query_order'] ?? null);
+            $query_limit = $query_limit ?? ($result['query_limit'] ?? null);
+            $distinct = $distinct ?? ($result['distinct'] ?? null);
+            $helpers = $helpers ?? ($result['helpers'] ?? null);
+        } elseif ($result !== 1 && $result !== null) {
             error_log(sprintf(
-                'Renderer: system.php must return array, got %s (%s) at %s',
+                'Renderer: system.php must define settings variables, got %s (%s) at %s',
                 gettype($result),
                 is_scalar($result) ? (string) $result : 'non-scalar',
                 $systemPath
             ));
-            $result = [];
         }
 
-        $helpers = [];
-        if (isset($result['helpers']) && is_array($result['helpers'])) {
-            $helpers = $result['helpers'];
-        }
+        $settings = [
+            'ignore_sub' => $ignore_sub,
+            'ignore_cc' => $ignore_cc,
+            'ignore_check' => $ignore_check,
+            'ignore_all' => $ignore_all,
+            'ignore_limit' => $ignore_limit,
+            'query_select' => $query_select,
+            'query_from' => $query_from,
+            'query_join' => $query_join,
+            'query_where' => $query_where,
+            'query_group' => $query_group,
+            'query_having' => $query_having,
+            'query_order' => $query_order,
+            'query_limit' => $query_limit,
+            'distinct' => $distinct,
+        ];
 
-        $normalized = $this->normalizeSystemSettings($result);
-        $normalized['helpers'] = $helpers;
+        $normalized = $this->normalizeSystemSettings($settings);
+        $normalized['helpers'] = is_array($helpers) ? $helpers : [];
 
         return $normalized;
     }
