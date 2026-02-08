@@ -31,6 +31,13 @@ Layout::render($layoutKey, $ctx, $body);
 - `$ctx` — массив контекста (`title`, `meta`, `site`, `section`, `h1`, `visual`, `children`).
 - `$body` — вызываемый коллбек, который печатает `HTML` инфоблоков.
 
+Дополнительно перед подключением макета `Layout::render()` подготавливает переменные:
+- `$title` — строка из `$ctx['title']` или пустая строка;
+- `$meta` — массив из `$ctx['meta']` или пустой массив;
+- `$site` — массив из `$ctx['site']` или пустой массив.
+
+В шаблоне макета эти переменные доступны напрямую без ручной подготовки.
+
 ## Полезные методы `Layout`
 - `Layout::renderDocumentStart($title, $meta)` — печатает `<html>`, `<head>`, подключает `CSS`.
 - `Layout::renderDocumentEnd()` — закрывает HTML и подключает `JS`.

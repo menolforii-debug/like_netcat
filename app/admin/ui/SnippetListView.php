@@ -70,6 +70,7 @@ final class SnippetListView
         echo '<label class="form-label">Ключ</label>';
         if ($snippetExists) {
             echo '<input class="form-control" name="keyword" value="' . htmlspecialchars($keyword, ENT_QUOTES, 'UTF-8') . '" readonly>';
+            echo '<input type="hidden" name="snippet_exists" value="1">';
         } else {
             echo '<input class="form-control" name="keyword" value="' . htmlspecialchars($keyword, ENT_QUOTES, 'UTF-8') . '" required>';
         }

@@ -105,9 +105,12 @@ final class Layout
             $layoutPath = self::layoutPath($layoutKey);
         }
 
-        $ctx['title'] = (string) ($ctx['title'] ?? '');
-        $ctx['meta'] = isset($ctx['meta']) && is_array($ctx['meta']) ? $ctx['meta'] : [];
-        $ctx['site'] = isset($ctx['site']) && is_array($ctx['site']) ? $ctx['site'] : [];
+        $title = (string) ($ctx['title'] ?? '');
+        $meta = isset($ctx['meta']) && is_array($ctx['meta']) ? $ctx['meta'] : [];
+        $site = isset($ctx['site']) && is_array($ctx['site']) ? $ctx['site'] : [];
+        $ctx['title'] = $title;
+        $ctx['meta'] = $meta;
+        $ctx['site'] = $site;
         $ctx['section'] = $ctx['section'] ?? null;
 
         $previousScope = $GLOBALS['_snip_scope'] ?? null;
