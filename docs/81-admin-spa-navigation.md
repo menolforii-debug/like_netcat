@@ -128,3 +128,9 @@ if (isAjaxRequest() && $_GET['partial'] === 'content') { ... }
 ## Напоминание
 
 Legacy-механики удалены **сознательно**. Использовать refresh/partial запрещено — это нарушение стандарта.
+
+## Известные отклонения (требуют устранения)
+
+- `app/admin/actions/post/object_update.php` в AJAX-ветке возвращает `adminOk(..., ['refresh' => ['#content']])`,
+  что нарушает запрет на `refresh` в JSON-ответах. Этот хвост нужно убрать при следующем рефакторинге
+  и привести обработку к текущему контракту (redirect или `{"ok": true}` без selector-refresh).
