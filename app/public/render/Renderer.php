@@ -254,7 +254,34 @@ final class Renderer
         $settings = $infoblock['settings'] ?? [];
         $cc_env = isset($infoblock['cc_env']) && is_array($infoblock['cc_env']) ? $infoblock['cc_env'] : [];
         $message_select = isset($infoblock['message_select']) ? (string) $infoblock['message_select'] : '';
-        $setFields = static function (array $item): void {
+        $fields = [];
+        $fieldTypes = [];
+        $fieldsJson = $component['fields_json'] ?? '';
+        $decodedFields = json_decode((string) $fieldsJson, true);
+        if (is_array($decodedFields)) {
+            $rawFields = $decodedFields['fields'] ?? $decodedFields;
+            if (is_array($rawFields)) {
+                foreach ($rawFields as $field) {
+                    if (is_string($field)) {
+                        $fields[$field] = '';
+                        $fieldTypes[$field] = 'string';
+                        continue;
+                    }
+                    if (is_array($field) && !empty($field['name'])) {
+                        $name = (string) $field['name'];
+                        $fields[$name] = '';
+                        $fieldTypes[$name] = isset($field['type']) ? (string) $field['type'] : 'text';
+                    }
+                }
+            }
+        }
+        $fullLink = '';
+        foreach ($fields as $key => &$value) {
+            ${'f_' . $key} = &$value;
+        }
+        unset($value);
+
+        $setFields = static function (array $item) use ($cc_env, &$fields, &$fullLink, $fieldTypes): void {
             $data = $item['data'] ?? [];
             if (!is_array($data)) {
                 return;
@@ -264,7 +291,13 @@ final class Renderer
                     continue;
                 }
                 $GLOBALS['f_' . $key] = $value;
+                $fields[$key] = $value;
             }
+            $params = $cc_env['query_params'] ?? [];
+            $params['object_id'] = (int) ($item['id'] ?? 0);
+            $qs = http_build_query($params);
+            $fullLink = (string) ($cc_env['base_url'] ?? '') . ($qs !== '' ? ('?' . $qs) : '');
+            $GLOBALS['fullLink'] = $fullLink;
         };
         if ($object !== null) {
             $setFields($object);
