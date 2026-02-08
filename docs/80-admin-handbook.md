@@ -178,6 +178,9 @@ CKEDITOR.replace('editor-<field>', {
 На практике в действиях по макетам проверяется только `layoutKeyIsValid()`, а
 `componentKeyIsValid()` используется лишь в `component_delete.php`, `snippetKeyIsValid()` в
 текущих action-файлах не вызывается — это нужно учитывать при аудите маршрутов и форм.
+`readDefaultLayoutNavTemplateFile()` не является «мертвой» функцией: она используется в
+`app/admin/actions/get/layouts.php` при создании нового макета, чтобы подставлять дефолтный
+шаблон навигации.
 
 `layoutTemplatesDir()` и `layoutNavTemplatesDir()` оба указывают на `templates/layouts`.
 Это намеренно: обычные макеты и `*.nav.php` лежат рядом, а различие задаётся суффиксом файла.
