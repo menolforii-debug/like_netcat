@@ -212,3 +212,47 @@ function browse_messages(array $cc_env, int $range, $user_template = false): str
 
     return $browseMsg['prefix'] . implode($browseMsg['divider'], $parts) . $browseMsg['suffix'];
 }
+
+/**
+ * Возвращает путь к шаблону компонента (list.php или single.php) по ключу и представлению.
+ */
+function resolveTemplatePath(string $componentKey = '', string $view = '', bool $isSingle = false): string
+{
+    if ($componentKey === '' || $view === '') {
+        return '';
+    }
+
+    if (!preg_match('/^[A-Za-z0-9_-]+$/', $componentKey)) {
+        return '';
+    }
+    if (!preg_match('/^[A-Za-z0-9_-]+$/', $view)) {
+        return '';
+    }
+
+    $baseDir = dirname(__DIR__, 3) . '/templates/component';
+    $baseReal = realpath($baseDir);
+    if ($baseReal === false) {
+        return '';
+    }
+    $baseReal = rtrim($baseReal, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+
+    $dir = $baseReal . $componentKey . '/' . $view;
+    $realDir = realpath($dir);
+    if ($realDir === false || strpos($realDir . DIRECTORY_SEPARATOR, $baseReal) !== 0) {
+        return '';
+    }
+
+    $singlePath = $realDir . '/single.php';
+    $listPath = $realDir . '/list.php';
+    if ($isSingle && is_file($singlePath)) {
+        return $singlePath;
+    }
+    if (is_file($listPath)) {
+        return $listPath;
+    }
+    if (is_file($singlePath)) {
+        return $singlePath;
+    }
+
+    return '';
+}

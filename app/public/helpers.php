@@ -128,6 +128,9 @@ function objects_list(array $filters): array
             }
             $GLOBALS['f_' . $key] = $value;
         }
+        $params = ['object_id' => (int) ($item['id'] ?? 0)];
+        $qs = http_build_query($params);
+        $GLOBALS['fullLink'] = $qs !== '' ? ('?' . $qs) : '';
     };
 
     $result = [];
