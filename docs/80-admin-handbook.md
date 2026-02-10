@@ -136,6 +136,7 @@ POST-действия для страницы макетов (`/admin.php?action
 В админском layout подключается скрипт:
 
 ```
+<script>window.CKEDITOR_DISABLE_SECURITY_WARNING = true;</script>
 <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
 ```
 
