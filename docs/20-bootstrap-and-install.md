@@ -66,6 +66,12 @@ php bin/cms sections:list
 php bin/cms sections:add --title="Новый сайт"
 php bin/cms users:add --login=admin --pass=admin --role=admin
 php bin/cms components:list
+php bin/cms backup:create
+php bin/cms backup:restore --in=var/backups/cms-backup-YYYYmmdd-HHMMSS.tar.gz --force=1
 ```
+
+Команды `backup:create` и `backup:restore` реализуют технический экспорт/импорт «Вариант 1»:
+- `backup:create` собирает архив `tar.gz` из рабочих данных: `var/app.sqlite`, `templates/layouts`, `templates/component`, `templates/snippets`, `public_html/files`;
+- `backup:restore` перед распаковкой очищает целевые пути бэкапа и затем восстанавливает архив в корень проекта (требует явный флаг `--force=1`).
 
 Утилита подключает `app/shared/bootstrap.php` и работает напрямую с `SQLite`.

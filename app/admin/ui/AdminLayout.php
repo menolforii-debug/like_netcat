@@ -56,6 +56,7 @@ final class AdminLayout
             'help' => ['label' => 'Справка', 'href' => '/admin.php?action=help'],
             'filemanager' => ['label' => 'Файлы', 'href' => '/admin.php?action=filemanager'],
             'sql' => ['label' => 'SQL', 'href' => '/admin.php?action=sql'],
+            'backups' => ['label' => 'Бэкапы', 'href' => '/admin.php?action=backups'],
         ];
         foreach ($menu as $key => $item) {
             $active = $action === $key ? ' active' : '';
@@ -167,6 +168,7 @@ final class AdminLayout
        
         echo "<script src=\"/assets/sow/js/core.min.js\"></script>\n";
         echo "<script src=\"/assets/sow/js/vendor_bundle.min.js\"></script>\n";
+        echo "<style>#cke_notifications_area_editor-text{display:none;}</style>\n";
         echo "<script src=\"https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js\"></script>\n";
         echo "<script src=\"/assets/admin.js\"></script>\n";
 

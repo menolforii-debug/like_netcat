@@ -133,9 +133,10 @@ POST-действия для страницы макетов (`/admin.php?action
 При создании и редактировании объектов `textarea`‑поля компонента получают класс `js-ckeditor`
 и уникальный `id="editor-<field>"`, который инициализирует редактор CKEditor через
 `initCkeditorEditors()` в `public_html/assets/admin.js`.
-В админском layout подключается скрипт:
+В админском layout подключаются стиль для скрытия зоны уведомлений CKEditor и скрипт:
 
 ```
+<style>#cke_notifications_area_editor-text{display:none;}</style>
 <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
 ```
 
@@ -153,6 +154,19 @@ CKEDITOR.replace('editor-<field>', {
 
 Другие редакторы (MediumEditor, Summernote, Quill, MarkdownEditor из пакета SOW) в админке
 не используются и их локальные ассеты удалены.
+
+### Бэкапы: одна колонка, список, загрузка и восстановление
+Страница `/admin.php?action=backups` работает в одну колонку в стандартном admin layout.
+На странице доступны:
+- создание нового бэкапа (`POST /admin.php?action=backups_create`),
+- загрузка архива `.tar.gz` (`POST /admin.php?action=backups_upload`),
+- список архивов из `var/backups` с кнопкой скачивания (`GET /admin.php?action=backups_download&file=...`),
+- восстановление выбранного архива (`POST /admin.php?action=backups_restore`).
+
+Восстановление перед распаковкой полностью очищает целевые пути бэкапа (`var/app.sqlite`, `templates/layouts`,
+`templates/component`, `templates/snippets`, `public_html/files`), затем распаковывает архив в корень проекта.
+Все новые данные в этих путях будут удалены, поэтому используйте подтверждение действия
+и выполняйте операцию только администратором.
 
 ### Пользователи: full-reload и тосты
 Раздел пользователей работает без `partial`‑блоков и `data-ajax`. Все операции обновления роли,

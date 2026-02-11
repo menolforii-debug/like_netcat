@@ -15,6 +15,8 @@ declare(strict_types=1);
  *   php bin/cms users:passwd --id=1 --pass=newpass
  *   php bin/cms users:role --id=1 --role=editor
  *   php bin/cms components:list
+ *   php bin/cms backup:create [--out=var/backups/cms-backup-YYYYmmdd-HHMMSS.tar.gz]
+ *   php bin/cms backup:restore --in=/path/to/cms-backup.tar.gz [--force=1]
  */
 
 $root = realpath(__DIR__ . '/..');
@@ -30,7 +32,9 @@ $args = $argv;
 array_shift($args);
 $cmd = $args[0] ?? 'help';
 
-function parse_kv_args(array $args): array {
+/** @return array<string, string> */
+function parse_kv_args(array $args): array
+{
     $out = [];
     foreach ($args as $a) {
         if (str_starts_with($a, '--') && str_contains($a, '=')) {
@@ -41,7 +45,8 @@ function parse_kv_args(array $args): array {
     return $out;
 }
 
-function help(): void {
+function help(): void
+{
     echo "cms.devel9.ru CLI\n\n";
     echo "Commands:\n";
     echo "  sections:list\n";
@@ -52,7 +57,32 @@ function help(): void {
     echo "  users:passwd --id=1 --pass=newpass\n";
     echo "  users:role --id=1 --role=editor\n";
     echo "  components:list\n";
+    echo "  backup:create [--out=var/backups/cms-backup-YYYYmmdd-HHMMSS.tar.gz]\n";
+    echo "  backup:restore --in=/path/to/cms-backup.tar.gz [--force=1]\n";
     echo "\n";
+}
+
+/** @return list<string> */
+function backupTargets(): array
+{
+    return [
+        'var/app.sqlite',
+        'templates/layouts',
+        'templates/component',
+        'templates/snippets',
+        'public_html/files',
+    ];
+}
+
+function resolveArchivePath(string $root, string $path): string
+{
+    if ($path === '') {
+        return $root . '/var/backups/cms-backup-' . date('Ymd-His') . '.tar.gz';
+    }
+    if (str_starts_with($path, '/')) {
+        return $path;
+    }
+    return $root . '/' . ltrim($path, '/');
 }
 
 switch ($cmd) {
@@ -67,7 +97,7 @@ switch ($cmd) {
             'SELECT id, parent_id, site_id, english_name, title, sort FROM sections ORDER BY parent_id ASC, sort ASC, id ASC'
         );
         foreach ($rows as $r) {
-            $pid = $r['parent_id'] === null ? 'NULL' : (string)$r['parent_id'];
+            $pid = $r['parent_id'] === null ? 'NULL' : (string) $r['parent_id'];
             $english = $r['english_name'] ?? '';
             echo "#{$r['id']} parent={$pid} site_id={$r['site_id']} english_name='{$english}' sort={$r['sort']} title=\"{$r['title']}\"\n";
         }
@@ -77,9 +107,9 @@ switch ($cmd) {
     case 'sections:add': {
         $kv = parse_kv_args($args);
         $parentId = isset($kv['parent-id']) ? (int) $kv['parent-id'] : null;
-        $englishName  = $kv['english-name'] ?? '';
+        $englishName = $kv['english-name'] ?? '';
         $title = $kv['title'] ?? '';
-        $sort  = (int)($kv['sort'] ?? 0);
+        $sort = (int) ($kv['sort'] ?? 0);
 
         if ($title === '' || ($parentId !== null && $englishName === '')) {
             fwrite(STDERR, "Missing --title or --english-name\n");
@@ -125,7 +155,7 @@ switch ($cmd) {
     case 'users:add': {
         $kv = parse_kv_args($args);
         $login = $kv['login'] ?? '';
-        $pass  = $kv['pass'] ?? '';
+        $pass = $kv['pass'] ?? '';
         $role = $kv['role'] ?? Auth::ROLE_ADMIN;
 
         if ($login === '' || $pass === '') {
@@ -173,6 +203,129 @@ switch ($cmd) {
         foreach ($rows as $row) {
             echo "#{$row['id']} keyword=\"{$row['keyword']}\" name=\"{$row['name']}\"\n";
         }
+        exit(0);
+    }
+
+    case 'backup:create': {
+        $kv = parse_kv_args($args);
+        $outPath = resolveArchivePath($root, $kv['out'] ?? '');
+        $outDir = dirname($outPath);
+
+        if (!is_dir($outDir) && !mkdir($outDir, 0775, true) && !is_dir($outDir)) {
+            fwrite(STDERR, "Cannot create output directory: {$outDir}\n");
+            exit(1);
+        }
+
+        if (is_file($outPath) && ($kv['force'] ?? '0') !== '1') {
+            fwrite(STDERR, "Archive already exists: {$outPath}. Add --force=1 to overwrite.\n");
+            exit(1);
+        }
+
+        $targets = [];
+        foreach (backupTargets() as $target) {
+            if (file_exists($root . '/' . $target)) {
+                $targets[] = $target;
+            }
+        }
+
+        if ($targets === []) {
+            fwrite(STDERR, "Nothing to backup: expected paths are missing.\n");
+            exit(1);
+        }
+
+        $parts = array_map(static fn(string $v): string => escapeshellarg($v), $targets);
+        $tarCmd = 'tar -czf ' . escapeshellarg($outPath) . ' -C ' . escapeshellarg($root) . ' ' . implode(' ', $parts);
+        exec($tarCmd, $output, $code);
+
+        if ($code !== 0) {
+            fwrite(STDERR, "Backup failed (tar exit code {$code})\n");
+            exit(1);
+        }
+
+        echo "Backup created: {$outPath}\n";
+        echo "Included: " . implode(', ', $targets) . "\n";
+        exit(0);
+    }
+
+    case 'backup:restore': {
+        $kv = parse_kv_args($args);
+        $inPath = resolveArchivePath($root, $kv['in'] ?? '');
+        $force = ($kv['force'] ?? '0') === '1';
+
+        if ($inPath === '' || !is_file($inPath)) {
+            fwrite(STDERR, "Archive not found: {$inPath}\n");
+            exit(1);
+        }
+
+        if (!$force) {
+            fwrite(STDERR, "backup:restore clears target paths and overwrites current data. Re-run with --force=1\n");
+            exit(1);
+        }
+
+        $realRoot = realpath($root);
+        if ($realRoot === false) {
+            fwrite(STDERR, "Cannot resolve real project root\n");
+            exit(1);
+        }
+        $realRoot = rtrim($realRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+
+        $removePath = static function (string $path) use (&$removePath): bool {
+            if (is_link($path) || is_file($path)) {
+                return @unlink($path);
+            }
+            if (!is_dir($path)) {
+                return true;
+            }
+
+            $items = scandir($path);
+            if (!is_array($items)) {
+                return false;
+            }
+
+            foreach ($items as $item) {
+                if ($item === '.' || $item === '..') {
+                    continue;
+                }
+                $child = $path . DIRECTORY_SEPARATOR . $item;
+                if (!$removePath($child)) {
+                    return false;
+                }
+            }
+
+            return @rmdir($path);
+        };
+
+        foreach (backupTargets() as $target) {
+            $targetPath = $root . '/' . $target;
+            if (!file_exists($targetPath) && !is_link($targetPath)) {
+                continue;
+            }
+
+            $targetReal = realpath($targetPath);
+            if ($targetReal === false) {
+                fwrite(STDERR, "Cannot prepare target path for cleanup: {$target}\n");
+                exit(1);
+            }
+
+            if (!str_starts_with(rtrim($targetReal, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR, $realRoot)) {
+                fwrite(STDERR, "Refusing to cleanup path outside project root: {$target}\n");
+                exit(1);
+            }
+
+            if (!$removePath($targetReal)) {
+                fwrite(STDERR, "Failed to cleanup target path: {$target}\n");
+                exit(1);
+            }
+        }
+
+        $tarCmd = 'tar -xzf ' . escapeshellarg($inPath) . ' -C ' . escapeshellarg($root);
+        exec($tarCmd, $output, $code);
+        if ($code !== 0) {
+            fwrite(STDERR, "Restore failed (tar exit code {$code})\n");
+            exit(1);
+        }
+
+        echo "Backup restored with cleanup from: {$inPath}\n";
         exit(0);
     }
 
