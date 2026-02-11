@@ -133,9 +133,10 @@ POST-действия для страницы макетов (`/admin.php?action
 При создании и редактировании объектов `textarea`‑поля компонента получают класс `js-ckeditor`
 и уникальный `id="editor-<field>"`, который инициализирует редактор CKEditor через
 `initCkeditorEditors()` в `public_html/assets/admin.js`.
-В админском layout подключается скрипт:
+В админском layout подключаются стиль для скрытия зоны уведомлений CKEditor и скрипт:
 
 ```
+<style>#cke_notifications_area_editor-text{display:none;}</style>
 <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
 ```
 
