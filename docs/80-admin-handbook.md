@@ -142,6 +142,15 @@ POST-действия для страницы макетов (`/admin.php?action
 
 Инициализация выполняется при загрузке страницы и при открытии форм в модалке
 через `openAdminModal()` → `initCkeditorEditors()` в `public_html/assets/admin.js`.
+Для `textarea.js-ckeditor` передаётся URL загрузки в `POST /admin.php?action=ckeditor_upload`.
+
+Загрузки из CKEditor и `file`‑поля объекта привязаны к объекту и компоненту:
+- для существующего объекта: `public_html/files/component/<component_keyword>/<object_id>`;
+- для нового объекта до сохранения: `public_html/files/component/<component_keyword>/_tmp/<upload_tmp_key>`;
+- после создания объекта файлы из `_tmp/<upload_tmp_key>` переносятся в `<object_id>`, а ссылки в данных объекта переписываются на финальный путь.
+
+Для загрузки CKEditor использует URL c `action=ckeditor_upload` и `csrf_token` в query-параметрах;
+проверка CSRF в `AdminRouter` принимает токен из `POST` или `GET`, чтобы multipart-запрос CKEditor проходил валидацию.
 
 Настройки по умолчанию:
 
@@ -254,7 +263,10 @@ echo browse_messages($ccEnv, 10);
 - Запросы `POST` к `filemanager_embed` не проходят проверку CSRF админки: Filegator использует собственный токен.
 
 Загрузки файлов объектов хранятся в:
-- `public_html/files/component/<infoblock_id>`
+- `public_html/files/component/<component_keyword>/<object_id>`
+
+Для нового объекта до первого сохранения используется временный путь:
+- `public_html/files/component/<component_keyword>/_tmp/<upload_tmp_key>`
 
 Файлы визуальных полей — в:
 - `public_html/files/layouts/<layout>/<fieldId>`

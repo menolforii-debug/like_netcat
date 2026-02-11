@@ -35,6 +35,10 @@ if ($component === null) {
 $fields = parseComponentFields($component);
 $data = [];
 $status = 'draft';
+$uploadTmpKey = '';
+if ($object === null) {
+    $uploadTmpKey = bin2hex(random_bytes(16));
+}
 if ($object !== null) {
     $data = json_decode((string) $object['data_json'], true);
     if (!is_array($data)) {
@@ -63,12 +67,17 @@ if ($object) {
     echo '<input type="hidden" name="id" value="' . (int) $object['id'] . '">';
 } else {
     echo '<input type="hidden" name="infoblock_id" value="' . (int) $infoblock['id'] . '">';
+    echo '<input type="hidden" name="upload_tmp_key" value="' . htmlspecialchars($uploadTmpKey, ENT_QUOTES, 'UTF-8') . '">';
 }
 echo '<input type="hidden" name="section_id" value="' . (int) $sectionId . '">';
 foreach ($fields as $field) {
     echo renderFieldInput($field, $data, [
         'context' => 'component',
         'infoblock_id' => (int) $infoblock['id'],
+        'component_keyword' => (string) ($component['keyword'] ?? ''),
+        'object_id' => $object ? (int) $object['id'] : 0,
+        'upload_tmp_key' => $uploadTmpKey,
+        'csrf_token' => csrf_token(),
     ]);
 }
 $isEnabled = $status === 'published';

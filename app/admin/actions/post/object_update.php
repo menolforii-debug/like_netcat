@@ -60,9 +60,16 @@ foreach ($fields as $field) {
 
     if (isset($_FILES[$name])) {
         $error = null;
-        // Сохраняем файлы в public_html, поднимаемся из app/admin/actions/post в корень проекта.
-        $targetDir = dirname(__DIR__, 4) . '/public_html/files/component/' . (int) $object['infoblock_id'];
-        $publicPrefix = '/files/component/' . (int) $object['infoblock_id'];
+        $componentKey = trim((string) ($component['keyword'] ?? ''));
+        if ($componentKey === '' || !componentKeyIsValid($componentKey)) {
+            if (isAjaxRequest()) {
+                jsonResponse(['ok' => false, 'error' => 'Некорректный ключ компонента']);
+            }
+            adminFlashSet('danger', 'Некорректный ключ компонента');
+            redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Некорректный ключ компонента']));
+        }
+        $targetDir = dirname(__DIR__, 4) . '/public_html/files/component/' . $componentKey . '/' . (int) $id;
+        $publicPrefix = '/files/component/' . $componentKey . '/' . (int) $id;
         $storedPath = saveUploadedFile($_FILES[$name], $targetDir, $publicPrefix, $error);
         if ($error !== null) {
             if (isAjaxRequest()) {

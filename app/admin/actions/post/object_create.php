@@ -3,6 +3,7 @@
 $infoblockId = isset($_POST['infoblock_id']) ? (int) $_POST['infoblock_id'] : 0;
 $sectionId = isset($_POST['section_id']) ? (int) $_POST['section_id'] : 0;
 $isEnabled = !empty($_POST['is_enabled']);
+$uploadTmpKey = isset($_POST['upload_tmp_key']) ? trim((string) $_POST['upload_tmp_key']) : '';
 
 $infoblock = null;
 $infoblocks = $infoblockRepo->listForSection($sectionId);
@@ -46,6 +47,27 @@ if ($component === null) {
     redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Компонент не найден']));
 }
 
+$componentKey = trim((string) ($component['keyword'] ?? ''));
+if ($componentKey === '' || !componentKeyIsValid($componentKey)) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Некорректный ключ компонента']);
+    }
+    adminFlashSet('danger', 'Некорректный ключ компонента');
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Некорректный ключ компонента']));
+}
+
+if ($uploadTmpKey === '' || !preg_match('/^[A-Fa-f0-9]{32}$/', $uploadTmpKey)) {
+    if (isAjaxRequest()) {
+        jsonResponse(['ok' => false, 'error' => 'Некорректный временный ключ загрузки']);
+    }
+    adminFlashSet('danger', 'Некорректный временный ключ загрузки');
+    redirectTo(buildAdminUrl(['section_id' => $sectionId, 'tab' => 'content', 'error' => 'Некорректный временный ключ загрузки']));
+}
+
+$rootDir = dirname(__DIR__, 4);
+$tmpTargetDir = $rootDir . '/public_html/files/component/' . $componentKey . '/_tmp/' . $uploadTmpKey;
+$tmpPublicPrefix = '/files/component/' . $componentKey . '/_tmp/' . $uploadTmpKey;
+
 $fields = parseComponentFields($component);
 $data = extractFormData($fields);
 foreach ($fields as $field) {
@@ -59,10 +81,7 @@ foreach ($fields as $field) {
     }
 
     $error = null;
-    // Сохраняем файлы в public_html, поднимаемся из app/admin/actions/post в корень проекта.
-    $targetDir = dirname(__DIR__, 4) . '/public_html/files/component/' . (int) $infoblock['id'];
-    $publicPrefix = '/files/component/' . (int) $infoblock['id'];
-    $storedPath = saveUploadedFile($_FILES[$name], $targetDir, $publicPrefix, $error);
+    $storedPath = saveUploadedFile($_FILES[$name], $tmpTargetDir, $tmpPublicPrefix, $error);
     if ($error !== null) {
         if (isAjaxRequest()) {
             jsonResponse(['ok' => false, 'error' => $error]);
@@ -93,6 +112,58 @@ $objectId = $objectRepo->create([
     'data' => $data,
     'status' => $status,
 ]);
+
+$finalTargetDir = $rootDir . '/public_html/files/component/' . $componentKey . '/' . $objectId;
+$finalPublicPrefix = '/files/component/' . $componentKey . '/' . $objectId;
+
+if (is_dir($tmpTargetDir)) {
+    if (!is_dir(dirname($finalTargetDir))) {
+        mkdir(dirname($finalTargetDir), 0770, true);
+        @chmod(dirname($finalTargetDir), 0770);
+    }
+
+    if (!@rename($tmpTargetDir, $finalTargetDir)) {
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($tmpTargetDir, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        );
+        foreach ($iterator as $item) {
+            $sourcePath = $item->getPathname();
+            $relative = ltrim(substr($sourcePath, strlen($tmpTargetDir)), DIRECTORY_SEPARATOR);
+            $destPath = $finalTargetDir . DIRECTORY_SEPARATOR . $relative;
+            if ($item->isDir()) {
+                if (!is_dir($destPath)) {
+                    mkdir($destPath, 0770, true);
+                    @chmod($destPath, 0770);
+                }
+            } else {
+                if (!is_dir(dirname($destPath))) {
+                    mkdir(dirname($destPath), 0770, true);
+                    @chmod(dirname($destPath), 0770);
+                }
+                @rename($sourcePath, $destPath);
+            }
+        }
+        if (is_dir($tmpTargetDir)) {
+            rmTree($tmpTargetDir, $rootDir . '/public_html/files/component/' . $componentKey . '/_tmp');
+        }
+    }
+
+    $replacePrefix = static function ($value) use (&$replacePrefix, $tmpPublicPrefix, $finalPublicPrefix) {
+        if (is_array($value)) {
+            foreach ($value as $k => $v) {
+                $value[$k] = $replacePrefix($v);
+            }
+            return $value;
+        }
+        if (is_string($value)) {
+            return str_replace($tmpPublicPrefix . '/', $finalPublicPrefix . '/', $value);
+        }
+        return $value;
+    };
+    $data = $replacePrefix($data);
+    $objectRepo->update($objectId, ['data' => $data]);
+}
 
 $actionTemplatePath = componentActionTemplatePath((string) $component['keyword']);
 if (is_file($actionTemplatePath)) {

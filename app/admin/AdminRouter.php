@@ -24,7 +24,8 @@ final class AdminRouter
         }
 
         if ($isPost && !in_array($action, ['login', 'filemanager_embed'], true)) {
-            if (!is_valid_csrf_token($_POST['csrf_token'] ?? null)) {
+            $csrfToken = $_POST['csrf_token'] ?? ($_GET['csrf_token'] ?? null);
+            if (!is_valid_csrf_token($csrfToken)) {
                 self::renderError(400, 'Неверный CSRF-токен');
                 return;
             }
@@ -299,6 +300,7 @@ final class AdminRouter
                 'object_unpublish' => 'editor',
                 'object_restore' => 'editor',
                 'object_purge' => 'editor',
+                'ckeditor_upload' => 'editor',
             ],
         ];
 

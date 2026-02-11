@@ -205,12 +205,39 @@ function renderFieldInput(array $field, array $data, array $uploadContext = []):
         case 'textarea':
             $textareaClass = 'form-control';
             $textareaId = '';
+            $textareaDataAttrs = '';
             if (($uploadContext['context'] ?? '') === 'component') {
                 $textareaClass .= ' js-ckeditor';
                 $textareaId = 'editor-' . $safeId;
+
+                $uploadUrl = '';
+                $componentKeyword = isset($uploadContext['component_keyword']) ? trim((string) $uploadContext['component_keyword']) : '';
+                $csrfToken = isset($uploadContext['csrf_token']) ? (string) $uploadContext['csrf_token'] : '';
+                $objectId = isset($uploadContext['object_id']) ? (int) $uploadContext['object_id'] : 0;
+                $infoblockId = isset($uploadContext['infoblock_id']) ? (int) $uploadContext['infoblock_id'] : 0;
+                $tmpKey = isset($uploadContext['upload_tmp_key']) ? trim((string) $uploadContext['upload_tmp_key']) : '';
+
+                if ($componentKeyword !== '' && $csrfToken !== '') {
+                    $params = [
+                        'action' => 'ckeditor_upload',
+                        'component_key' => $componentKeyword,
+                        'csrf_token' => $csrfToken,
+                    ];
+                    if ($objectId > 0) {
+                        $params['object_id'] = $objectId;
+                    } elseif ($infoblockId > 0 && $tmpKey !== '') {
+                        $params['infoblock_id'] = $infoblockId;
+                        $params['tmp_key'] = $tmpKey;
+                    }
+                    $uploadUrl = buildAdminUrl($params);
+                }
+
+                if ($uploadUrl !== '') {
+                    $textareaDataAttrs .= ' data-ckeditor-upload-url="' . htmlspecialchars($uploadUrl, ENT_QUOTES, 'UTF-8') . '"';
+                }
             }
             $idAttr = $textareaId !== '' ? ' id="' . $textareaId . '"' : '';
-            $html .= '<textarea class="' . $textareaClass . '"' . $idAttr . ' name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" rows="4">' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '</textarea>';
+            $html .= '<textarea class="' . $textareaClass . '"' . $idAttr . $textareaDataAttrs . ' name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" rows="4">' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '</textarea>';
             break;
         case 'number':
             $html .= '<input class="form-control" type="number" name="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '">';

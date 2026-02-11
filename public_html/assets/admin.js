@@ -238,10 +238,17 @@ function initCkeditorEditors(scope) {
     if (!textarea.id) {
       textarea.id = 'editor-' + Math.random().toString(36).slice(2, 10);
     }
-    window.CKEDITOR.replace(textarea, {
-      extraPlugins: 'table,image',
+    const uploadUrl = textarea.getAttribute('data-ckeditor-upload-url') || '';
+    const config = {
+      extraPlugins: 'table,image,uploadimage',
       removePlugins: 'cloudservices',
-    });
+    };
+    if (uploadUrl) {
+      config.filebrowserUploadUrl = uploadUrl;
+      config.filebrowserUploadMethod = 'form';
+      config.uploadUrl = uploadUrl;
+    }
+    window.CKEDITOR.replace(textarea, config);
   });
 }
 
