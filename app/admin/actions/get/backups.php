@@ -96,10 +96,15 @@ if ($backupFiles === []) {
         echo '<td>' . htmlspecialchars($sizeKb . ' KB', ENT_QUOTES, 'UTF-8') . '</td>';
         echo '<td class="text-end">';
         echo '<a class="btn btn-sm btn-outline-secondary me-2" href="' . htmlspecialchars(buildAdminUrl(['action' => 'backups_download', 'file' => $name]), ENT_QUOTES, 'UTF-8') . '">Скачать</a>';
-        echo '<form class="d-inline" method="post" action="/admin.php?action=backups_restore" data-confirm="Восстановить из этого бэкапа? Текущие данные будут перезаписаны.">';
+        echo '<form class="d-inline-flex align-items-center gap-2" method="post" action="/admin.php?action=backups_restore" data-confirm="Восстановить из этого бэкапа? Текущие данные будут перезаписаны.">';
         echo csrf_token_field();
         echo '<input type="hidden" name="file" value="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '">';
-        echo '<button class="btn btn-sm btn-danger" type="submit">Восстановить</button>';
+        echo '<select class="form-select form-select-sm" name="restore_policy" title="Политика восстановления">';
+        echo '<option value="strict">strict</option>';
+        echo '<option value="lenient">lenient</option>';
+        echo '</select>';
+        echo '<button class="btn btn-sm btn-outline-primary" type="submit" name="run_mode" value="preview">Dry-run</button>';
+        echo '<button class="btn btn-sm btn-danger" type="submit" name="run_mode" value="restore">Восстановить</button>';
         echo '</form>';
         echo '</td>';
         echo '</tr>';
