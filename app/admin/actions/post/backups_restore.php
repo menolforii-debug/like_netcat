@@ -62,6 +62,24 @@ $runTar = static function (string $command, ?array &$output = null): int {
     return (int) $code;
 };
 
+$writeRestoreLog = static function (string $status, array $context = []) use ($rootDir): void {
+    $logDir = $rootDir . '/var/logs';
+    if (!is_dir($logDir) && !@mkdir($logDir, 0775, true) && !is_dir($logDir)) {
+        return;
+    }
+
+    $record = [
+        'ts' => date('c'),
+        'status' => $status,
+        'context' => $context,
+    ];
+    @file_put_contents(
+        $logDir . '/backup-restore.log',
+        json_encode($record, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL,
+        FILE_APPEND
+    );
+};
+
 $normalizeArchivePath = static function (string $path): string {
     $path = trim($path);
     while (str_starts_with($path, './')) {
@@ -82,6 +100,7 @@ $findTargetForPath = static function (string $path) use ($targets): ?string {
 $archiveListCmd = 'tar -tvzf ' . escapeshellarg($realArchive);
 $archiveRows = [];
 if ($runTar($archiveListCmd, $archiveRows) !== 0 || $archiveRows === []) {
+    $writeRestoreLog('preflight_failed', ['file' => basename($realArchive), 'reason' => 'tar_list_failed']);
     adminFlashSet('danger', 'Не удалось прочитать содержимое архива бэкапа');
     redirectTo(buildAdminUrl(['action' => 'backups']));
 }
@@ -133,6 +152,7 @@ if ($archiveTargets === []) {
 $archiveTargetList = array_keys($archiveTargets);
 $missingTargets = array_values(array_diff($targets, $archiveTargetList));
 if ($restorePolicy === 'strict' && $missingTargets !== []) {
+    $writeRestoreLog('strict_rejected', ['file' => basename($realArchive), 'missing' => $missingTargets]);
     adminFlashSet('danger', 'Strict-режим: архив неполный. Отсутствуют цели: ' . implode(', ', $missingTargets));
     redirectTo(buildAdminUrl(['action' => 'backups']));
 }
@@ -151,6 +171,13 @@ if ($runMode === 'preview') {
     $missingText = $missingTargets === [] ? 'нет' : implode(', ', $missingTargets);
     $cleanupText = $currentTargets === [] ? 'ничего (пути отсутствуют)' : implode(', ', $currentTargets);
     $restoreText = implode(', ', $archiveTargetList);
+    $writeRestoreLog('dry_run', [
+        'file' => basename($realArchive),
+        'policy' => $restorePolicy,
+        'cleanup_targets' => $currentTargets,
+        'restore_targets' => $archiveTargetList,
+        'missing_targets' => $missingTargets,
+    ]);
     adminFlashSet(
         'info',
         'Dry-run (' . $modeLabel . '): будет очищено [' . $cleanupText . '], восстановлено [' . $restoreText . '], отсутствуют в архиве [' . $missingText . '].'
@@ -290,11 +317,48 @@ $copyFromStagingCmd = 'tar -czf - -C ' . escapeshellarg($stagingDir) . ' . | tar
 if ($runTar($copyFromStagingCmd) !== 0) {
     $cleanupStaging();
     $restoreSnapshot();
+    $writeRestoreLog('apply_failed_rolled_back', ['file' => basename($realArchive), 'policy' => $restorePolicy]);
     adminFlashSet('danger', 'Не удалось применить данные из staging в рабочую директорию. Выполнен откат.');
     redirectTo(buildAdminUrl(['action' => 'backups']));
 }
 
+$postCheckErrors = [];
+foreach ($archiveTargetList as $target) {
+    $targetPath = $rootDir . '/' . $target;
+    if (!file_exists($targetPath) && !is_link($targetPath)) {
+        $postCheckErrors[] = 'Отсутствует восстановленный путь: ' . $target;
+        continue;
+    }
+
+    if ($target === 'var/app.sqlite' && (!is_file($targetPath) || filesize($targetPath) === 0)) {
+        $postCheckErrors[] = 'SQLite после restore отсутствует или пустой';
+    }
+
+    if ($target !== 'var/app.sqlite' && !is_dir($targetPath)) {
+        $postCheckErrors[] = 'Путь должен быть директорией: ' . $target;
+    }
+}
+
+if ($postCheckErrors !== []) {
+    $cleanupStaging();
+    $restoreSnapshot();
+    $writeRestoreLog('postcheck_failed', [
+        'file' => basename($realArchive),
+        'policy' => $restorePolicy,
+        'errors' => $postCheckErrors,
+    ]);
+    adminFlashSet('danger', 'Post-check не пройден, выполнен откат: ' . implode(' | ', $postCheckErrors));
+    redirectTo(buildAdminUrl(['action' => 'backups']));
+}
+
 $cleanupStaging();
+
+$writeRestoreLog('success', [
+    'file' => basename($realArchive),
+    'policy' => $restorePolicy,
+    'restored_targets' => $archiveTargetList,
+    'snapshot' => is_file($preRestoreArchive) ? basename($preRestoreArchive) : null,
+]);
 
 $restoredTargets = implode(', ', $archiveTargetList);
 $safetyTail = is_file($preRestoreArchive)

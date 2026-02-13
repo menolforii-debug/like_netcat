@@ -176,6 +176,7 @@ CKEDITOR.replace('editor-<field>', {
 распаковка в staging-каталог, создание аварийного snapshot перед очисткой, затем очистка целевых путей
 (`var/app.sqlite`, `templates/layouts`, `templates/component`, `templates/snippets`, `public_html/files`)
 и применение данных из staging. При ошибке применения выполняется автоматический откат из snapshot.
+После применения запускается post-check восстановленных целей и запись результата в `var/logs/backup-restore.log`; при провале post-check выполняется откат.
 
 На форме восстановления доступны режимы этапа 3:
 - `Dry-run` — только предпросмотр плана (что будет очищено/восстановлено, без изменений на диске);
