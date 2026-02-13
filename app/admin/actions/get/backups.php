@@ -43,6 +43,53 @@ usort($backupFiles, static function (array $a, array $b): int {
     return $b['mtime'] <=> $a['mtime'];
 });
 
+$restoreLogEntries = [];
+$restoreLogPath = $rootDir . '/var/logs/backup-restore.log';
+if (is_file($restoreLogPath) && is_readable($restoreLogPath)) {
+    $lines = @file($restoreLogPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    if (is_array($lines)) {
+        $lines = array_slice($lines, -30);
+        $lines = array_reverse($lines);
+        foreach ($lines as $line) {
+            $decoded = json_decode((string) $line, true);
+            if (!is_array($decoded)) {
+                continue;
+            }
+
+            $ts = isset($decoded['ts']) ? (string) $decoded['ts'] : '';
+            $status = isset($decoded['status']) ? (string) $decoded['status'] : '';
+            $context = isset($decoded['context']) && is_array($decoded['context']) ? $decoded['context'] : [];
+
+            if ($status === '') {
+                continue;
+            }
+
+            $fileName = isset($context['file']) ? (string) $context['file'] : '';
+            $policy = isset($context['policy']) ? (string) $context['policy'] : '';
+
+            $details = [];
+            if ($fileName !== '') {
+                $details[] = 'file=' . $fileName;
+            }
+            if ($policy !== '') {
+                $details[] = 'policy=' . $policy;
+            }
+            if (isset($context['missing']) && is_array($context['missing'])) {
+                $details[] = 'missing=' . implode(', ', array_map('strval', $context['missing']));
+            }
+            if (isset($context['errors']) && is_array($context['errors'])) {
+                $details[] = 'errors=' . implode(' | ', array_map('strval', $context['errors']));
+            }
+
+            $restoreLogEntries[] = [
+                'ts' => $ts,
+                'status' => $status,
+                'details' => implode('; ', $details),
+            ];
+        }
+    }
+}
+
 AdminLayout::renderHeader('Бэкапы');
 
 echo '<div class="d-flex justify-content-between align-items-center mb-3">';
@@ -69,6 +116,41 @@ echo '<input class="form-control" type="file" name="backup_file" accept=".tar.gz
 echo '</div>';
 echo '<button class="btn btn-outline-primary" type="submit">Загрузить</button>';
 echo '</form>';
+echo '</div>';
+echo '</div>';
+
+echo '<div class="card shadow-sm mb-4">';
+echo '<div class="card-body">';
+echo '<h2 class="h6 mb-3">Журнал восстановлений (последние 30 событий)</h2>';
+if ($restoreLogEntries === []) {
+    echo '<div class="alert alert-light border mb-0">События восстановлений не найдены.</div>';
+} else {
+    echo '<div class="table-responsive">';
+    echo '<table class="table table-sm align-middle mb-0">';
+    echo '<thead><tr><th>Время (UTC)</th><th>Статус</th><th>Детали</th></tr></thead><tbody>';
+    foreach ($restoreLogEntries as $entry) {
+        $ts = htmlspecialchars((string) $entry['ts'], ENT_QUOTES, 'UTF-8');
+        $status = htmlspecialchars((string) $entry['status'], ENT_QUOTES, 'UTF-8');
+        $details = htmlspecialchars((string) $entry['details'], ENT_QUOTES, 'UTF-8');
+
+        $statusClass = 'secondary';
+        if ((string) $entry['status'] === 'success') {
+            $statusClass = 'success';
+        } elseif (str_contains((string) $entry['status'], 'failed')) {
+            $statusClass = 'danger';
+        } elseif ((string) $entry['status'] === 'dry_run' || (string) $entry['status'] === 'strict_rejected') {
+            $statusClass = 'warning';
+        }
+
+        echo '<tr>';
+        echo '<td class="font-monospace">' . $ts . '</td>';
+        echo '<td><span class="badge text-bg-' . $statusClass . '">' . $status . '</span></td>';
+        echo '<td>' . ($details === '' ? '-' : $details) . '</td>';
+        echo '</tr>';
+    }
+    echo '</tbody></table>';
+    echo '</div>';
+}
 echo '</div>';
 echo '</div>';
 
