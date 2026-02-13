@@ -286,7 +286,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-const ADMIN_SNACKBAR_DURATION = 3500;
+const ADMIN_SNACKBAR_SUCCESS_DURATION = 3500;
+const ADMIN_SNACKBAR_OTHER_DURATION = 15000;
 const ADMIN_SNACKBAR_ID = 'adminSnackbar';
 let adminSnackbarTimer = null;
 
@@ -356,11 +357,15 @@ function showGlobalSnackbar(type, message) {
   if (adminSnackbarTimer) {
     clearTimeout(adminSnackbarTimer);
   }
+  const duration = (type === 'success')
+    ? ADMIN_SNACKBAR_SUCCESS_DURATION
+    : ADMIN_SNACKBAR_OTHER_DURATION;
+
   requestAnimationFrame(() => {
     snackbar.classList.add('is-visible');
     adminSnackbarTimer = setTimeout(() => {
       snackbar.classList.remove('is-visible');
-    }, ADMIN_SNACKBAR_DURATION);
+    }, duration);
   });
 }
 
@@ -498,20 +503,28 @@ document.addEventListener('submit', (event) => {
   if (!confirmMessage) return;
   event.preventDefault();
   const modalEl = document.getElementById('adminConfirmModal');
-  if (!modalEl) return;
+  if (!modalEl || !window.bootstrap) {
+    if (window.confirm(confirmMessage)) {
+      form.dataset.confirmSkip = '1';
+      form.submit();
+    }
+    return;
+  }
+
   const modalBody = modalEl.querySelector('.modal-body');
   if (modalBody) {
     modalBody.textContent = confirmMessage;
   }
   const confirmButton = modalEl.querySelector('[data-confirm-action="true"]');
   if (confirmButton) {
+    confirmButton.textContent = 'Подтвердить';
     confirmButton.onclick = () => {
       form.dataset.confirmSkip = '1';
       form.submit();
     };
   }
-  const modal = window.bootstrap ? window.bootstrap.Modal.getOrCreateInstance(modalEl) : null;
-  if (modal) modal.show();
+  const modal = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+  modal.show();
 });
 
 // SectionTree: toggle expand/collapse by chevron (no navigation)
