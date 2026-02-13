@@ -286,7 +286,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-const ADMIN_SNACKBAR_DURATION = 3500;
+const ADMIN_SNACKBAR_SUCCESS_DURATION = 3500;
+const ADMIN_SNACKBAR_OTHER_DURATION = 15000;
 const ADMIN_SNACKBAR_ID = 'adminSnackbar';
 let adminSnackbarTimer = null;
 
@@ -356,11 +357,15 @@ function showGlobalSnackbar(type, message) {
   if (adminSnackbarTimer) {
     clearTimeout(adminSnackbarTimer);
   }
+  const duration = (type === 'success')
+    ? ADMIN_SNACKBAR_SUCCESS_DURATION
+    : ADMIN_SNACKBAR_OTHER_DURATION;
+
   requestAnimationFrame(() => {
     snackbar.classList.add('is-visible');
     adminSnackbarTimer = setTimeout(() => {
       snackbar.classList.remove('is-visible');
-    }, ADMIN_SNACKBAR_DURATION);
+    }, duration);
   });
 }
 
