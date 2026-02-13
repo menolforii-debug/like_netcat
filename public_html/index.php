@@ -5,6 +5,15 @@ error_reporting(E_ALL);
 
 require __DIR__ . '/../app/public/bootstrap.php';
 
+
+$maintenanceLockPath = __DIR__ . '/../var/restore.maintenance.lock';
+if (is_file($maintenanceLockPath)) {
+    http_response_code(503);
+    header('Retry-After: 120');
+    echo 'Site is temporarily in maintenance mode during backup restore.';
+    return;
+}
+
 $host = isset($_SERVER['HTTP_HOST']) ? (string) $_SERVER['HTTP_HOST'] : '';
 
 $sectionRepo = new SectionRepo();
