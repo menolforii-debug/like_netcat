@@ -177,6 +177,7 @@ CKEDITOR.replace('editor-<field>', {
 (`var/app.sqlite`, `templates/layouts`, `templates/component`, `templates/snippets`, `public_html/files`)
 и применение данных из staging. При ошибке применения выполняется автоматический откат из snapshot.
 После применения запускается post-check восстановленных целей и запись результата в `var/logs/backup-restore.log`; при провале post-check выполняется откат.
+Во время restore активируется технический lock `var/restore.maintenance.lock`: фронтенд отдаёт `503`, а админка работает в режиме read-only для POST (кроме самого `backups_restore`).
 
 На форме восстановления доступны режимы этапа 3:
 - `Dry-run` — только предпросмотр плана (что будет очищено/восстановлено, без изменений на диске);

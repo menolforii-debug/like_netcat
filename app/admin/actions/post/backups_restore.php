@@ -185,12 +185,35 @@ if ($runMode === 'preview') {
     redirectTo(buildAdminUrl(['action' => 'backups']));
 }
 
+$maintenanceLockPath = $rootDir . '/var/restore.maintenance.lock';
+$setMaintenance = static function () use ($maintenanceLockPath, $file, $restorePolicy): void {
+    $payload = [
+        'started_at' => date('c'),
+        'file' => $file,
+        'policy' => $restorePolicy,
+        'reason' => 'backup_restore',
+    ];
+    @file_put_contents(
+        $maintenanceLockPath,
+        json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+    );
+};
+$clearMaintenance = static function () use ($maintenanceLockPath): void {
+    if (is_file($maintenanceLockPath)) {
+        @unlink($maintenanceLockPath);
+    }
+};
+
+$setMaintenance();
+
+
 $backupTimestamp = date('Ymd-His');
 $preRestoreArchive = $backupDir . '/pre-restore-safety-' . $backupTimestamp . '.tar.gz';
 if ($currentTargets !== []) {
     $parts = array_map(static fn(string $item): string => escapeshellarg($item), $currentTargets);
     $snapshotCmd = 'tar -czf ' . escapeshellarg($preRestoreArchive) . ' -C ' . escapeshellarg($rootDir) . ' ' . implode(' ', $parts);
     if ($runTar($snapshotCmd) !== 0 || !is_file($preRestoreArchive)) {
+        $clearMaintenance();
         adminFlashSet('danger', 'Не удалось создать аварийный снимок перед восстановлением');
         redirectTo(buildAdminUrl(['action' => 'backups']));
     }
@@ -198,11 +221,13 @@ if ($currentTargets !== []) {
 
 $stagingBase = $rootDir . '/var/tmp';
 if (!is_dir($stagingBase) && !mkdir($stagingBase, 0775, true) && !is_dir($stagingBase)) {
+    $clearMaintenance();
     adminFlashSet('danger', 'Не удалось подготовить временную директорию восстановления');
     redirectTo(buildAdminUrl(['action' => 'backups']));
 }
 $stagingDir = $stagingBase . '/restore-' . $backupTimestamp . '-' . substr(sha1(uniqid('', true)), 0, 8);
 if (!mkdir($stagingDir, 0775, true) && !is_dir($stagingDir)) {
+    $clearMaintenance();
     adminFlashSet('danger', 'Не удалось создать staging-директорию восстановления');
     redirectTo(buildAdminUrl(['action' => 'backups']));
 }
@@ -271,6 +296,7 @@ $restoreSnapshot = static function () use (
 $extractToStagingCmd = 'tar -xzf ' . escapeshellarg($realArchive) . ' -C ' . escapeshellarg($stagingDir);
 if ($runTar($extractToStagingCmd) !== 0) {
     $cleanupStaging();
+    $clearMaintenance();
     adminFlashSet('danger', 'Не удалось распаковать архив в staging-область');
     redirectTo(buildAdminUrl(['action' => 'backups']));
 }
@@ -279,6 +305,7 @@ foreach ($archiveTargetList as $target) {
     $stagingTarget = $stagingDir . '/' . $target;
     if (!file_exists($stagingTarget) && !is_link($stagingTarget)) {
         $cleanupStaging();
+        $clearMaintenance();
         adminFlashSet('danger', 'Проверка staging не пройдена: отсутствует путь ' . $target);
         redirectTo(buildAdminUrl(['action' => 'backups']));
     }
@@ -294,6 +321,7 @@ foreach ($targetsToCleanup as $target) {
     if ($targetReal === false) {
         $cleanupStaging();
         $restoreSnapshot();
+        $clearMaintenance();
         adminFlashSet('danger', 'Не удалось подготовить путь для очистки: ' . $target);
         redirectTo(buildAdminUrl(['action' => 'backups']));
     }
@@ -301,6 +329,7 @@ foreach ($targetsToCleanup as $target) {
     if (!str_starts_with(rtrim($targetReal, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR, $realRootDir)) {
         $cleanupStaging();
         $restoreSnapshot();
+        $clearMaintenance();
         adminFlashSet('danger', 'Запрещено очищать путь вне корня проекта: ' . $target);
         redirectTo(buildAdminUrl(['action' => 'backups']));
     }
@@ -308,6 +337,7 @@ foreach ($targetsToCleanup as $target) {
     if (!$removePath($targetReal)) {
         $cleanupStaging();
         $restoreSnapshot();
+        $clearMaintenance();
         adminFlashSet('danger', 'Не удалось очистить путь перед восстановлением: ' . $target);
         redirectTo(buildAdminUrl(['action' => 'backups']));
     }
@@ -318,6 +348,7 @@ if ($runTar($copyFromStagingCmd) !== 0) {
     $cleanupStaging();
     $restoreSnapshot();
     $writeRestoreLog('apply_failed_rolled_back', ['file' => basename($realArchive), 'policy' => $restorePolicy]);
+    $clearMaintenance();
     adminFlashSet('danger', 'Не удалось применить данные из staging в рабочую директорию. Выполнен откат.');
     redirectTo(buildAdminUrl(['action' => 'backups']));
 }
@@ -347,6 +378,7 @@ if ($postCheckErrors !== []) {
         'policy' => $restorePolicy,
         'errors' => $postCheckErrors,
     ]);
+    $clearMaintenance();
     adminFlashSet('danger', 'Post-check не пройден, выполнен откат: ' . implode(' | ', $postCheckErrors));
     redirectTo(buildAdminUrl(['action' => 'backups']));
 }
@@ -365,5 +397,6 @@ $safetyTail = is_file($preRestoreArchive)
     ? ' Аварийный снимок: ' . basename($preRestoreArchive)
     : '';
 $policyTail = ' Режим: ' . $restorePolicy . '.';
+$clearMaintenance();
 adminFlashSet('success', 'Бэкап восстановлен после очистки. Восстановленные цели: ' . $restoredTargets . '.' . $policyTail . $safetyTail);
 redirectTo(buildAdminUrl(['action' => 'backups']));
