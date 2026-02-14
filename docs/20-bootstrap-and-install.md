@@ -12,13 +12,15 @@
    - определяет путь к БД `var/app.sqlite` и флаг `isDbNew` (файл отсутствует);
    - подключает `app/shared/bootstrap.php` и зависимости публичного рантайма;
    - стартует сессию (`Auth::start()`);
-   - если БД новая, выполняет сидинг (см. ниже).
+   - если БД новая, выполняет публичные дефолты (макеты, visual fields).
 
 3. `app/shared/bootstrap.php`:
    - создаёт папку `var/` при необходимости;
    - подключает core и доменные классы;
    - соединяется с `SQLite` (`DB::connect()`);
-   - если БД новая **или** нет таблицы `sections`, загружает `app/shared/schema.sql`.
+   - если БД новая **или** нет таблицы `sections`, загружает `app/shared/schema.sql`;
+   - если БД новая, гарантирует наличие дефолтного сайта и системных разделов `index`/`404`
+     (это важно, даже если первым запросом была админка).
 
 ## Где создаётся `SQLite`
 - Файл базы данных: `var/app.sqlite`.
@@ -33,11 +35,12 @@
 
 ## Когда выполняются дефолты
 Сиды выполняются **только при первом запуске**, когда файла БД ещё не было:
-- `ensureDefaultLayoutTemplates()` — создаёт `templates/layouts/default.php` и `templates/layouts/default.nav.php` на основе шаблонов `templates/layouts/default/*.tpl.php`.
-- `ensureDefaultSite()` — создаёт сайт и системные разделы `index` и `404`.
-- `ensureDefaultVisualFields()` — заполняет `visual_fields` дефолтными полями.
+- `ensureDefaultSiteForNewDatabase()` (в `app/shared/bootstrap.php`) — создаёт сайт и системные разделы `index` и `404`.
+- `ensureDefaultLayoutTemplates()` (в `app/public/bootstrap.php`) — создаёт `templates/layouts/default.php` и `templates/layouts/default.nav.php`.
+- `ensureDefaultVisualFields()` (в `app/public/bootstrap.php`) — заполняет `visual_fields` дефолтными полями.
 
-Логика сидов находится в `app/public/bootstrap.php` и привязана к условию «файл БД отсутствовал».
+Это разделение нужно, чтобы сайт создавался независимо от того, какой рантайм стартовал первым
+(`public` или `admin`).
 
 ## Права на запись
 Для корректной работы нужны права на запись:

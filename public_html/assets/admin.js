@@ -240,8 +240,8 @@ function initCkeditorEditors(scope) {
     }
     const uploadUrl = textarea.getAttribute('data-ckeditor-upload-url') || '';
     const config = {
-      extraPlugins: 'table,image,uploadimage',
       removePlugins: 'cloudservices',
+      filebrowserBrowseUrl: '/assets/ckeditor4/filemanager/index.php?type=Images',
     };
     if (uploadUrl) {
       config.filebrowserUploadUrl = uploadUrl;

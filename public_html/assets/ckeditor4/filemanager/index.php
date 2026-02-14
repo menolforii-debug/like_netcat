@@ -1,15 +1,20 @@
-﻿<?
+<?php
+
+declare(strict_types=1);
+
 error_reporting(0);
-ini_set('display_errors', 0);
-$NETCAT_FOLDER = join(strstr(__FILE__, "/") ? "/" : "\\", array_slice(preg_split("/[\/\\\]+/", __FILE__), 0, -2)).( strstr(__FILE__, "/") ? "/" : "\\" )."../../../";
-include_once ($NETCAT_FOLDER."vars.inc.php");
-require($ROOT_FOLDER . "connect_io.php");
+ini_set('display_errors', '0');
 
-$settings = $nc_core->get_settings(null,null,false);
+$root = dirname(__DIR__, 4);
+require_once $root . '/app/admin/bootstrap.php';
 
+if (!Auth::canEdit()) {
+    http_response_code(403);
+    echo 'Forbidden';
+    exit;
+}
 
-$CKEditorAllowCyrilicFolder = (int) $settings['CKEditorAllowCyrilicFolder'];
-
+$allowCyrillicFolder = 0;
 ?><html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
@@ -32,13 +37,13 @@ $CKEditorAllowCyrilicFolder = (int) $settings['CKEditorAllowCyrilicFolder'];
 <button id="home" name="home" type="button" value="Home">&nbsp;</button>
 <h1></h1>
 <div id="uploadresponse"></div>
-<input id="mode" name="mode" type="hidden" value="add" /> 
+<input id="mode" name="mode" type="hidden" value="add" />
 <input id="currentpath" name="currentpath" type="hidden" />
 <div id="file-input-container">
-	<div id="alt-fileinput">
-		<input	id="filepath" name="filepath" type="text" /><button id="browse" name="browse" type="button" value="Browse"></button>
-	</div>
-	<input	id="newfile" name="newfile" type="file" />
+    <div id="alt-fileinput">
+        <input id="filepath" name="filepath" type="text" /><button id="browse" name="browse" type="button" value="Browse"></button>
+    </div>
+    <input id="newfile" name="newfile" type="file" />
 </div>
 <button id="upload" name="upload" type="submit" value="Upload"></button>
 <button id="newfolder" name="newfolder" type="button" value="New Folder"></button>
@@ -52,19 +57,19 @@ $CKEditorAllowCyrilicFolder = (int) $settings['CKEditorAllowCyrilicFolder'];
 </div>
 </div>
 <form name="search" id="search" method="get">
-		<div>
-			<input type="text" value="" name="q" id="q" />
-			<a id="reset" href="#" class="q-reset"></a>
-			<span class="q-inactive"></span>
-		</div> 
+        <div>
+            <input type="text" value="" name="q" id="q" />
+            <a id="reset" href="#" class="q-reset"></a>
+            <span class="q-inactive"></span>
+        </div>
 </form>
 
 <ul id="itemOptions" class="contextMenu">
-	<li class="select"><a href="#select"></a></li>
-	<li class="download"><a href="#download"></a></li>
-	<li class="rename"><a href="#rename"></a></li>
-	<li class="move"><a href="#move"></a></li>
-	<li class="delete separator"><a href="#delete"></a></li>
+    <li class="select"><a href="#select"></a></li>
+    <li class="download"><a href="#download"></a></li>
+    <li class="rename"><a href="#rename"></a></li>
+    <li class="move"><a href="#move"></a></li>
+    <li class="delete separator"><a href="#delete"></a></li>
 </ul>
 
 <script type="text/javascript" src="scripts/jquery-1.8.3.min.js"></script>
@@ -78,7 +83,7 @@ $CKEditorAllowCyrilicFolder = (int) $settings['CKEditorAllowCyrilicFolder'];
 <script type="text/javascript" src="scripts/jquery.tablesorter-2.7.2.min.js"></script>
 <script type="text/javascript" src="scripts/filemanager.js"></script>
 <script type="text/javascript">
-    var CKEditorAllowCyrilicFolder = <?=$CKEditorAllowCyrilicFolder?>;
+    var CKEditorAllowCyrilicFolder = <?= (int) $allowCyrillicFolder ?>;
 </script>
 </div>
 
