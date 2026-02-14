@@ -242,6 +242,7 @@ function initCkeditorEditors(scope) {
     const config = {
       extraPlugins: 'table,image,uploadimage',
       removePlugins: 'cloudservices',
+      filebrowserBrowseUrl: '/assets/ckeditor4/filemanager/index.php?type=Images',
     };
     if (uploadUrl) {
       config.filebrowserUploadUrl = uploadUrl;
