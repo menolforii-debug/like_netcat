@@ -1,75 +1,47 @@
-<?
+<?php
 /**
  * Crop plugin for filemanager of CKEditor
  */
 error_reporting(E_ALL);
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST')
-{
-
-    $config = json_decode(file_get_contents("../../scripts/filemanager.config.js"), true);
-
-    if ($config['options']['fileRoot'] !== false ) {
-        if($config['options']['serverRoot'] === true) {
-            $doc_root = $_SERVER['DOCUMENT_ROOT'];
-            $separator = basename($config['options']['fileRoot']);
-        } else {
-            $doc_root = $config['options']['fileRoot'];
-            $separator = basename($config['options']['fileRoot']);
-        }
-    } else {
-        $doc_root = $_SERVER['DOCUMENT_ROOT'];
-    }
-
-
-    include ($doc_root.'/vars.inc.php');
-
-    $type = str_replace('.','',substr($_REQUEST['img'], -4));
-
-    $info = parse_url($_REQUEST['img']);
-
-    parse_str($info['query']);
-
-    $img_src = str_replace('//','/',$doc_root.$HTTP_FILES_PATH."userfiles".$path);
-
-    //$img_src = $doc_root.
-
-    // start netcat & fm
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     require_once('./inc/filemanager.inc.php');
-    #NETCAT START
     require_once('filemanager.config.php');
-    #NETCAT END
     require_once('filemanager.class.php');
+
     $fm = new Filemanager();
-    if(!auth()) {
+    if (!auth()) {
         $fm->error($fm->lang('AUTHORIZATION_REQUIRED'));
         return false;
     }
 
+    $imgUrl = isset($_REQUEST['img']) ? (string) $_REQUEST['img'] : '';
+    $info = parse_url($imgUrl);
+    parse_str($info['query'] ?? '', $query);
 
-    $x = $_REQUEST['x'];
-    $y = $_REQUEST['y'];
-    $w = $_REQUEST['w'];
-    $h = $_REQUEST['h'];
+    $path = isset($query['path']) ? (string) $query['path'] : '';
+    if ($path === '') {
+        return false;
+    }
 
+    $img_src = rtrim($config['doc_root'], '/\\') . '/' . ltrim(rawurldecode($path), '/');
+    $img_src = str_replace('\\', '/', $img_src);
 
-    $cropped_img = img_helper::crop($img_src,$x,$y,$w,$h);
+    $type = strtolower(pathinfo($img_src, PATHINFO_EXTENSION));
 
-    if (img_helper::save($cropped_img,$img_src,$type) !== false){
+    $x = isset($_REQUEST['x']) ? (int) $_REQUEST['x'] : 0;
+    $y = isset($_REQUEST['y']) ? (int) $_REQUEST['y'] : 0;
+    $w = isset($_REQUEST['w']) ? (int) $_REQUEST['w'] : 0;
+    $h = isset($_REQUEST['h']) ? (int) $_REQUEST['h'] : 0;
 
-        // make new thumbnail
+    $cropped_img = img_helper::crop($img_src, $x, $y, $w, $h);
 
-        $fm->setFileRoot($SUB_FOLDER . $config['rel_path']);
-
-        $fm->get_thumbnail($img_src,true);
-
+    if (img_helper::save($cropped_img, $img_src, $type) !== false) {
+        $fm->setFileRoot($config['rel_path']);
+        $fm->get_thumbnail($img_src, true);
         return true;
     }
 }
-
-
-
-
 
 class img_helper {
 

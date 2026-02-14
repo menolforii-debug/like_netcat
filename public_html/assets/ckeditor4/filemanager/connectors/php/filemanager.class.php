@@ -591,8 +591,7 @@ class Filemanager {
 
 
 	private function get_file_info($path='', $thumbnail = false) {
-		$nc_core = nc_core::get_object();
-		// DO NOT  rawurlencode() since $current_path it
+				// DO NOT  rawurlencode() since $current_path it
 		// is used for displaying name file
 		if($path=='') {
 			$current_path = $this->get['path'];
@@ -619,7 +618,7 @@ class Filemanager {
 			if($this->item['filetype'] == 'svg') {
 				$this->item['preview'] = $current_path;
 			} else {
-				$this->item['preview'] = $nc_core->SUB_FOLDER . $nc_core->HTTP_ROOT_PATH . 'editors/ckeditor4/filemanager/connectors/php/filemanager.php?mode=preview&path='. rawurlencode($current_path);
+				$this->item['preview'] = '/assets/ckeditor4/filemanager/connectors/php/filemanager.php?mode=preview&path=' . rawurlencode($current_path);
 				if($thumbnail) $this->item['preview'] .= '&thumbnail=true';
 			}
 			//if(isset($get['getsize']) && $get['getsize']=='true') {
@@ -801,9 +800,7 @@ private function cleanString($string, $allowed = array()) {
 	);
 
 
-    $nc_core = nc_Core::get_object();
-
-    $CKEditorAllowCyrilicFolder = (int) $nc_core->get_settings('CKEditorAllowCyrilicFolder');
+		$CKEditorAllowCyrilicFolder = 0;
 
 	if (is_array($string)) {
 
@@ -813,7 +810,7 @@ private function cleanString($string, $allowed = array()) {
 			$clean = strtr($clean, $mapping);
 
 			if(!$CKEditorAllowCyrilicFolder) {
-                $string = nc_transliterate($string);
+                $string = $this->transliterate((string) $string);
 				$clean = preg_replace("/[^{$allow}_a-zA-Z0-9]/u", '', $string);
 				// $clean = preg_replace("/[^{$allow}_a-zA-Z0-9\x{0430}-\x{044F}\x{0410}-\x{042F}]/u", '', $clean); // allow only latin alphabet with cyrillic
 			}
@@ -822,7 +819,7 @@ private function cleanString($string, $allowed = array()) {
 	} else {
 		$clean = $string = strtr($string, $mapping);
 		if(!$CKEditorAllowCyrilicFolder) {
-            $string = nc_transliterate($string);
+            $string = $this->transliterate((string) $string);
             $clean = preg_replace("/[^{$allow}_a-zA-Z0-9]/u", '', $string);
 			    // $clean = preg_replace("/[^{$allow}_a-zA-Z0-9\x{0430}-\x{044F}\x{0410}-\x{042F}]/u", '', $string); // allow only latin alphabet with cyrillic
 		}
@@ -830,6 +827,17 @@ private function cleanString($string, $allowed = array()) {
 		
 	}
 	return $cleaned;
+}
+
+private function transliterate($value) {
+	if (!is_string($value)) {
+		return '';
+	}
+	$converted = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
+	if ($converted === false) {
+		return $value;
+	}
+	return $converted;
 }
 
 /**
