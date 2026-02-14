@@ -84,7 +84,7 @@ AdminLayout::closeSidebar();
 
 AdminLayout::openContent();
 echo '<div id="content">';
-SnippetListView::renderContent($snippets, $keyword, $snippetExists, $snippetName, $content, $error);
+SnippetListView::renderContent($snippets, $keyword, $snippetExists, $snippetName, $content, $error, $isNew);
 echo '</div>';
 AdminLayout::closeContent();
 

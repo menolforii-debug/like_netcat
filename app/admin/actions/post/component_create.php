@@ -131,63 +131,7 @@ if ($baseReal !== false) {
     }
     $componentDirReal = realpath($componentDir);
     if ($componentDirReal !== false && strpos($componentDirReal . DIRECTORY_SEPARATOR, $baseReal) === 0) {
-        $defaultListContent = <<<'PHP'
-<?php
-/** @var array $items */
-/** @var callable $setFields */
-?>
-<div class="component-list">
-    <?php foreach ($items as $item): ?>
-        <?php $setFields($item); ?>
-        <article class="component-item">
-            <h3>
-                <?php if (!empty($fullLink)): ?>
-                    <a href="<?php echo (string) $fullLink; ?>">
-                        <?php echo (string) ($f_title ?? ''); ?>
-                    </a>
-                <?php else: ?>
-                    <?php echo (string) ($f_title ?? ''); ?>
-                <?php endif; ?>
-            </h3>
-            <?php if (!empty($f_text)): ?>
-                <p><?php echo (string) $f_text; ?></p>
-            <?php endif; ?>
-        </article>
-    <?php endforeach; ?>
-</div>
-PHP;
-
-        $defaultSingleContent = <<<'PHP'
-<?php
-/** @var array|null $object */
-if ($object === null) {
-    return;
-}
-$title = (string) ($f_title ?? '');
-$text = (string) ($f_text ?? '');
-?>
-<article class="component-single">
-    <h1><?php echo $title; ?></h1>
-    <?php if ($text !== ''): ?>
-        <div class="content"><?php echo $text; ?></div>
-    <?php endif; ?>
-</article>
-PHP;
-
-        $defaultSystemContent = <<<'PHP'
-<?php
-// Доступны переменные: $section, $site, $infoblock, $component, $isSingle
-// Пример системных настроек:
-// $query_order = 'a.created_at DESC';
-// $query_limit = '10';
-// $distinct = 'DISTINCT';
-PHP;
-
-        $defaultFiles = [
-            'list.php' => $defaultListContent,
-            'single.php' => $defaultSingleContent,
-            'system.php' => $defaultSystemContent,
-        ];
+        $defaultFiles = componentDefaultTemplateFiles();
 
         foreach ($defaultFiles as $fileName => $content) {
             $filePath = $componentDirReal . '/' . $fileName;
