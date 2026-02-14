@@ -137,7 +137,7 @@ POST-действия для страницы макетов (`/admin.php?action
 
 ```
 <style>#cke_notifications_area_editor-text{display:none;}</style>
-<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
+<script src="/assets/ckeditor4/ckeditor.js"></script>
 ```
 
 Инициализация выполняется при загрузке страницы и при открытии форм в модалке
@@ -156,8 +156,8 @@ POST-действия для страницы макетов (`/admin.php?action
 
 ```
 CKEDITOR.replace('editor-<field>', {
-  extraPlugins: 'table,image',
-  removePlugins: 'cloudservices'
+  removePlugins: 'cloudservices',
+  filebrowserBrowseUrl: '/assets/ckeditor4/filemanager/index.php?type=Images'
 });
 ```
 
@@ -267,7 +267,7 @@ echo browse_messages($ccEnv, 10);
 ## Файловый менеджер и загрузки
 Админка отображает файловый менеджер через `filemanager` и `filemanager_embed`:
 - `filemanager_embed` требует роль `admin`.
-- Подключается файл `vendor/filegator/index.php` (если он установлен).
+- Подключается файл `app/vendor/filegator/index.php`.
 - Запросы `POST` к `filemanager_embed` не проходят проверку CSRF админки: Filegator использует собственный токен.
 
 Загрузки файлов объектов хранятся в:
