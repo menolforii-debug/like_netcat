@@ -34,7 +34,7 @@ require_once('filemanager.class.php');
 #NETCAT START
 $fm = new Filemanager();
 
-$fm->setFileRoot($SUB_FOLDER . $config['rel_path']);
+$fm->setFileRoot($config['rel_path']);
 #NETCAT END
 $response = '';
 
