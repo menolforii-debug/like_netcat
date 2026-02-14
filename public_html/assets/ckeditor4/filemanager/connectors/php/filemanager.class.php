@@ -528,9 +528,10 @@ class Filemanager {
 			$this->error("No way.");
 		}
 
-		if (strpos(nc_file_mime_type($current_path), 'image/') !== 0) {
-			$this->error("No way.");
-		}
+			$mimeType = $this->detectMimeType($current_path);
+			if (strpos($mimeType, 'image/') !== 0) {
+				$this->error("No way.");
+			}
 
 		if (isset($this->get['path']) && file_exists($current_path)) {
 			// if $thumbnail is set to true we return the thumbnail
@@ -591,8 +592,7 @@ class Filemanager {
 
 
 	private function get_file_info($path='', $thumbnail = false) {
-		$nc_core = nc_core::get_object();
-		// DO NOT  rawurlencode() since $current_path it
+				// DO NOT  rawurlencode() since $current_path it
 		// is used for displaying name file
 		if($path=='') {
 			$current_path = $this->get['path'];
@@ -617,9 +617,10 @@ class Filemanager {
 			
 			// svg should not be previewed as raster formats images
 			if($this->item['filetype'] == 'svg') {
-				$this->item['preview'] = $current_path;
+				$this->item['preview'] = $this->toPublicPath($current_path);
 			} else {
-				$this->item['preview'] = $nc_core->SUB_FOLDER . $nc_core->HTTP_ROOT_PATH . 'editors/ckeditor4/filemanager/connectors/php/filemanager.php?mode=preview&path='. rawurlencode($current_path);
+				$previewPath = $this->toPublicPath($current_path);
+				$this->item['preview'] = '/assets/ckeditor4/filemanager/connectors/php/filemanager.php?mode=preview&path=' . rawurlencode($previewPath);
 				if($thumbnail) $this->item['preview'] .= '&thumbnail=true';
 			}
 			//if(isset($get['getsize']) && $get['getsize']=='true') {
@@ -801,9 +802,7 @@ private function cleanString($string, $allowed = array()) {
 	);
 
 
-    $nc_core = nc_Core::get_object();
-
-    $CKEditorAllowCyrilicFolder = (int) $nc_core->get_settings('CKEditorAllowCyrilicFolder');
+		$CKEditorAllowCyrilicFolder = 0;
 
 	if (is_array($string)) {
 
@@ -813,7 +812,7 @@ private function cleanString($string, $allowed = array()) {
 			$clean = strtr($clean, $mapping);
 
 			if(!$CKEditorAllowCyrilicFolder) {
-                $string = nc_transliterate($string);
+                $string = $this->transliterate((string) $string);
 				$clean = preg_replace("/[^{$allow}_a-zA-Z0-9]/u", '', $string);
 				// $clean = preg_replace("/[^{$allow}_a-zA-Z0-9\x{0430}-\x{044F}\x{0410}-\x{042F}]/u", '', $clean); // allow only latin alphabet with cyrillic
 			}
@@ -822,7 +821,7 @@ private function cleanString($string, $allowed = array()) {
 	} else {
 		$clean = $string = strtr($string, $mapping);
 		if(!$CKEditorAllowCyrilicFolder) {
-            $string = nc_transliterate($string);
+            $string = $this->transliterate((string) $string);
             $clean = preg_replace("/[^{$allow}_a-zA-Z0-9]/u", '', $string);
 			    // $clean = preg_replace("/[^{$allow}_a-zA-Z0-9\x{0430}-\x{044F}\x{0410}-\x{042F}]/u", '', $string); // allow only latin alphabet with cyrillic
 		}
@@ -830,6 +829,58 @@ private function cleanString($string, $allowed = array()) {
 		
 	}
 	return $cleaned;
+}
+
+private function transliterate($value) {
+	if (!is_string($value)) {
+		return '';
+	}
+	$converted = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
+	if ($converted === false) {
+		return $value;
+	}
+	return $converted;
+}
+
+private function detectMimeType($path) {
+	if (!is_string($path) || $path === '' || !is_file($path)) {
+		return '';
+	}
+
+	if (function_exists('finfo_open')) {
+		$finfo = finfo_open(FILEINFO_MIME_TYPE);
+		if ($finfo) {
+			$mime = finfo_file($finfo, $path);
+			finfo_close($finfo);
+			if (is_string($mime) && $mime !== '') {
+				return $mime;
+			}
+		}
+	}
+
+	if (function_exists('mime_content_type')) {
+		$mime = mime_content_type($path);
+		if (is_string($mime) && $mime !== '') {
+			return $mime;
+		}
+	}
+
+	return '';
+}
+
+private function toPublicPath($path) {
+	$publicPath = (string) $path;
+	if($this->dynamic_fileroot != '') {
+		$publicPath = $this->dynamic_fileroot . $publicPath;
+	}
+	$publicPath = preg_replace('~/+~', '/', $publicPath);
+	if ($publicPath === '') {
+		return '/';
+	}
+	if ($publicPath[0] !== '/') {
+		$publicPath = '/' . $publicPath;
+	}
+	return $publicPath;
 }
 
 /**
