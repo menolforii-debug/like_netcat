@@ -52,6 +52,37 @@ function csrf_token_field(): string
     return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">';
 }
 
+
+function componentDefaultTemplateFiles(): array
+{
+    $baseDir = __DIR__ . '/resources/default_component_templates';
+    $map = [
+        'list.php' => 'list.php',
+        'single.php' => 'single.php',
+        'system.php' => 'system.php',
+    ];
+
+    $templates = [];
+    foreach ($map as $key => $fileName) {
+        $filePath = $baseDir . '/' . $fileName;
+        $content = is_file($filePath) ? file_get_contents($filePath) : false;
+        $templates[$key] = is_string($content) ? $content : '';
+    }
+
+    return $templates;
+}
+
+function componentDefaultTemplatesForEditor(): array
+{
+    $files = componentDefaultTemplateFiles();
+
+    return [
+        'list' => $files['list.php'] ?? '',
+        'single' => $files['single.php'] ?? '',
+        'system' => $files['system.php'] ?? '',
+    ];
+}
+
 function is_valid_csrf_token(?string $token): bool
 {
     if ($token === null || $token === '') {
@@ -797,7 +828,7 @@ function readLayoutNavTemplate(string $layoutKey): ?string
 
 function readDefaultLayoutTemplateFile(): ?string
 {
-    $path = layoutTemplatesDir() . '/default/default.php';
+    $path = __DIR__ . '/resources/default_layouts_templates/default.php';
     if (!is_file($path)) {
         return null;
     }
@@ -808,7 +839,7 @@ function readDefaultLayoutTemplateFile(): ?string
 
 function readDefaultLayoutNavTemplateFile(): ?string
 {
-    $path = layoutNavTemplatesDir() . '/default/default.nav.php';
+    $path = __DIR__ . '/resources/default_layouts_templates/default.nav.php';
     if (!is_file($path)) {
         return null;
     }

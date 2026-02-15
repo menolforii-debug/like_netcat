@@ -86,9 +86,18 @@ function ensureDefaultLayoutTemplates(string $root): void
     $legacyLayoutSource = $defaultSourceDir . '/layout.tpl.php';
     $legacyNavSource = $defaultSourceDir . '/nav.tpl.php';
 
-    // If canonical sources are missing, create them from legacy sources (or empty).
+    $resourceLayoutSource = $root . '/app/admin/resources/default_layouts_templates/default.php';
+    $resourceNavSource = $root . '/app/admin/resources/default_layouts_templates/default.nav.php';
+
+    // If canonical sources are missing, create them from resources, then legacy sources (or empty).
     if (!is_file($canonicalLayoutSource)) {
-        $content = is_file($legacyLayoutSource) ? file_get_contents($legacyLayoutSource) : '';
+        if (is_file($resourceLayoutSource)) {
+            $content = file_get_contents($resourceLayoutSource);
+        } elseif (is_file($legacyLayoutSource)) {
+            $content = file_get_contents($legacyLayoutSource);
+        } else {
+            $content = '';
+        }
         if ($content === false || $content === null) {
             $content = '';
         }
@@ -96,7 +105,13 @@ function ensureDefaultLayoutTemplates(string $root): void
         @chmod($canonicalLayoutSource, 0660);
     }
     if (!is_file($canonicalNavSource)) {
-        $content = is_file($legacyNavSource) ? file_get_contents($legacyNavSource) : '';
+        if (is_file($resourceNavSource)) {
+            $content = file_get_contents($resourceNavSource);
+        } elseif (is_file($legacyNavSource)) {
+            $content = file_get_contents($legacyNavSource);
+        } else {
+            $content = '';
+        }
         if ($content === false || $content === null) {
             $content = '';
         }

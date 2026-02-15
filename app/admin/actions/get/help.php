@@ -10,7 +10,7 @@ $rootCandidates = [
 ];
 $docsDir = null;
 foreach ($rootCandidates as $root) {
-    $candidate = $root . '/docs';
+    $candidate = $root . '/doc_user';
     if (is_dir($candidate)) {
         $docsDir = $candidate;
         break;
@@ -44,12 +44,15 @@ if ($docsDir !== null) {
 }
 ksort($docs);
 
-$selectedDoc = isset($_GET['doc']) ? (string) $_GET['doc'] : 'help.md';
+$selectedDoc = isset($_GET['doc']) ? (string) $_GET['doc'] : '';
+if ($selectedDoc === '' && isset($docs['00-index.md'])) {
+    $selectedDoc = '00-index.md';
+}
 if (!isset($docs[$selectedDoc])) {
     $selectedDoc = array_key_first($docs) ?: '';
 }
 
-$content = "Файлы документации не найдены.\n";
+$content = "Файлы пользовательской документации не найдены в каталоге doc_user.\n";
 if ($selectedDoc !== '' && isset($docs[$selectedDoc])) {
     $loaded = file_get_contents($docs[$selectedDoc]['path']);
     if ($loaded !== false) {
