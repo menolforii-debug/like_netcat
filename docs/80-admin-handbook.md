@@ -211,8 +211,8 @@ CKEDITOR.replace('editor-<field>', {
 текущих action-файлах не вызывается — это нужно учитывать при аудите маршрутов и форм.
 `readDefaultLayoutNavTemplateFile()` не является «мертвой» функцией: она используется в
 `app/admin/actions/get/layouts.php` при создании нового макета, чтобы подставлять дефолтный
-шаблон навигации. Функция читает файл `templates/layouts/default/default.nav.php` и возвращает
-его содержимое, либо `null`, если файл отсутствует или не читается.
+шаблон навигации. Функция читает файл `app/admin/resources/default_layouts_templates/default.nav.php`
+и возвращает его содержимое, либо `null`, если файл отсутствует или не читается.
 
 `layoutTemplatesDir()` и `layoutNavTemplatesDir()` оба указывают на `templates/layouts`.
 Это намеренно: обычные макеты и `*.nav.php` лежат рядом, а различие задаётся суффиксом файла.

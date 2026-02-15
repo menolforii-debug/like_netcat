@@ -50,14 +50,15 @@ final class SnippetListView
         bool $snippetExists,
         string $snippetName,
         string $content,
-        string $error
+        string $error,
+        bool $isNew = false
     ): void {
         echo '<div class="card shadow-sm">';
         echo '<div class="card-body">';
         if ($error !== '') {
             echo '<div class="alert alert-danger">' . htmlspecialchars($error, ENT_QUOTES, 'UTF-8') . '</div>';
         }
-        if ($keyword === '' && $snippets === []) {
+        if ($keyword === '' && $snippets === [] && !$isNew) {
             echo '<div class="text-muted">Врезки пока не созданы.</div>';
             echo '</div></div>';
             return;
